@@ -26,10 +26,10 @@ export default function Contact() {
             
             <div className="space-y-6 text-gray-400 text-lg font-light leading-relaxed mb-12">
               <p>
-                Immediate deployment operations are currently <strong className="text-white">frozen</strong> for Q3. We strictly cap our active partner ecosystem to ensure our infrastructure provides an unassailable, asymmetrical advantage in the market.
+                Immediate deployment operations are currently <strong className="text-white">frozen</strong> for Q3. We strictly cap our active partner ecosystem to ensure our infrastructure provides an unassailable, asymmetrical advantage in the market. This restricted action protects infrastructure fidelity for active partners while preserving a controlled path for firms seeking enterprise operational intelligence.
               </p>
               <p>
-                Applications for the Q4 review cycle are now open. Firms will be selected via strict merit-based hierarchy regarding transaction volume, market stance, and alignment with Aurixa's strategic objectives. 
+                Applications for the Q4 review cycle are now open. Firms will be selected via strict merit-based hierarchy regarding transaction volume, market stance, and alignment with Aurixa's strategic objectives. Submit credentials that demonstrate operational maturity, systemic capability, and the current bottlenecks preventing your firm from scaling through unified infrastructure. 
               </p>
             </div>
           </motion.div>
@@ -45,7 +45,7 @@ export default function Contact() {
               <h3 className="font-display font-semibold text-xl tracking-wide uppercase">Operational Freeze</h3>
             </div>
             <p className="text-gray-400 font-light text-sm leading-relaxed mb-4">
-              "To maintain extreme architectural fidelity for our Tier-1 partners, we limit new integrations. We do not accept capital for queue priority. Allocation is earned by proving your firm has the systemic capability to dominate your sector once armed with our software. Submit your credentials meticulously."
+              "To maintain extreme architectural fidelity for our Tier-1 partners, we limit new integrations. We do not accept capital for queue priority. Allocation is earned by proving your firm has the systemic capability to dominate your sector once armed with our software. Submit your credentials meticulously. Q4 review is calibrated around transaction volume, market stance, and alignment with Aurixa Systems' strategic objectives."
             </p>
             <div className="text-[10px] uppercase tracking-widest text-[#94A3B8] font-mono">
               — Founding Partner, Aurixa Systems
@@ -99,9 +99,15 @@ export default function Contact() {
                   <select required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm appearance-none">
                     <option value="" className="bg-[#040B16]">Select Segment...</option>
                     <option value="buyers_agent" className="bg-[#040B16]">Buyers Agency</option>
+                    <option value="property_advisory" className="bg-[#040B16]">Property Advisory Firm</option>
+                    <option value="real_estate_agency" className="bg-[#040B16]">Real Estate Agency</option>
+                    <option value="mortgage_finance" className="bg-[#040B16]">Mortgage & Finance Business</option>
                     <option value="wealth_advisor" className="bg-[#040B16]">Wealth Management Firm</option>
                     <option value="financial_planner" className="bg-[#040B16]">Financial Planning Office</option>
+                    <option value="investment_group" className="bg-[#040B16]">Investment Group</option>
+                    <option value="developer" className="bg-[#040B16]">Developer</option>
                     <option value="enterprise" className="bg-[#040B16]">Enterprise Aggregate</option>
+                    <option value="enterprise_property_network" className="bg-[#040B16]">Enterprise Property Network</option>
                   </select>
                 </div>
               </div>

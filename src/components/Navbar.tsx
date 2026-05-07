@@ -40,7 +40,7 @@ export function Navbar() {
             <circle cx="50" cy="58" r="14" fill="url(#nav-orb-grad)" filter="url(#nav-neon-glow)" />
           </svg>
           <span className="text-2xl font-display tracking-[0.2em] uppercase text-chrome-prismatic transition-all duration-300 group-hover:scale-105 group-hover:drop-shadow-[0_0_15px_rgba(200,155,60,0.8)] filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            Aurixa
+            Aurixa Systems
           </span>
         </Link>
         

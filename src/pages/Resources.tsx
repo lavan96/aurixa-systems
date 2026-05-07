@@ -5,7 +5,7 @@ import {
   Target, Briefcase, Send, TrendingUp, Bell, ListTodo, FileSignature, 
   Map, Megaphone, PieChart, BookOpen, Zap, Copy, Palette, Plug, Cloud, 
   Cpu, ShieldCheck, UploadCloud, Layers, AlertTriangle, History, Settings, 
-  Users, DollarSign, Sliders, Sparkles, Server
+  Users, DollarSign, Sliders, Sparkles, Server, Network
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
@@ -14,8 +14,11 @@ const MODULE_CATEGORIES = [
   {
     id: "01",
     title: "OPERATIONAL CORE",
-    description: "Primary workflow orchestration & strategic data structuring.",
+    description: "Primary workflow orchestration & strategic data structuring. Workflow systems, business scalability, operational infrastructure.",
     items: [
+      { name: "Workflow Systems", icon: LayoutGrid },
+      { name: "Business Scalability", icon: TrendingUp },
+      { name: "Operational Infrastructure", icon: Server },
       { name: "Overview", icon: LayoutGrid },
       { name: "Listings", icon: Building },
       { name: "Calendar", icon: CalendarDays },
@@ -32,8 +35,11 @@ const MODULE_CATEGORIES = [
   {
     id: "02",
     title: "INTELLIGENCE & AI",
-    description: "Automated analysis, live telemetry, & generative outputs.",
+    description: "Automated analysis, live telemetry, & generative outputs. Property analysis, scenario modelling, strategic recommendations.",
     items: [
+      { name: "Property Analysis", icon: BarChart2 },
+      { name: "Scenario Modelling", icon: PieChart },
+      { name: "Strategic Recommendations", icon: BookOpen },
       { name: "Reports", icon: BarChart2 },
       { name: "Generated Reports", icon: FileText },
       { name: "Cash Flow Analysis", icon: Activity },
@@ -44,9 +50,25 @@ const MODULE_CATEGORIES = [
   },
   {
     id: "03",
-    title: "CLIENT ECOSYSTEM",
-    description: "Secure portals, tracking, & communications logging.",
+    title: "FINANCIAL INTELLIGENCE",
+    description: "Borrowing capacity, cash flow, depreciation integration, and financial operations.",
     items: [
+      { name: "Borrowing Capacity", icon: DollarSign },
+      { name: "Cash Flow Operations", icon: Activity },
+      { name: "Depreciation Integration", icon: Layers },
+      { name: "Finance Portal", icon: DollarSign },
+      { name: "Cash Flow Analysis", icon: Activity },
+      { name: "Depreciation Comps", icon: Layers },
+    ]
+  },
+  {
+    id: "04",
+    title: "CLIENT ECOSYSTEM",
+    description: "Secure portals, tracking, & communications logging. CRM workflows, client engagement, lifecycle infrastructure.",
+    items: [
+      { name: "CRM Workflows", icon: Users },
+      { name: "Client Engagement", icon: MessageSquare },
+      { name: "Lifecycle Infrastructure", icon: Briefcase },
       { name: "Call Logs", icon: PhoneCall },
       { name: "Conversations", icon: MessageSquare },
       { name: "Clients", icon: UserCheck, highlight: true },
@@ -56,10 +78,13 @@ const MODULE_CATEGORIES = [
     ]
   },
   {
-    id: "04",
-    title: "SYSTEM ADMINISTRATION",
-    description: "Root access, global configurations, & API management.",
+    id: "05",
+    title: "ENTERPRISE INFRASTRUCTURE",
+    description: "Root access, global configurations, API management, administration, governance, and scalability systems.",
     items: [
+       { name: "Administration Systems", icon: Settings },
+       { name: "Brand Governance", icon: ShieldCheck },
+       { name: "Scalability Networks", icon: Network },
        { name: "Automation", icon: Zap },
        { name: "Templates", icon: Copy },
        { name: "Branding", icon: Palette },
@@ -103,7 +128,7 @@ export default function Resources() {
             animate={{ opacity: 1, y: 0 }}
             className="text-xl text-[#9CA3AF] font-light leading-relaxed max-w-2xl mb-12"
           >
-            A comprehensive, unrestricted index of the underlying infrastructure components mapping our entire architectural capacity.
+            A comprehensive, unrestricted index of the underlying infrastructure components mapping our entire architectural capacity. The Aurixa Intelligence Centre is a comprehensively aggregated directory of the sub-systems and governed modules embedded within the Aurixa operational ecosystem.
           </motion.p>
         </div>
 
@@ -192,10 +217,10 @@ export default function Resources() {
              
              <h3 className="text-3xl font-display font-light text-white mb-6 tracking-wide drop-shadow-md">RESTRICTED ARCHIVES</h3>
              <p className="text-[#00A8B5]/80 font-mono text-[11px] leading-relaxed mb-10 max-w-xl uppercase tracking-widest text-center">
-               Live deployment demonstrations and proprietary operational blueprints are walled off from general traffic. Access requires an authorized partner protocol link.
+               Live deployment demonstrations and proprietary operational blueprints are walled off from general traffic. Access requires an authorized partner protocol link. Explore the ecosystem to access structured operational intelligence, automation systems, reporting infrastructure, and enterprise support.
              </p>
              <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-[#040B16] bg-gradient-to-r from-[#C89B3C] to-[#E2C78C] rounded-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.3)] hover:shadow-[0_0_50px_rgba(200,155,60,0.5)]">
-               <span className="drop-shadow-sm font-black">REQUEST SECURITY CLEARANCE</span>
+               <span className="drop-shadow-sm font-black">BOOK ENTERPRISE DEMO</span>
                <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform stroke-[#040B16] drop-shadow-sm" style={{ strokeWidth: 2 }}/>
              </Link>
            </div>
