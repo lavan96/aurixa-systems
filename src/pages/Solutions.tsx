@@ -28,7 +28,7 @@ export default function Solutions() {
             transition={{ delay: 0.1 }}
             className="text-xl text-[#9CA3AF] font-light leading-relaxed max-w-3xl mb-12"
           >
-            We build solutions that eliminate the guesswork from high-level advisory. By weaponizing data and cash flow models, your firm transforms from a service provider into an undeniable market authority. 
+            We build solutions that eliminate the guesswork from high-level advisory. By weaponizing data and cash flow models, your firm transforms from a service provider into an undeniable market authority. Strategic overview: model convergence, value realisation, and locked alignment. Businesses care about outcomes. Aurixa Systems transforms operations, empowering property enterprises to scale efficiently, improve client delivery, and dominate their market position.
           </motion.p>
         </div>
 
@@ -62,17 +62,17 @@ export default function Solutions() {
                 <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#00A8B5]/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                 <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Precision Client <span className="italic text-[#00A8B5]">Acquisition.</span></h3>
                 <p className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl">
-                  Stop losing prospects to competitors with glossier but hollow presentations. By deploying Aurixa's mathematically air-tight serviceability models in your initial consultation, trust is established instantly. Competitors attempting to sell on intuition will look primitive by comparison.
+                  Stop losing prospects to competitors with glossier but hollow presentations. By deploying Aurixa's mathematically air-tight serviceability models in your initial consultation, trust is established instantly. Competitors attempting to sell on intuition will look primitive by comparison. Operational efficiency reduces administrative workload, eliminates fragmented systems, accelerates internal processes, and radically improves team productivity with connected operational tools.
                 </p>
                 <div className="flex gap-8 relative z-10 border-t border-white/10 pt-8">
                    <div className="flex flex-col gap-2">
                       <span className="text-3xl font-display text-white">400%</span>
-                      <span className="text-xs uppercase tracking-widest text-[#00A8B5] font-bold">Conversion Lift</span>
+                      <span className="text-xs uppercase tracking-widest text-[#00A8B5] font-bold">Conversion Lift / Model Convergence</span>
                    </div>
                    <div className="w-px h-12 bg-white/10" />
                    <div className="flex flex-col gap-2">
                       <span className="text-3xl font-display text-white">&lt;5 min</span>
-                      <span className="text-xs uppercase tracking-widest text-[#00A8B5] font-bold">Audit Time</span>
+                      <span className="text-xs uppercase tracking-widest text-[#00A8B5] font-bold">Audit Time / Alignment Locked</span>
                    </div>
                 </div>
              </div>
@@ -105,17 +105,17 @@ export default function Solutions() {
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#C89B3C]/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                 <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Zero-Friction <span className="italic text-[#C89B3C]">Compliance.</span></h3>
                 <p className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl">
-                  Protect your firm against regulatory blowback. The Aurixa engine mathematically prevents advisors from recommending investment strategies that breach APRA buffers or exceed the absolute ceiling of the client’s real-world borrowing capacity.
+                  Protect your firm against regulatory blowback. The Aurixa engine mathematically prevents advisors from recommending investment strategies that breach APRA buffers or exceed the absolute ceiling of the client’s real-world borrowing capacity. Business scalability means scaling without operational bottlenecks, centralising growing business operations, creating repeatable workflows, and building the infrastructure necessary for rapid expansion. Client experience improves through faster turnaround times, structured reporting delivery, professional client presentation, and stronger engagement and retention.
                 </p>
                 <div className="flex flex-col gap-4 relative z-10">
                     <div className="w-full bg-[#040B16] border border-white/10 p-4 flex items-center justify-between shadow-inner">
-                        <span className="text-xs uppercase tracking-widest text-gray-500 font-mono">APRA Buffer Alignment</span>
+                        <span className="text-xs uppercase tracking-widest text-gray-500 font-mono">APRA Buffer Alignment / Operational Bottlenecks Reduced</span>
                         <div className="h-1 w-24 bg-[#0B162C] rounded-full overflow-hidden">
                            <div className="h-full bg-[#C89B3C] w-full" />
                         </div>
                     </div>
                     <div className="w-full bg-[#040B16] border border-white/10 p-4 flex items-center justify-between shadow-inner">
-                        <span className="text-xs uppercase tracking-widest text-gray-500 font-mono">Digital Audit Trail</span>
+                        <span className="text-xs uppercase tracking-widest text-gray-500 font-mono">Digital Audit Trail / Structured Reporting Delivery</span>
                         <div className="h-1 w-24 bg-[#0B162C] rounded-full overflow-hidden">
                            <div className="h-full bg-[#C89B3C] w-full" />
                         </div>
@@ -148,17 +148,17 @@ export default function Solutions() {
              <div className="w-full md:w-7/12 p-12 relative flex flex-col justify-center">
                 <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Hyper-Scaled <span className="italic text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">Operations.</span></h3>
                 <p className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl">
-                  A single principal advisor armed with Aurixa can output the workload of a ten-person analyst team. Scale your asset under management exponentially without ballooning your payroll overhead. This is about absolute leverage.
+                  A single principal advisor armed with Aurixa can output the workload of a ten-person analyst team. Scale your asset under management exponentially without ballooning your payroll overhead. This is about absolute leverage. Enterprise positioning modernises business operations and delivers institutional-grade intelligence, creating competitive differentiation and strengthening brand authority in the market. The intelligence reporting ecosystem provides strategic intelligence, compass intelligence, executive-level strategic direction, strategic briefing, and snapshot intelligence for rapid client decision support.
                 </p>
                 <div className="flex gap-8 relative z-10 border-t border-white/10 pt-8 mt-auto">
                    <div className="flex flex-col gap-2">
                       <span className="text-3xl font-display text-white">10x</span>
-                      <span className="text-xs uppercase tracking-widest text-white/70 font-bold">Analyst Output</span>
+                      <span className="text-xs uppercase tracking-widest text-white/70 font-bold">Analyst Output / Enterprise Positioning</span>
                    </div>
                    <div className="w-px h-12 bg-white/10" />
                    <div className="flex flex-col gap-2">
                       <span className="text-3xl font-display text-white">Uncapped</span>
-                      <span className="text-xs uppercase tracking-widest text-white/70 font-bold">AUM Scaling</span>
+                      <span className="text-xs uppercase tracking-widest text-white/70 font-bold">AUM Scaling / Brand Authority</span>
                    </div>
                 </div>
              </div>
@@ -173,10 +173,10 @@ export default function Solutions() {
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>
             <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Your Competition <span className="italic text-chrome-prismatic">Is Applying.</span></h3>
             <p className="text-[#9CA3B8] mb-12 max-w-2xl mx-auto text-lg leading-relaxed font-light">
-              If you aren't deploying Aurixa to your clients, the firm across the street will. Secure your spot in the queue and guarantee your firm remains mathematically untouchable.
+              If you aren't deploying Aurixa to your clients, the firm across the street will. Secure your spot in the queue and guarantee your firm remains mathematically untouchable. Aurixa Systems operates on scalable subscription-based operational infrastructure designed around your business, giving growing firms foundation infrastructure, scaling advisory teams priority allocations and growth infrastructure, and multi-office operations enterprise infrastructure with governance control, bespoke strategic briefing templates, API interconnects, and continuous implementation assistance.
             </p>
             <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.3)]">
-              <span className="drop-shadow-md">Secure Priority Waitlist</span>
+              <span className="drop-shadow-md">Book Enterprise Demo</span>
               <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
             </Link>
           </div>
