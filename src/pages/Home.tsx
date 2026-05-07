@@ -19,7 +19,7 @@ export default function Home() {
             className="inline-flex items-center gap-3 px-5 py-2 rounded-full border border-white/10 bg-[#0B162C]/80 backdrop-blur-md mb-8 shadow-[0_0_15px_rgba(200,155,60,0.15)]"
           >
             <span className="w-2 h-2 rounded-full bg-[#C89B3C] animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-white">Direct Onboarding Now Frozen</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-white">SYS.CORE.ACTIVE</span>
           </motion.div>
           
           <motion.h1 
@@ -28,8 +28,8 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
             className="text-5xl md:text-7xl lg:text-[5.5rem] font-display font-light tracking-[-0.02em] leading-[1.05] mb-8"
           >
-            <span className="block text-liquid-chrome mb-2 drop-shadow-lg">Where Property Intuition</span>
-            <span className="text-chrome-prismatic italic drop-shadow-2xl">Surrenders to Mathematics.</span>
+            <span className="block text-liquid-chrome mb-2 drop-shadow-lg">The Operational Intelligence Infrastructure</span>
+            <span className="text-chrome-prismatic italic drop-shadow-2xl">Powering Modern Property Businesses.</span>
           </motion.h1>
 
           <motion.p 
@@ -38,7 +38,7 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
             className="text-lg md:text-xl text-[#9CA3AF] max-w-3xl mb-12 font-light leading-relaxed"
           >
-            If your advisory firm still relies on fragmented spreadsheets and isolated CRM data, you are bleeding capital. Aurixa Systems equips you with patched workflows, 10-year cash flow forecasting, and live financial matrices. <span className="text-white font-medium">To preserve the asymmetrical advantage of our active partners, immediate deployment is disabled.</span>
+            Aurixa Systems unifies operational workflows, strategic reporting, financial modelling, client ecosystems, and enterprise intelligence into one scalable business infrastructure platform built for modern property enterprises.
           </motion.p>
           
           <motion.div 
@@ -48,11 +48,11 @@ export default function Home() {
             className="flex flex-col sm:flex-row items-center gap-6 w-full justify-center"
           >
             <Link to="/contact" className="w-full sm:w-auto group relative inline-flex items-center justify-center px-10 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-none transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.2)] hover:shadow-[0_0_40px_rgba(0,168,181,0.4)]">
-              <span className="drop-shadow-md">Join The Waitlist</span>
+              <span className="drop-shadow-md">Book Enterprise Demo</span>
               <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
             </Link>
             <Link to="/platform" className="w-full sm:w-auto inline-flex items-center justify-center px-10 py-5 text-[12px] uppercase tracking-[0.25em] font-medium text-white border border-white/20 hover:bg-white/5 rounded-none transition-colors">
-              Examine The Arsenal
+              Explore The Ecosystem
             </Link>
           </motion.div>
         </div>
@@ -63,15 +63,15 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-white/10 text-center">
           <div className="px-4">
             <h4 className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">Zero</h4>
-            <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">Compliance Risk</p>
+            <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">Operational Bottlenecks</p>
           </div>
           <div className="px-4">
             <h4 className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">10yr</h4>
-            <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">Cashflow Analysis</p>
+            <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">Financial Modelling</p>
           </div>
           <div className="px-4">
             <h4 className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">100%</h4>
-            <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">White-Labeled</p>
+            <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">White-Labeled Delivery</p>
           </div>
           <div className="px-4">
             <h4 className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">SOC 2</h4>
@@ -88,19 +88,19 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <span className="w-12 h-px bg-[#C89B3C]" />
-                <span className="text-[11px] font-bold tracking-widest uppercase text-[#C89B3C]">System Sentinels</span>
+                <span className="text-[11px] font-bold tracking-widest uppercase text-[#C89B3C]">The Aurixa Ecosystem</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight mb-6 text-white drop-shadow-md">
-                The Intelligence <br />
-                <span className="text-chrome-prismatic italic drop-shadow-xl">Vanguard.</span>
+                Operational <br />
+                <span className="text-chrome-prismatic italic drop-shadow-xl">Infrastructure Layers.</span>
               </h2>
             </div>
             <div>
               <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
-                These are not just features. They are your tactical assets. The elite, automated agents executing your firm's strategy.
+                Not feature sets. Interconnected operational infrastructure designed to streamline complexity and drive governance.
               </p>
               <p className="text-gray-400 text-lg font-light leading-relaxed">
-                If you challenge the market with these assets, you don't just compete. <span className="text-white font-medium">You execute instantly. Lethal precision. Zero hesitation.</span>
+                Each layer supports unified intelligence, analytical systems, strategic forecasts, engagement infrastructure, and administration oversight.
               </p>
             </div>
           </div>
@@ -108,25 +108,39 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                id: "A-01",
-                name: "CORE INGESTION",
-                spec: "Data Assassination",
-                desc: "Rapidly hunts and processes CoreLogic property matrices and manual data uploads into a singular, unified threat model. Removes spreadsheet bottlenecks permanently.",
+                id: "LYR-01",
+                name: "Operational Intelligence",
+                spec: "Workflow & Oversight",
+                desc: "Streamline operations and reduce business complexity through one unified operational environment. Features business process systems and centralised platform control.",
                 img: "https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=400&h=500&auto=format&fit=crop"
               },
               {
-                id: "V-09",
-                name: "YIELD FORECASTER",
-                spec: "10-Year Execution",
-                desc: "Maps out multi-year holding costs, pre/post-tax impacts, and capital growth to deliver a mathematically untouchable strategy. Leaves competitors with guesswork.",
+                id: "LYR-02",
+                name: "Strategic Intelligence",
+                spec: "Analytical Systems",
+                desc: "Deliver faster, more structured client intelligence through governed analytical systems. Includes property analysis, market intelligence, and automated insight generation.",
                 img: "https://images.unsplash.com/photo-1535295972055-1c762f4483e5?q=80&w=400&h=500&auto=format&fit=crop"
               },
               {
-                id: "X-99",
-                name: "PROTOCOL EXPORT",
-                spec: "White-Label Briefs",
-                desc: "Generates stunning, board-grade capability and compliance reports instantly. Armed with your firm's exact branding. The ultimate strategic kill-shot in client meetings.",
+                id: "LYR-03",
+                name: "Financial Modelling",
+                spec: "Strategic Forecasts",
+                desc: "Provide scalable financial intelligence and long-term strategic modelling capabilities. Encompasses borrowing capacity, 10-year cash flow, and scenario modelling.",
                 img: "https://images.unsplash.com/photo-1558244661-d248897f7bb4?q=80&w=400&h=500&auto=format&fit=crop"
+              },
+              {
+                id: "LYR-04",
+                name: "Client Growth Ecosystem",
+                spec: "Engagement Infrastructure",
+                desc: "Build scalable client experiences with structured engagement infrastructure. CRM workflows, client engagement, communication systems, reporting delivery, lifecycle management.",
+                img: "https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=400&h=500&auto=format&fit=crop"
+              },
+              {
+                id: "LYR-05",
+                name: "Enterprise Governance",
+                spec: "Administration & Oversight",
+                desc: "Maintain operational control as your business scales. Systems administration, permissions, oversight, governance, and complete operational visibility.",
+                img: "https://images.unsplash.com/photo-1535295972055-1c762f4483e5?q=80&w=400&h=500&auto=format&fit=crop"
               }
             ].map((unit, i) => (
               <div key={i} className="armor-panel group flex flex-col h-[500px] overflow-hidden hover:lethal-glow transition-all duration-500">
@@ -161,17 +175,17 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
             <div>
               <h2 className="text-4xl md:text-5xl font-display font-light tracking-tight mb-8 drop-shadow-md text-white">
-                The <span className="italic text-chrome-prismatic drop-shadow-xl">"Penny Drop"</span> moment for <br />your high-net-worth clients.
+                The Industry Problem: <br /><span className="italic text-chrome-prismatic drop-shadow-xl">Fragmented Systems.</span>
               </h2>
               <div className="space-y-6 text-gray-400 text-lg font-light leading-relaxed">
                 <p>
-                  <strong className="text-white font-medium">Here is the uncomfortable truth:</strong> Your clients don't just want data; they want the undeniable mathematical conclusion clearly presented. 
+                  <strong className="text-white font-medium">Property businesses are operating across fragmented systems:</strong> disconnected workflows, multiple software subscriptions, and operational inefficiencies are crippling growth. 
                 </p>
                 <p>
-                  Most advisory businesses operate in unscalable silos. Connecting manual serviceability calculators to property analytics and cobbling together client reports costs your firm hundreds of unrecoverable manual hours. It introduces catastrophic margin for error.
+                  You are dealing with slow client turnaround, manual reporting, administrative overload, scalability limitations, and inconsistent client delivery.
                 </p>
                 <p>
-                  Aurixa replaces your fragmentation with an integrated weapon. Ingest financials directly, route them through APRA-aligned buffers, and instantly generate board-grade, white-labeled strategy briefs. <strong className="text-white font-medium">It’s not just software; it’s an unfair advantage.</strong>
+                  Aurixa Systems was built to unify the operational infrastructure of modern property businesses through one structured intelligence ecosystem.
                 </p>
               </div>
             </div>
@@ -183,12 +197,12 @@ export default function Home() {
                   {/* Typographic Arsenal Block */}
                   <div className="absolute inset-0 bg-chrome-prismatic opacity-10 group-hover:opacity-20 transition-opacity duration-1000" />
                   <div className="h-full w-full relative z-20 flex flex-col items-center justify-center text-center">
-                    <span className="text-[10px] uppercase font-mono tracking-[0.3em] text-[#00A8B5] mb-6">Engine Architecture</span>
+                    <span className="text-[10px] uppercase font-mono tracking-[0.3em] text-[#00A8B5] mb-6">Enterprise Infrastructure</span>
                     <div className="text-3xl lg:text-4xl font-display font-light text-white leading-tight mb-6 drop-shadow-md">
-                      "Data is abundant.<br/><span className="text-chrome-prismatic italic drop-shadow-2xl">Prestige is scarce.</span>"
+                      "Scale smarter through<br/><span className="text-chrome-prismatic italic drop-shadow-2xl">unified intelligence.</span>"
                     </div>
                     <div className="w-12 h-px bg-gradient-to-r from-transparent via-[#C89B3C] to-transparent mb-6 opacity-50" />
-                    <p className="text-xs font-light text-[#9CA3AF] uppercase tracking-widest font-mono">10-Year Forecasting Protocols</p>
+                    <p className="text-xs font-light text-[#9CA3AF] uppercase tracking-widest font-mono">Centralised Platform Control</p>
                   </div>
                 </div>
               </div>
@@ -206,13 +220,13 @@ export default function Home() {
             <span className="text-white font-display font-bold text-3xl drop-shadow-md">A</span>
           </div>
           <h2 className="text-6xl md:text-7xl lg:text-[5rem] font-display font-light mb-8 tracking-tight leading-[1.05] text-white">
-            Stop playing the game.<br /><span className="italic text-chrome-prismatic drop-shadow-2xl">Own the board.</span>
+            Unifying strategic intelligence <br /><span className="italic text-chrome-prismatic drop-shadow-2xl">into one platform.</span>
           </h2>
           <p className="text-xl text-[#9CA3AF] mb-12 max-w-2xl font-light leading-relaxed">
-            Immediate allocations are frozen. To preserve the systemic superiority of our integrated partners, access is heavily restricted. Review cycles are opening shortly.
+            Aurixa helps property businesses scale smarter through unified operational intelligence. Experience governed automation infrastructure designed to modernise how you analyse, advise, and scale.
           </p>
           <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_40px_rgba(0,168,181,0.2)] hover:shadow-[0_0_50px_rgba(200,155,60,0.4)]">
-            <span className="drop-shadow-md">Secure Priority Waitlist</span>
+            <span className="drop-shadow-md">Book Enterprise Demo</span>
             <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
           </Link>
         </div>

@@ -30,7 +30,7 @@ export default function About() {
             transition={{ delay: 0.1 }}
             className="text-xl md:text-2xl text-[#9CA3AF] font-light leading-relaxed max-w-4xl mb-12"
           >
-            Aurixa Systems was not conceived in a traditional soft-tech incubator; it was forged in the absolute frustration of apex-level finance. We engineer asymmetric leverage for firms that refuse to operate on archaic infrastructure.
+            Aurixa Systems was not conceived in a traditional soft-tech incubator; it was forged in the absolute frustration of apex-level finance. We engineer asymmetric leverage for firms that refuse to operate on archaic infrastructure. Aurixa Systems is the result of property professionals and quantitative engineers solving the exact operational bottlenecks that limit modern real estate businesses.
           </motion.p>
         </div>
 
@@ -41,10 +41,10 @@ export default function About() {
                <h3 className="text-4xl md:text-5xl font-display text-white mb-6 tracking-wide drop-shadow-md">The Genesis Protocol</h3>
                <div className="space-y-6">
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed">
-                   A clandestine coalition of quantitative engineers and former apex-tier advisory figures recognized a critical systemic flaw: the industry's catastrophic reliance on fragmented spreadsheets, decaying CRM data, and severely manual workflows spanning disjointed portals.
+                   A clandestine coalition of quantitative engineers and former apex-tier advisory figures recognized a critical systemic flaw: the industry's catastrophic reliance on fragmented spreadsheets, decaying CRM data, and severely manual workflows spanning disjointed portals. The Aurixa mandate is to confront fragmented tools, decaying CRM data, and severely manual workflows spanning disjointed platforms.
                  </p>
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed">
-                   We determined that human intuition in high-velocity financial operations is a devastating liability. Aurixa was engineered from the bedrock up to be the ultimate countermeasure—a singularly unified, mathematically infallible intelligence matrix that surgically targets operational friction, eradicates human error, and replaces it with algorithmic certainty.
+                   We determined that human intuition in high-velocity financial operations is a devastating liability. Aurixa was engineered from the bedrock up to be the ultimate countermeasure—a singularly unified, mathematically infallible intelligence matrix that surgically targets operational friction, eradicates human error, and replaces it with algorithmic certainty. It reduces administrative limits and replaces them with highly scalable operational infrastructure.
                  </p>
                </div>
             </div>
@@ -89,7 +89,7 @@ export default function About() {
                  <Network className="w-12 h-12 mb-8 z-10" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                  <h4 className="text-3xl font-display text-white mb-6 z-10 drop-shadow-md">Eradicate Friction</h4>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed z-10">
-                   Every millisecond of operational drag is a hemorrhage in firm revenue. We aggressively zero-out bottlenecks, collapsing week-long data gathering, document sourcing, and multi-lender API pinging into a completely unified, zero-latency corridor. Velocity is prioritized above all else.
+                   Every millisecond of operational drag is a hemorrhage in firm revenue. We aggressively zero-out bottlenecks, collapsing week-long data gathering, document sourcing, and multi-lender API pinging into a completely unified, zero-latency corridor. Velocity is prioritized above all else. End-to-end framework delivery eliminates single-point software solutions, handling the entire pipeline from intelligence gathering to strategic modelling to final client reporting execution.
                  </p>
                  {/* Visual element bottom */}
                  <div className="mt-auto w-full pt-8 flex gap-2 z-10">
@@ -105,7 +105,7 @@ export default function About() {
                  <Crosshair className="w-12 h-12 mb-8 z-10" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                  <h4 className="text-3xl font-display text-white mb-6 z-10 drop-shadow-md">Engineer Dominance</h4>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed z-10">
-                   Survival is an insufficient commercial metric; we architect market monopolies. By equipping your firm with real-time macro-market statistics, highly sophisticated strategy visualization, and custom white-label portals, you project an insurmountable aura of absolute institutional power to your clientele.
+                   Survival is an insufficient commercial metric; we architect market monopolies. By equipping your firm with real-time macro-market statistics, highly sophisticated strategy visualization, and custom white-label portals, you project an insurmountable aura of absolute institutional power to your clientele. Proprietary algorithms built specifically for the intricacies of Australian property process complex market metrics, cash flows, and depreciations with ruthless mathematical precision.
                  </p>
                  <div className="absolute bottom-0 right-0 w-40 h-40 opacity-20 group-hover:opacity-100 transition-opacity duration-1000">
                     <div className="w-full h-full border-t-[3px] border-l-[3px] border-[#C89B3C] rounded-tl-[100%] absolute right-[-20%] bottom-[-20%]" />
@@ -119,7 +119,7 @@ export default function About() {
                  <Lock className="w-12 h-12 mb-8 z-10" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                  <h4 className="text-3xl font-display text-white mb-6 z-10 drop-shadow-md">Enforce Compliance</h4>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed z-10">
-                   In an aggressively scrutinized regulatory landscape, structural integrity is not negotiable. Aurixa's core intelligence is permanently shackled to real-time APRA buffers, deep non-destructible audit trails, and strict lending logic parameters. Total compliance is hard-coded into the fundamental mathematical bedrock.
+                   In an aggressively scrutinized regulatory landscape, structural integrity is not negotiable. Aurixa's core intelligence is permanently shackled to real-time APRA buffers, deep non-destructible audit trails, and strict lending logic parameters. Total compliance is hard-coded into the fundamental mathematical bedrock. Rapid implementation is designed for massive organisational rollouts, integrating complex infrastructure seamlessly and providing comprehensive administrative control to govern extensive enterprise networks instantly.
                  </p>
                  <div className="mt-auto w-full pt-8 flex justify-end gap-1.5 z-10">
                     {[...Array(6)].map((_, i) => <div key={i} className="w-2 h-6 bg-white/10 group-hover:bg-[#00A8B5] transition-colors duration-300" style={{ transitionDelay: `${i * 100}ms` }} />)}
@@ -141,13 +141,13 @@ export default function About() {
                  </div>
                  <h3 className="text-4xl md:text-5xl font-display text-white mb-8 tracking-wide drop-shadow-md">The Obfuscation Protocol</h3>
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed mb-6">
-                   We do not compromise on structural sovereignty. Our backend infrastructure utilizes defense-grade SSL/TLS encryption matrices, heavily isolated sub-database partitioning per specific partner tenant, and end-to-end mathematical data obfuscation vectors. 
+                   We do not compromise on structural sovereignty. Our backend infrastructure utilizes defense-grade SSL/TLS encryption matrices, heavily isolated sub-database partitioning per specific partner tenant, and end-to-end mathematical data obfuscation vectors. Proprietary Australian Framework technology is packaged for seamless enterprise operation and designed to aggregate and unify property operations across the continent. 
                  </p>
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed mb-6">
-                   Your client intelligence, proprietary operational strategies, and financial modeling blueprints are permanently insulated. <span className="text-white font-medium">We do not scrape or aggregate your data for internal machine learning variants.</span> 
+                   Your client intelligence, proprietary operational strategies, and financial modeling blueprints are permanently insulated. <span className="text-white font-medium">We do not scrape or aggregate your data for internal machine learning variants.</span> Our institute-grade technology aligns operational infrastructure with enterprise authority, built by industry and engineered for scale. 
                  </p>
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed">
-                   Aurixa runs strictly as a high-velocity, black-site engine—projecting your brand interface securely upfront while enforcing an impenetrable, dark-web level of backend resilience.
+                   Aurixa runs strictly as a high-velocity, black-site engine—projecting your brand interface securely upfront while enforcing an impenetrable, dark-web level of backend resilience. The result is operational supremacy via three directives: end-to-end framework, proprietary algorithms, and rapid implementation.
                  </p>
               </div>
               <div className="w-full lg:w-1/2 flex justify-end">
@@ -199,15 +199,15 @@ export default function About() {
             
             <div className="max-w-3xl mx-auto space-y-6 mb-16">
                <p className="text-[#9CA3B8] text-xl leading-relaxed font-light">
-                 Aurixa is a weapon of massive asymmetric advantage. We strictly control its distribution pipeline. Mass software adoption leads to heavily diluted competitive edges; therefore, Aurixa is definitively not available to the general market.
+                 Aurixa is a weapon of massive asymmetric advantage. We strictly control its distribution pipeline. Mass software adoption leads to heavily diluted competitive edges; therefore, Aurixa is definitively not available to the general market. Align with the new standard of property operations and scale your brand through intelligent operational infrastructure today.
                </p>
                <p className="text-[#9CA3B8] text-xl leading-relaxed font-light">
-                 We operate on a restricted allocation model, conducting rigorous operational audits on prospective partner firms before granting master access keys. Only advisory syndicates demonstrating the capacity and capital scale to wield this computational framework at its full potential will clear the waitlist.
+                 We operate on a restricted allocation model, conducting rigorous operational audits on prospective partner firms before granting master access keys. Only advisory syndicates demonstrating the capacity and capital scale to wield this computational framework at its full potential will clear the waitlist. Deploy Aurixa Systems to streamline workflows, unify operations, and scale smarter with modular infrastructure.
                </p>
             </div>
             
             <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[13px] md:text-sm uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all duration-300 hover:scale-[1.02] shadow-[0_0_40px_rgba(200,155,60,0.3)] hover:shadow-[0_0_60px_rgba(200,155,60,0.5)] border border-[#C89B3C]">
-              <span className="drop-shadow-md">Initiate Vetting Phase</span>
+              <span className="drop-shadow-md">Book Enterprise Demo</span>
               <Target className="w-5 h-5 ml-4 group-hover:rotate-90 transition-transform duration-500 drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
             </Link>
           </div>
