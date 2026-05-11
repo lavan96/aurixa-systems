@@ -20,11 +20,11 @@ export function BrandLogo({ className, imageClassName, compact = false }: BrandL
     >
       <span className="brand-logo-ambient" aria-hidden="true" />
       <img
-        src="/brand/aurixa-systems-logo-upscaled.svg"
+        src="/brand/aurixa-systems-logo-source.jpg"
         alt="Aurixa Systems"
         width={compact ? 230 : 300}
         height={compact ? 77 : 100}
-        className={cn("brand-logo-image relative z-10 h-full w-full object-cover", imageClassName)}
+        className={cn("brand-logo-image relative z-10 h-full w-full object-contain", imageClassName)}
       />
     </Link>
   );
