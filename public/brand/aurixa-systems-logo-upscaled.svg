@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2160 720" width="2160" height="720" role="img" aria-labelledby="title desc">
+  <title id="title">Aurixa Systems brand logo</title>
+  <desc id="desc">Upscaled Aurixa Systems logo with animated cybernetic blue and gold ambient background.</desc>
+  <defs>
+    <linearGradient id="aurixa-edge-fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity="0"/>
+      <stop offset="0.08" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="0.92" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="aurixa-vertical-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity="0"/>
+      <stop offset="0.11" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="0.88" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="aurixa-soft-mask">
+      <rect width="2160" height="720" fill="url(#aurixa-edge-fade)"/>
+      <rect width="2160" height="720" fill="url(#aurixa-vertical-fade)" style="mix-blend-mode:multiply"/>
+    </mask>
+    <radialGradient id="aurixa-reactor-glow" cx="34%" cy="45%" r="42%">
+      <stop offset="0" stop-color="#f5d17a" stop-opacity="0.28"/>
+      <stop offset="0.18" stop-color="#00a8b5" stop-opacity="0.2"/>
+      <stop offset="0.7" stop-color="#040b16" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="aurixa-scan" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00a8b5" stop-opacity="0"/>
+      <stop offset="0.45" stop-color="#00a8b5" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.26"/>
+      <stop offset="0.55" stop-color="#c89b3c" stop-opacity="0"/>
+      <stop offset="1" stop-color="#c89b3c" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="aurixa-grid" width="96" height="96" patternUnits="userSpaceOnUse">
+      <path d="M0 48H96M48 0V96" stroke="#00a8b5" stroke-width="1" stroke-opacity="0.16"/>
+      <path d="M0 96L96 0" stroke="#c89b3c" stroke-width="0.7" stroke-opacity="0.07"/>
+    </pattern>
+    <filter id="aurixa-soften" x="-4%" y="-6%" width="108%" height="112%">
+      <feGaussianBlur stdDeviation="0.18"/>
+      <feComponentTransfer>
+        <feFuncR type="gamma" amplitude="1.04" exponent="0.96" offset="0"/>
+        <feFuncG type="gamma" amplitude="1.04" exponent="0.96" offset="0"/>
+        <feFuncB type="gamma" amplitude="1.06" exponent="0.94" offset="0"/>
+      </feComponentTransfer>
+    </filter>
+    <style><![CDATA[
+      .aurixa-bg-pan { animation: aurixaBgPan 18s ease-in-out infinite alternate; transform-origin: center; }
+      .aurixa-grid-drift { animation: aurixaGridDrift 16s linear infinite; }
+      .aurixa-scanline { animation: aurixaScan 7.5s cubic-bezier(.45,0,.2,1) infinite; mix-blend-mode: screen; }
+      .aurixa-pulse { animation: aurixaPulse 5.8s ease-in-out infinite; mix-blend-mode: screen; }
+      @keyframes aurixaBgPan { from { transform: translateX(-36px) scale(1.02); opacity: .72; } to { transform: translateX(44px) scale(1.05); opacity: .96; } }
+      @keyframes aurixaGridDrift { from { transform: translate3d(0,0,0); } to { transform: translate3d(96px,-48px,0); } }
+      @keyframes aurixaScan { 0% { transform: translateX(-2300px) skewX(-16deg); opacity: 0; } 12% { opacity: .35; } 45% { opacity: .18; } 72%,100% { transform: translateX(2300px) skewX(-16deg); opacity: 0; } }
+      @keyframes aurixaPulse { 0%,100% { opacity: .18; } 50% { opacity: .5; } }
+    ]]></style>
+  </defs>
+  <rect width="2160" height="720" fill="#040b16"/>
+  <g class="aurixa-bg-pan">
+    <rect x="-120" y="-80" width="2400" height="880" fill="url(#aurixa-reactor-glow)"/>
+    <ellipse cx="1560" cy="392" rx="760" ry="250" fill="#00a8b5" opacity="0.06"/>
+    <ellipse cx="740" cy="394" rx="520" ry="230" fill="#c89b3c" opacity="0.055"/>
+  </g>
+  <g class="aurixa-grid-drift" opacity="0.38">
+    <rect x="-120" y="320" width="2400" height="360" fill="url(#aurixa-grid)"/>
+  </g>
+  <image href="/brand/aurixa-systems-logo-source.jpg" x="0" y="0" width="2160" height="720" preserveAspectRatio="xMidYMid slice" mask="url(#aurixa-soft-mask)" filter="url(#aurixa-soften)"/>
+  <rect class="aurixa-pulse" width="2160" height="720" fill="url(#aurixa-reactor-glow)" opacity="0.3"/>
+  <rect class="aurixa-scanline" x="-180" y="0" width="420" height="720" fill="url(#aurixa-scan)"/>
+  <rect width="2160" height="720" fill="none" stroke="#00a8b5" stroke-opacity="0.18" stroke-width="1"/>
+</svg>
