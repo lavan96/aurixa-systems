@@ -8,7 +8,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-6 w-full flex flex-col items-center relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-20 w-full mb-16">
           <div className="col-span-1 md:col-span-1">
-            <BrandLogo className="mb-6 h-14 w-[230px]" />
+            <BrandLogo className="mb-8 h-20 w-[320px] sm:w-[380px]" />
             <p className="text-sm text-gray-400 leading-relaxed max-w-sm">
               The indispensable backbone of industrial innovation. Bridging property and financial intelligence for serious advisory firms.
             </p>
