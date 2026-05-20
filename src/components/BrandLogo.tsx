@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { cn } from "../lib/utils";
 
 interface BrandLogoProps {
   className?: string;
@@ -12,18 +11,18 @@ export function BrandLogo({ className, imageClassName, compact = false }: BrandL
     <Link
       to="/"
       aria-label="Aurixa Systems home"
-      className={cn(
-        "brand-logo-shell group relative flex items-center overflow-visible rounded-sm",
+      className={[
+        "block",
         compact ? "h-[5.5rem] w-[340px] sm:w-[430px] lg:w-[480px]" : "h-28 w-[430px] sm:w-[560px]",
         className
-      )}
+      ].filter(Boolean).join(" ")}
     >
       <img
         src="/brand/aurixa-systems-logo-source.jpg"
         alt="Aurixa Systems"
         width={compact ? 480 : 560}
         height={compact ? 160 : 187}
-        className={cn("brand-logo-image relative z-10 h-full w-full object-contain", imageClassName)}
+        className={["h-full w-full object-contain", imageClassName].filter(Boolean).join(" ")}
       />
     </Link>
   );
