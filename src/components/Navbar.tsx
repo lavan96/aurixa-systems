@@ -8,7 +8,7 @@ export function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#040B16]/90 backdrop-blur-xl border-b border-[#00A8B5]/20">
-      <div className="max-w-7xl mx-auto px-6 h-[85px] flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 h-[100px] flex items-center justify-between">
         <div className="py-1">
           <BrandLogo compact />
         </div>
