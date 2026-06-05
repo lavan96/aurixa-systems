@@ -105,7 +105,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {[
               {
                 id: "LYR-01",
@@ -148,7 +148,7 @@ export default function Home() {
                 imagePosition: "center center"
               }
             ].map((unit, i) => (
-              <div key={i} className="armor-panel group flex h-full flex-col overflow-hidden hover:lethal-glow transition-all duration-500">
+              <div key={i} className={`armor-panel group flex h-full flex-col overflow-hidden hover:lethal-glow transition-all duration-500 lg:col-span-2 ${unit.id === "LYR-05" ? "lg:col-start-2" : ""}`}>
                 <div className="aspect-video w-full relative shrink-0 overflow-hidden">
                   <div className="absolute inset-0 bg-[#00A8B5] mix-blend-color z-10 opacity-30 group-hover:opacity-10 transition-opacity" />
                   <div className="absolute inset-0 bg-[#C89B3C] mix-blend-color z-10 opacity-20 group-hover:opacity-50 transition-opacity" />
