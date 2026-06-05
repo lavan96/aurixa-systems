@@ -8,9 +8,9 @@ export function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#040B16]/90 backdrop-blur-xl border-b border-[#00A8B5]/20">
-      <div className="max-w-7xl mx-auto px-6 h-[100px] flex items-center justify-between">
-        <div className="py-1">
-          <BrandLogo compact />
+      <div className="max-w-7xl mx-auto px-4 md:px-6 h-[100px] flex items-center justify-between gap-3">
+        <div className="py-1 min-w-0 flex-1 md:flex-none">
+          <BrandLogo compact className="max-w-[calc(100vw-6rem)] md:max-w-none" />
         </div>
         
         <nav className="hidden md:flex items-center gap-8">
@@ -43,10 +43,13 @@ export function Navbar() {
         </div>
 
         <button 
-          className="md:hidden text-white"
+          type="button"
+          aria-label={isOpen ? "Close mobile menu" : "Open mobile menu"}
+          aria-expanded={isOpen}
+          className="md:hidden relative z-50 ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-slate-100 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00A8B5]"
           onClick={() => setIsOpen(!isOpen)}
         >
-          {isOpen ? <X className="w-6 h-6" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/> : <Menu className="w-6 h-6" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>}
+          {isOpen ? <X className="h-7 w-7" strokeWidth={2.25} /> : <Menu className="h-7 w-7" strokeWidth={2.25} />}
         </button>
       </div>
 
