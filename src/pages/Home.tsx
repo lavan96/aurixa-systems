@@ -126,7 +126,7 @@ export default function Home() {
                 name: "Financial Modelling",
                 spec: "Strategic Forecasts",
                 desc: "Provide scalable financial intelligence and long-term strategic modelling capabilities. Encompasses borrowing capacity, 10-year cash flow, and scenario modelling.",
-                img: "https://images.unsplash.com/photo-1558244661-d248897f7bb4?q=80&w=400&h=500&auto=format&fit=crop"
+                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2005_42_10%20PM.png"
               },
               {
                 id: "LYR-04",
