@@ -133,7 +133,7 @@ export default function Home() {
                 name: "Client Growth Ecosystem",
                 spec: "Engagement Infrastructure",
                 desc: "Build scalable client experiences with structured engagement infrastructure. CRM workflows, client engagement, communication systems, reporting delivery, lifecycle management.",
-                img: "https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=400&h=500&auto=format&fit=crop"
+                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2006_11_24%20PM.png"
               },
               {
                 id: "LYR-05",
