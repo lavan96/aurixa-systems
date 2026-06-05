@@ -143,12 +143,12 @@ export default function Home() {
                 img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2009_23_40%20PM.png"
               }
             ].map((unit, i) => (
-              <div key={i} className="armor-panel group flex flex-col h-[500px] overflow-hidden hover:lethal-glow transition-all duration-500">
-                <div className="h-1/2 w-full relative overflow-hidden">
+              <div key={i} className="armor-panel group flex h-full flex-col overflow-hidden hover:lethal-glow transition-all duration-500">
+                <div className="aspect-video w-full relative shrink-0 overflow-hidden">
                   <div className="absolute inset-0 bg-[#00A8B5] mix-blend-color z-10 opacity-30 group-hover:opacity-10 transition-opacity" />
                   <div className="absolute inset-0 bg-[#C89B3C] mix-blend-color z-10 opacity-20 group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B162C] to-transparent z-20" />
-                  <img src={unit.img} alt={unit.name} className={`w-full h-full object-cover ${unit.id === "LYR-03" ? "object-[center_42%]" : unit.id === "LYR-05" ? "object-[center_center]" : ""} filter ${unit.id === "LYR-01" ? "brightness-[1.35] contrast-[1.15] saturate-[1.15] opacity-90 group-hover:brightness-[1.45] group-hover:contrast-[1.2] group-hover:saturate-[1.2]" : "grayscale contrast-125 opacity-70"} group-hover:scale-110 group-hover:opacity-100 transition-all duration-700`} referrerPolicy="no-referrer" />
+                  <img src={unit.img} alt={unit.name} className={`block w-full h-full object-cover object-center filter ${unit.id === "LYR-01" ? "brightness-[1.35] contrast-[1.15] saturate-[1.15] opacity-90 group-hover:brightness-[1.45] group-hover:contrast-[1.2] group-hover:saturate-[1.2]" : "grayscale contrast-125 opacity-70"} group-hover:scale-110 group-hover:opacity-100 transition-all duration-700`} referrerPolicy="no-referrer" />
                   <div className="absolute top-4 right-4 z-30">
                     <span className="px-2 py-1 bg-[#000]/80 border border-white/30 text-white text-[10px] font-mono tracking-widest">{unit.id}</span>
                   </div>
