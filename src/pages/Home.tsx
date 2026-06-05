@@ -112,7 +112,7 @@ export default function Home() {
                 name: "Operational Intelligence",
                 spec: "Workflow & Oversight",
                 desc: "Streamline operations and reduce business complexity through one unified operational environment. Features business process systems and centralised platform control.",
-                img: "https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=400&h=500&auto=format&fit=crop"
+                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2004_32_43%20PM.png"
               },
               {
                 id: "LYR-02",
@@ -148,7 +148,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-[#00A8B5] mix-blend-color z-10 opacity-30 group-hover:opacity-10 transition-opacity" />
                   <div className="absolute inset-0 bg-[#C89B3C] mix-blend-color z-10 opacity-20 group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B162C] to-transparent z-20" />
-                  <img src={unit.img} alt={unit.name} className="w-full h-full object-cover filter grayscale contrast-125 opacity-70 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700" referrerPolicy="no-referrer" />
+                  <img src={unit.img} alt={unit.name} className={`w-full h-full object-cover filter ${unit.id === "LYR-01" ? "brightness-[1.35] contrast-[1.15] saturate-[1.15] opacity-90 group-hover:brightness-[1.45] group-hover:contrast-[1.2] group-hover:saturate-[1.2]" : "grayscale contrast-125 opacity-70"} group-hover:scale-110 group-hover:opacity-100 transition-all duration-700`} referrerPolicy="no-referrer" />
                   <div className="absolute top-4 right-4 z-30">
                     <span className="px-2 py-1 bg-[#000]/80 border border-white/30 text-white text-[10px] font-mono tracking-widest">{unit.id}</span>
                   </div>
