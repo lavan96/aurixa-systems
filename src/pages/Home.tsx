@@ -113,7 +113,7 @@ export default function Home() {
                 spec: "Workflow & Oversight",
                 desc: "Streamline operations and reduce business complexity through one unified operational environment. Features business process systems and centralised platform control.",
                 img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2004_32_43%20PM.png",
-                imagePosition: "center center"
+                imagePosition: "50% 50%"
               },
               {
                 id: "LYR-02",
@@ -121,7 +121,7 @@ export default function Home() {
                 spec: "Analytical Systems",
                 desc: "Deliver faster, more structured client intelligence through governed analytical systems. Includes property analysis, market intelligence, and automated insight generation.",
                 img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2005_17_23%20PM.png",
-                imagePosition: "center center"
+                imagePosition: "50% 50%"
               },
               {
                 id: "LYR-03",
@@ -129,7 +129,7 @@ export default function Home() {
                 spec: "Strategic Forecasts",
                 desc: "Provide scalable financial intelligence and long-term strategic modelling capabilities. Encompasses borrowing capacity, 10-year cash flow, and scenario modelling.",
                 img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2005_42_10%20PM.png",
-                imagePosition: "left top"
+                imagePosition: "30% 30%"
               },
               {
                 id: "LYR-04",
@@ -137,7 +137,7 @@ export default function Home() {
                 spec: "Engagement Infrastructure",
                 desc: "Build scalable client experiences with structured engagement infrastructure. CRM workflows, client engagement, communication systems, reporting delivery, lifecycle management.",
                 img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2006_11_24%20PM.png",
-                imagePosition: "center center"
+                imagePosition: "50% 50%"
               },
               {
                 id: "LYR-05",
@@ -145,7 +145,7 @@ export default function Home() {
                 spec: "Administration & Oversight",
                 desc: "Maintain operational control as your business scales. Systems administration, permissions, oversight, governance, and complete operational visibility.",
                 img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2009_23_40%20PM.png",
-                imagePosition: "center center"
+                imagePosition: "50% 50%"
               }
             ].map((unit, i) => (
               <div key={i} className="armor-panel group flex h-full flex-col overflow-hidden hover:lethal-glow transition-all duration-500">
