@@ -7,16 +7,16 @@ export function Footer() {
       <div className="absolute inset-0 bg-gradient-to-t from-[#0055FF]/5 to-transparent pointer-events-none" />
       <div className="max-w-7xl mx-auto px-6 w-full flex flex-col items-center relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-20 w-full mb-16">
-          <div className="col-span-1 md:col-span-1">
-            <BrandLogo className="mb-8 h-28 w-[430px] max-w-full sm:w-[520px]" />
-            <p className="text-sm text-gray-400 leading-relaxed max-w-sm">
+          <div className="col-span-1 md:col-span-1 flex flex-col items-center md:items-start text-center md:text-left">
+            <BrandLogo className="mb-8 h-28 w-[430px] max-w-full sm:w-[520px] mx-auto md:mx-0" />
+            <p className="text-sm text-gray-400 leading-relaxed max-w-sm mx-auto md:mx-0">
               The indispensable backbone of industrial innovation. Bridging property and financial intelligence for serious advisory firms.
             </p>
           </div>
           
-          <div>
+          <div className="flex flex-col items-center md:items-start text-center md:text-left">
             <h4 className="text-sm font-semibold tracking-wider uppercase text-white mb-6">Platform</h4>
-            <ul className="flex flex-col gap-4 text-sm text-gray-400">
+            <ul className="flex flex-col items-center md:items-start gap-4 text-sm text-gray-400">
               <li><Link to="/platform" className="hover:text-white transition-colors">Serviceability Engine</Link></li>
               <li><Link to="/platform" className="hover:text-white transition-colors">Cash Flow Modelling</Link></li>
               <li><Link to="/platform" className="hover:text-white transition-colors">Strategic Reporting</Link></li>
@@ -25,9 +25,9 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          <div className="flex flex-col items-center md:items-start text-center md:text-left">
             <h4 className="text-sm font-semibold tracking-wider uppercase text-white mb-6">Solutions</h4>
-            <ul className="flex flex-col gap-4 text-sm text-gray-400">
+            <ul className="flex flex-col items-center md:items-start gap-4 text-sm text-gray-400">
               <li><Link to="/industries" className="hover:text-white transition-colors">For Buyers Agents</Link></li>
               <li><Link to="/industries" className="hover:text-white transition-colors">For Wealth Advisors</Link></li>
               <li><Link to="/industries" className="hover:text-white transition-colors">For Enterprise Firms</Link></li>
@@ -36,9 +36,9 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          <div className="flex flex-col items-center md:items-start text-center md:text-left">
             <h4 className="text-sm font-semibold tracking-wider uppercase text-white mb-6">Company</h4>
-            <ul className="flex flex-col gap-4 text-sm text-gray-400">
+            <ul className="flex flex-col items-center md:items-start gap-4 text-sm text-gray-400">
               <li><Link to="/about" className="hover:text-white transition-colors">About Aurixa</Link></li>
               <li><Link to="/resources" className="hover:text-white transition-colors">Intelligence Hub</Link></li>
               <li><Link to="/contact" className="hover:text-white transition-colors">Join Waitlist</Link></li>
