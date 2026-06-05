@@ -35,10 +35,10 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-6">
           <Link 
             to="/contact" 
-            className="group relative inline-flex items-center justify-center px-6 py-2.5 text-[13px] font-black tracking-widest uppercase text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_20px_rgba(0,168,181,0.3)] hover:shadow-[0_0_30px_rgba(200,155,60,0.6)]"
+            className="group relative isolate inline-flex items-center justify-center overflow-hidden px-6 py-2.5 text-[13px] font-black tracking-widest uppercase text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_20px_rgba(0,168,181,0.3)] hover:shadow-[0_0_30px_rgba(200,155,60,0.6)]"
           >
             <span className="relative z-10 text-white tracking-[0.25em] font-semibold">JOIN WAITLIST</span>
-          <div className="absolute inset-0 rounded-sm bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-sm bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
           </Link>
         </div>
 
