@@ -119,7 +119,7 @@ export default function Home() {
                 name: "Strategic Intelligence",
                 spec: "Analytical Systems",
                 desc: "Deliver faster, more structured client intelligence through governed analytical systems. Includes property analysis, market intelligence, and automated insight generation.",
-                img: "https://images.unsplash.com/photo-1535295972055-1c762f4483e5?q=80&w=400&h=500&auto=format&fit=crop"
+                img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2005_17_23%20PM.png"
               },
               {
                 id: "LYR-03",
