@@ -140,7 +140,7 @@ export default function Home() {
                 name: "Enterprise Governance",
                 spec: "Administration & Oversight",
                 desc: "Maintain operational control as your business scales. Systems administration, permissions, oversight, governance, and complete operational visibility.",
-                img: "https://images.unsplash.com/photo-1535295972055-1c762f4483e5?q=80&w=400&h=500&auto=format&fit=crop"
+                img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2008_04_59%20PM.png"
               }
             ].map((unit, i) => (
               <div key={i} className="armor-panel group flex flex-col h-[500px] overflow-hidden hover:lethal-glow transition-all duration-500">
