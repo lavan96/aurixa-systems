@@ -112,7 +112,7 @@ export default function Home() {
                 name: "Operational Intelligence",
                 spec: "Workflow & Oversight",
                 desc: "Streamline operations and reduce business complexity through one unified operational environment. Features business process systems and centralised platform control.",
-                img: "https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=400&h=500&auto=format&fit=crop"
+                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2004_32_43%20PM.png"
               },
               {
                 id: "LYR-02",
