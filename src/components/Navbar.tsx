@@ -55,7 +55,7 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden absolute top-20 left-0 right-0 bg-[#0B162C] border-b border-[#00A8B5]/20 p-6 flex flex-col gap-4 shadow-[0_20px_40px_rgba(0,168,181,0.1)]">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-[#0B162C] border-b border-[#00A8B5]/20 p-6 flex flex-col gap-4 shadow-[0_20px_40px_rgba(0,168,181,0.1)]">
           <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">Home</Link>
           <Link to="/platform" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">Platform</Link>
           <Link to="/solutions" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">Solutions</Link>
