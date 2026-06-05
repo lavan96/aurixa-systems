@@ -112,35 +112,40 @@ export default function Home() {
                 name: "Operational Intelligence",
                 spec: "Workflow & Oversight",
                 desc: "Streamline operations and reduce business complexity through one unified operational environment. Features business process systems and centralised platform control.",
-                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2004_32_43%20PM.png"
+                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2004_32_43%20PM.png",
+                imagePosition: "center center"
               },
               {
                 id: "LYR-02",
                 name: "Strategic Intelligence",
                 spec: "Analytical Systems",
                 desc: "Deliver faster, more structured client intelligence through governed analytical systems. Includes property analysis, market intelligence, and automated insight generation.",
-                img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2005_17_23%20PM.png"
+                img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2005_17_23%20PM.png",
+                imagePosition: "center center"
               },
               {
                 id: "LYR-03",
                 name: "Financial Modelling",
                 spec: "Strategic Forecasts",
                 desc: "Provide scalable financial intelligence and long-term strategic modelling capabilities. Encompasses borrowing capacity, 10-year cash flow, and scenario modelling.",
-                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2005_42_10%20PM.png"
+                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2005_42_10%20PM.png",
+                imagePosition: "left top"
               },
               {
                 id: "LYR-04",
                 name: "Client Growth Ecosystem",
                 spec: "Engagement Infrastructure",
                 desc: "Build scalable client experiences with structured engagement infrastructure. CRM workflows, client engagement, communication systems, reporting delivery, lifecycle management.",
-                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2006_11_24%20PM.png"
+                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2006_11_24%20PM.png",
+                imagePosition: "center center"
               },
               {
                 id: "LYR-05",
                 name: "Enterprise Governance",
                 spec: "Administration & Oversight",
                 desc: "Maintain operational control as your business scales. Systems administration, permissions, oversight, governance, and complete operational visibility.",
-                img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2009_23_40%20PM.png"
+                img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2009_23_40%20PM.png",
+                imagePosition: "center center"
               }
             ].map((unit, i) => (
               <div key={i} className="armor-panel group flex h-full flex-col overflow-hidden hover:lethal-glow transition-all duration-500">
@@ -148,7 +153,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-[#00A8B5] mix-blend-color z-10 opacity-30 group-hover:opacity-10 transition-opacity" />
                   <div className="absolute inset-0 bg-[#C89B3C] mix-blend-color z-10 opacity-20 group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B162C] to-transparent z-20" />
-                  <img src={unit.img} alt={unit.name} className={`block w-full h-full object-cover object-center filter ${unit.id === "LYR-01" ? "brightness-[1.35] contrast-[1.15] saturate-[1.15] opacity-90 group-hover:brightness-[1.45] group-hover:contrast-[1.2] group-hover:saturate-[1.2]" : "grayscale contrast-125 opacity-70"} group-hover:scale-110 group-hover:opacity-100 transition-all duration-700`} referrerPolicy="no-referrer" />
+                  <img src={unit.img} alt={unit.name} style={{ objectPosition: unit.imagePosition }} className={`block w-full h-full object-cover filter ${unit.id === "LYR-01" ? "brightness-[1.35] contrast-[1.15] saturate-[1.15] opacity-90 group-hover:brightness-[1.45] group-hover:contrast-[1.2] group-hover:saturate-[1.2]" : "grayscale contrast-125 opacity-70"} group-hover:scale-110 group-hover:opacity-100 transition-all duration-700`} referrerPolicy="no-referrer" />
                   <div className="absolute top-4 right-4 z-30">
                     <span className="px-2 py-1 bg-[#000]/80 border border-white/30 text-white text-[10px] font-mono tracking-widest">{unit.id}</span>
                   </div>
