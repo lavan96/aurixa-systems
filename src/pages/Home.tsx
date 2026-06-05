@@ -143,8 +143,8 @@ export default function Home() {
                 img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2009_23_40%20PM.png"
               }
             ].map((unit, i) => (
-              <div key={i} className="armor-panel group flex flex-col h-[500px] overflow-hidden hover:lethal-glow transition-all duration-500">
-                <div className="h-1/2 w-full relative overflow-hidden">
+              <div key={i} className="armor-panel group flex h-full flex-col overflow-hidden hover:lethal-glow transition-all duration-500">
+                <div className="aspect-video w-full relative shrink-0 overflow-hidden">
                   <div className="absolute inset-0 bg-[#00A8B5] mix-blend-color z-10 opacity-30 group-hover:opacity-10 transition-opacity" />
                   <div className="absolute inset-0 bg-[#C89B3C] mix-blend-color z-10 opacity-20 group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B162C] to-transparent z-20" />
