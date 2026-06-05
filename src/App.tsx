@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
+import { ScrollToTop } from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import Platform from "./pages/Platform";
 import Solutions from "./pages/Solutions";
@@ -12,6 +13,7 @@ import Contact from "./pages/Contact";
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <svg width="0" height="0" className="absolute pointer-events-none">
         <defs>
           <linearGradient id="icon-gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
