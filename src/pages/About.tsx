@@ -202,7 +202,7 @@ export default function About() {
             </div>
             
             <h3 className="text-5xl md:text-6xl lg:text-7xl font-display tracking-tight mb-8 text-white relative">
-              Restricted Vetting <br/> <span className="italic text-chrome-prismatic drop-shadow-[0_0_15px_rgba(200,155,60,0.3)]">The Syndicate</span>
+              Restricted Vetting <br/> <span className="italic text-chrome-prismatic drop-shadow-[0_0_15px_rgba(200,155,60,0.3)]">The Collective</span>
             </h3>
             
             <div className="max-w-3xl mx-auto space-y-6 mb-16">
