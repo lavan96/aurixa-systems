@@ -109,9 +109,14 @@ export default function Solutions() {
              <div className="w-full md:w-7/12 p-12 relative flex flex-col justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#C89B3C]/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                 <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Zero-Friction <span className="italic text-[#C89B3C]">Compliance.</span></h3>
-                <p className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl">
-                  Protect your firm against regulatory blowback. The Aurixa engine mathematically prevents advisors from recommending investment strategies that breach APRA buffers or exceed the absolute ceiling of the client’s real-world borrowing capacity. Business scalability means scaling without operational bottlenecks, centralising growing business operations, creating repeatable workflows, and building the infrastructure necessary for rapid expansion. Client experience improves through faster turnaround times, structured reporting delivery, professional client presentation, and stronger engagement and retention.
-                </p>
+                <div className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl space-y-4">
+                  <p>
+                    Protect your firm against regulatory blowback. The Aurixa engine mathematically prevents advisors from recommending investment strategies that breach APRA buffers or exceed the absolute ceiling of the client’s real-world borrowing capacity.
+                  </p>
+                  <p>
+                    Business scalability means scaling without operational bottlenecks, centralising growing business operations, creating repeatable workflows, and building the infrastructure necessary for rapid expansion. Client experience improves through faster turnaround times, structured reporting delivery, professional client presentation, and stronger engagement and retention.
+                  </p>
+                </div>
                 <div className="flex flex-col gap-4 relative z-10">
                     <div className="w-full bg-[#040B16] border border-white/10 p-4 flex items-center justify-between shadow-inner">
                         <span className="text-xs uppercase tracking-widest text-gray-500 font-mono">APRA Buffer Alignment / Operational Bottlenecks Reduced</span>
