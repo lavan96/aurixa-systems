@@ -183,18 +183,13 @@ export default function Solutions() {
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>
-            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Secure Priority Integration</h3>
-            <p className="text-[#9CA3B8] mb-12 max-w-2xl mx-auto text-lg leading-relaxed font-light">
-              Access to Aurixa’s deployment cycle is limited to preserve delivery quality, architectural focus, and partner success.
-              <br />
-              <br />
-              Businesses accepted into the next integration cycle will gain early access to unified operational intelligence built for property, finance, and wealth creation.
-              <br />
-              <br />
-              Delayed action may mean delayed access — and in a market where operational intelligence, speed, and client engagement are becoming competitive advantages, waiting could come at a cost.
-            </p>
+            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Your Competition <span className="italic text-chrome-prismatic">Is Applying.</span></h3>
+            <div className="text-[#9CA3B8] mb-12 max-w-2xl mx-auto text-lg leading-relaxed font-light">
+              <p>If you aren't deploying Aurixa to your clients, the firm across the street will. Secure your spot in the queue and guarantee your firm remains mathematically untouchable.</p>
+              <p>Aurixa Systems operates on scalable subscription-based operational infrastructure designed around your business, giving growing firms foundation infrastructure, scaling advisory teams priority allocations and growth infrastructure, and multi-office operations enterprise infrastructure with governance control, bespoke strategic briefing templates, and continuous implementation assistance.</p>
+            </div>
             <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.3)]">
-              <span className="drop-shadow-md">SECURE PRIORITY REVIEW</span>
+              <span className="drop-shadow-md">Secure Your Priority Access</span>
               <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
             </Link>
           </div>
