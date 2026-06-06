@@ -184,7 +184,7 @@ export default function Solutions() {
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>
             <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Your Competition <span className="italic text-chrome-prismatic">Is Applying.</span></h3>
-            <div className="text-[#9CA3B8] mb-12 max-w-3xl mx-auto text-lg leading-relaxed font-light">
+            <div className="text-[#9CA3B8] mb-12 max-w-3xl mx-auto text-lg leading-relaxed font-light space-y-6">
               <p>If you aren't deploying Aurixa to your clients, the firm across the street will. Secure your spot in the queue and guarantee your firm remains mathematically untouchable.</p>
               <p>Aurixa Systems operates on scalable subscription-based operational infrastructure designed around your business, giving growing firms foundation infrastructure, scaling advisory teams priority allocations and growth infrastructure, and multi-office operations enterprise infrastructure with governance control, bespoke strategic briefing templates, and continuous implementation assistance.</p>
             </div>
