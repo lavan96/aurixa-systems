@@ -19,7 +19,7 @@ export default function About() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="font-display font-light tracking-tight mb-8 text-[2.75rem] sm:text-[3.25rem] md:text-[3.75rem] lg:text-[4rem] xl:text-[4rem] leading-[0.95]"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-[3.75rem] font-display font-light tracking-tight mb-8 leading-[1.1]"
           >
             <span className="block text-liquid-chrome-clean drop-shadow-md">The Collective</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Behind The Code</span>
