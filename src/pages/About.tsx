@@ -19,7 +19,8 @@ export default function About() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[3rem] sm:text-[3.75rem] lg:text-[4.5rem] xl:text-[4.75rem] font-display font-light tracking-tight mb-8 leading-[0.95]"
+            className="font-display font-light tracking-tight mb-8"
+            style={{ fontSize: "clamp(3rem, 5vw, 4.75rem)", lineHeight: 0.95 }}
           >
             <span className="block text-liquid-chrome-clean drop-shadow-md">The Collective</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Behind The Code</span>
