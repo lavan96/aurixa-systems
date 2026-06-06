@@ -368,12 +368,14 @@ export default function Platform() {
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>
-            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Demand <span className="italic text-chrome-prismatic">Priority Integration.</span></h3>
-            <p className="text-[#9CA3B8] mb-12 max-w-2xl mx-auto text-lg leading-relaxed font-light">
-              Our deployment queue is currently restricted to preserve architectural bandwidth for active partners. Apply today to secure priority review for the next integration cycle. Book an enterprise demo to explore the ecosystem and see unified operational intelligence for property in action.
-            </p>
+            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Secure <span className="italic text-chrome-prismatic">Priority Integration</span></h3>
+            <div className="text-[#9CA3B8] mb-12 max-w-2xl mx-auto text-lg leading-relaxed font-light">
+              <p>Access to Aurixa’s deployment cycle is limited to preserve delivery quality, architectural focus, and partner success.</p>
+              <p>Businesses accepted into the next integration cycle will gain early access to unified operational intelligence built for property, finance, and wealth creation.</p>
+              <p>Delayed action may mean delayed access — and in a market where operational intelligence, speed, and client engagement are becoming competitive advantages, waiting could come at a cost.</p>
+            </div>
             <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.3)]">
-              <span className="drop-shadow-md">Book Enterprise Demo</span>
+              <span className="drop-shadow-md">SECURE PRIORITY REVIEW</span>
               <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
             </Link>
           </div>
