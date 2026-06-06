@@ -225,7 +225,7 @@ export default function Platform() {
                   </div>
                   
                   {/* Main Screen */}
-                  <div className="flex-1 p-5 flex flex-col gap-5 relative">
+                  <div className="flex-1 p-5 flex flex-col gap-5 relative opacity-[0.12]">
                     <div className="w-full h-6 bg-[#C89B3C]/10 rounded-sm border border-[#C89B3C]/20 flex items-center px-3 mt-4">
                        <div className="w-1/3 h-1.5 bg-[#C89B3C]/60 rounded-full"/>
                     </div>
