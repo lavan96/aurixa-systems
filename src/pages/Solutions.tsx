@@ -19,7 +19,7 @@ export default function Solutions() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
           >
-            <span className="block text-liquid-chrome drop-shadow-md">Unfair Market</span>
+            <span className="block text-liquid-chrome-clean drop-shadow-md">Unfair Market</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Dominance.</span>
           </motion.h1>
           <motion.p 
