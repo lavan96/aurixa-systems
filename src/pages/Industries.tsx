@@ -79,7 +79,10 @@ export default function Industries() {
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Property Advisory Firms</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: fragmented systems trying to combine macro-economic data, client financials, and property research. Transformation outcome: a unified operational environment that centralises intelligence, modelling, and client reporting.
+                Pain point: fragmented systems trying to combine macro-economic data, client financials, and property research.
+                <br />
+                <br />
+                Transformation outcome: a unified operational environment that centralises intelligence, modelling, and client reporting.
               </p>
               <div className="w-full h-px bg-[#00A8B5]/20" />
            </div>
@@ -88,7 +91,10 @@ export default function Industries() {
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Real Estate Agencies</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: commoditised brand positioning against competitors and failure to deliver strategic ongoing value directly to property investors. Transformation outcome: structured financial intelligence that empowers agents to advise investors, dramatically strengthening retention and brand authority.
+                Pain point: commoditised brand positioning against competitors and failure to deliver strategic ongoing value directly to property investors.
+                <br />
+                <br />
+                Transformation outcome: structured financial intelligence that empowers agents to advise investors, dramatically strengthening retention and brand authority.
               </p>
               <div className="w-full h-px bg-[#C89B3C]/20" />
            </div>
@@ -97,7 +103,10 @@ export default function Industries() {
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Mortgage & Finance Businesses</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: isolating the loan process from the property strategy and losing clients post-settlement due to a lack of ongoing advisory touchpoints. Transformation outcome: a continuous client ecosystem, integrating borrowing capacity directly into property growth and 10-year holding scenarios.
+                Pain point: isolating the loan process from the property strategy and losing clients post-settlement due to a lack of ongoing advisory touchpoints.
+                <br />
+                <br />
+                Transformation outcome: a continuous client ecosystem, integrating borrowing capacity directly into property growth and 10-year holding scenarios.
               </p>
               <div className="w-full h-px bg-white/20" />
            </div>
