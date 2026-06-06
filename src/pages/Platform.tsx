@@ -289,9 +289,9 @@ export default function Platform() {
                         <span className="w-1.5 h-1.5 bg-[#00A8B5] rounded-full animate-pulse" /> Live Link Active
                      </span>
                  </div>
-                 <h4 className="text-white font-display text-4xl mb-6 tracking-wide drop-shadow-md">CoreLogic Mainframe Integration</h4>
+                 <h4 className="text-white font-display text-4xl mb-6 tracking-wide drop-shadow-md">CoreLogic Data Integration</h4>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed">
-                   Bypass friction. Ingest raw property statistics from CoreLogic directly into your tactical cache. Automated synchronization means your intelligence is permanently linked to the master mainframe—bypassing browser toggling and data decay. This unified operational intelligence streamlines workflows, unifies operations, and helps property firms scale smarter through modular infrastructure.
+                   Bring trusted property data into the centre of your operations. Aurixa connects CoreLogic insights directly into your workflow, helping real estate and finance businesses reduce manual searching, improve data accuracy, and make faster decisions across sales, investment, finance, and portfolio operations.
                  </p>
                </div>
                
