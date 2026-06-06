@@ -18,7 +18,7 @@ export default function Industries() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
           >
-            <span className="block text-liquid-chrome drop-shadow-md">Built for the</span>
+            <span className="block text-liquid-chrome-clean drop-shadow-md">Built for the</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Apex Players.</span>
           </motion.h1>
           <motion.p 
