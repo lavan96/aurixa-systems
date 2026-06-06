@@ -232,7 +232,7 @@ export default function Platform() {
                     
                     <div className="flex-1 rounded-md border border-white/5 bg-gradient-to-t from-white/5 to-transparent flex items-end gap-2 p-3">
                        {[30, 80, 50, 100, 70].map((h, i) => (
-                         <div key={i} className="flex-1 bg-[#00A8B5]/40 rounded-t-sm" style={{ height: `${h}%` }} />
+                         <div key={i} className="flex-1 bg-[#00A8B5]/40 rounded-t-sm opacity-30" style={{ height: `${h}%` }} />
                        ))}
                     </div>
                   </div>
