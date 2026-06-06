@@ -19,7 +19,7 @@ export default function About() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-[3.75rem] font-display font-light tracking-tight mb-8 leading-[1.1]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-[3rem] font-display font-light tracking-tight mb-6 leading-[1.08]"
           >
             <span className="block text-liquid-chrome-clean drop-shadow-md">The Collective</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Behind The Code</span>
@@ -28,7 +28,7 @@ export default function About() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="max-w-4xl mb-12 space-y-6 text-xl md:text-2xl text-[#9CA3AF] font-light leading-relaxed"
+            className="max-w-4xl mb-12 space-y-5 text-base md:text-lg text-[#9CA3AF] font-light leading-relaxed"
           >
             <p>
               Aurixa Systems was built from inside the industry, by people who understand the pressure, complexity, and pace of modern property and finance operations.
