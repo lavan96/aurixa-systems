@@ -144,7 +144,7 @@ export default function Home() {
                 id: "LYR-04",
                 name: "Client Growth Ecosystem",
                 spec: "Engagement Infrastructure",
-                desc: "Build scalable client experiences with structured engagement infrastructure. CRM workflows, client engagement, communication systems, reporting delivery, lifecycle management.",
+                desc: "Build better client journeys with connected engagement infrastructure. Aurixa brings CRM workflows, communication systems, reporting delivery, and lifecycle management into one structured ecosystem designed to support scalable growth across real estate, finance, and wealth creation.",
                 img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2006_11_24%20PM.png",
                 imagePosition: "center center"
               },
