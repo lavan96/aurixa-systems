@@ -38,10 +38,10 @@ export default function Industries() {
                 Prove your value instantly. Instead of telling a client a property is a good investment, generate a 10-year cash flow analysis that proves it mathematically before the competition can even run a CMA.
                 <br />
                 <br />
-                Pain point: manual property searches, slow due diligence turnaround, and lack of visual professional reporting.
+                Pain Point: Manual property searches, slow due diligence turnaround, and lack of visual professional reporting.
                 <br />
                 <br />
-                Transformation outcome: instant property analysis, rapid strategic briefing delivery, and institutional-grade client presentations.
+                Transformation Outcome: Instant property analysis, rapid strategic briefing delivery, and institutional-grade client presentations.
               </p>
               <div className="w-full h-px bg-[#00A8B5]/20" />
            </div>
@@ -53,10 +53,10 @@ export default function Industries() {
                 Integrate property into your wider wealth strategies without the compliance risk. Sync our matrices directly with your CRM and stop guessing on borrowing capacities.
                 <br />
                 <br />
-                Pain point: difficulty standardising property advice within wider wealth strategies, manual compliance checking, and risk of providing unregulated advice.
+                Pain Point: Difficulty standardising property advice within wider wealth strategies, manual compliance checking, and risk of providing unregulated advice.
                 <br />
                 <br />
-                Transformation outcome: governed, white-labelled financial modelling infrastructure ensuring compliance and delivering board-grade strategic direction.
+                Transformation Outcome: Governed, white-labelled financial modelling infrastructure ensuring compliance and delivering board-grade strategic direction.
               </p>
               <div className="w-full h-px bg-[#C89B3C]/20" />
            </div>
@@ -68,10 +68,10 @@ export default function Industries() {
                 Standardize output across 50+ brokers effortlessly. Ensure every presentation that leaves your office carries the same elite, mathematically air-tight Aurixa seal of approval, white-labeled to your brand.
                 <br />
                 <br />
-                Scaling operations involves exponential headcount and maintaining consistency across a massive footprint.
+                Pain Point: Scaling operations involves exponential headcount and maintaining consistency across a massive footprint.
                 <br />
                 <br />
-                Transformation outcome: enterprise infrastructure featuring deep systems administration, role-based permissions, and complete brand governance across all sub-entities.
+                Transformation Outcome: Enterprise infrastructure featuring deep systems administration, role-based permissions, and complete brand governance across all sub-entities.
               </p>
               <div className="w-full h-px bg-white/20" />
            </div>
@@ -79,10 +79,10 @@ export default function Industries() {
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Property Advisory Firms</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: fragmented systems trying to combine macro-economic data, client financials, and property research.
+                Pain Point: Fragmented systems trying to combine macro-economic data, client financials, and property research.
                 <br />
                 <br />
-                Transformation outcome: a unified operational environment that centralises intelligence, modelling, and client reporting.
+                Transformation Outcome: A unified operational environment that centralises intelligence, modelling, and client reporting.
               </p>
               <div className="w-full h-px bg-[#00A8B5]/20" />
            </div>
@@ -91,10 +91,10 @@ export default function Industries() {
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Real Estate Agencies</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: commoditised brand positioning against competitors and failure to deliver strategic ongoing value directly to property investors.
+                Pain Point: Commoditised brand positioning against competitors and failure to deliver strategic ongoing value directly to property investors.
                 <br />
                 <br />
-                Transformation outcome: structured financial intelligence that empowers agents to advise investors, dramatically strengthening retention and brand authority.
+                Transformation Outcome: Structured financial intelligence that empowers agents to advise investors, dramatically strengthening retention and brand authority.
               </p>
               <div className="w-full h-px bg-[#C89B3C]/20" />
            </div>
@@ -103,10 +103,10 @@ export default function Industries() {
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Mortgage & Finance Businesses</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: isolating the loan process from the property strategy and losing clients post-settlement due to a lack of ongoing advisory touchpoints.
+                Pain Point: Isolating the loan process from the property strategy and losing clients post-settlement due to a lack of ongoing advisory touchpoints.
                 <br />
                 <br />
-                Transformation outcome: a continuous client ecosystem, integrating borrowing capacity directly into property growth and 10-year holding scenarios.
+                Transformation Outcome: A continuous client ecosystem, integrating borrowing capacity directly into property growth and 10-year holding scenarios.
               </p>
               <div className="w-full h-px bg-white/20" />
            </div>
