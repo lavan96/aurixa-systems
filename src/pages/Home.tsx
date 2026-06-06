@@ -97,10 +97,19 @@ export default function Home() {
             </div>
             <div>
               <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
-                Not feature sets. Interconnected operational infrastructure designed to streamline complexity and drive governance.
+                Real estate businesses do not need more isolated platforms.
+              </p>
+              <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
+                They need connected infrastructure that helps them manage opportunity, capital, clients, data, compliance, and growth with greater clarity.
+              </p>
+              <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
+                Each layer supports the systems behind modern property businesses — from market intelligence, portfolio insights, investor communication, finance coordination, and strategic forecasting through to administration, compliance, and operational oversight.
+              </p>
+              <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
+                Rather than operating through fragmented systems, businesses can create a clearer view of opportunity, performance, risk, and long-term wealth creation.
               </p>
               <p className="text-gray-400 text-lg font-light leading-relaxed">
-                Each layer supports unified intelligence, analytical systems, strategic forecasts, engagement infrastructure, and administration oversight.
+                This is a single infrastructure for the next generation of property, proptech, fintech, and investment-led businesses.
               </p>
             </div>
           </div>
