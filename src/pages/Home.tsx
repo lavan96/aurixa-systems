@@ -48,7 +48,7 @@ export default function Home() {
             className="flex flex-col sm:flex-row items-center gap-6 w-full justify-center"
           >
             <Link to="/contact" className="w-full sm:w-auto group relative inline-flex items-center justify-center px-10 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-none transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.2)] hover:shadow-[0_0_40px_rgba(0,168,181,0.4)]">
-              <span className="drop-shadow-md">Book Enterprise Demo</span>
+              <span className="drop-shadow-md">Book Your Free Demo</span>
               <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
             </Link>
             <Link to="/platform" className="w-full sm:w-auto inline-flex items-center justify-center px-10 py-5 text-[12px] uppercase tracking-[0.25em] font-medium text-white border border-white/20 hover:bg-white/5 rounded-none transition-colors">
