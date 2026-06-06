@@ -157,7 +157,7 @@ export default function Solutions() {
              {/* Content Side */}
              <div className="w-full md:w-7/12 p-12 relative flex flex-col justify-center">
                 <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Hyper-Scaled <span className="italic text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">Operations.</span></h3>
-                <div className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl">
+                <div className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl space-y-4">
                   <p>A single principal advisor armed with Aurixa can output the workload of a ten-person analyst team. Scale your asset under management exponentially without ballooning your payroll overhead. This is about absolute leverage.</p>
                   <p>Enterprise positioning modernises business operations and delivers institutional-grade intelligence, creating competitive differentiation and strengthening brand authority in the market.</p>
                   <p>The intelligence reporting ecosystem provides strategic intelligence, compass intelligence, executive-level strategic direction, strategic briefing, and snapshot intelligence for rapid client decision support.</p>
