@@ -21,17 +21,25 @@ export default function About() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl lg:text-[5.5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
           >
-            <span className="block text-liquid-chrome drop-shadow-md">The Syndicate</span>
-            <span className="text-chrome-prismatic italic drop-shadow-2xl">Behind The Code.</span>
+            <span className="block text-liquid-chrome-clean drop-shadow-md">The Collective</span>
+            <span className="text-chrome-prismatic italic drop-shadow-2xl">Behind The Code</span>
           </motion.h1>
-          <motion.p 
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl md:text-2xl text-[#9CA3AF] font-light leading-relaxed max-w-4xl mb-12"
+            className="max-w-4xl mb-12 space-y-6 text-xl md:text-2xl text-[#9CA3AF] font-light leading-relaxed"
           >
-            Aurixa Systems was not conceived in a traditional soft-tech incubator; it was forged in the absolute frustration of apex-level finance. We engineer asymmetric leverage for firms that refuse to operate on archaic infrastructure. Aurixa Systems is the result of property professionals and quantitative engineers solving the exact operational bottlenecks that limit modern real estate businesses.
-          </motion.p>
+            <p>
+              Aurixa Systems was built from inside the industry, by people who understand the pressure, complexity, and pace of modern property and finance operations.
+            </p>
+            <p>
+              Not Built In Isolation or Therory.
+            </p>
+            <p>
+              Aurixa Systems is the result of property professionals and quantitative engineers solving the exact operational bottlenecks that limit modern real estate businesses. We engineer asymmetric leverage for firms that refuse to operate on archaic infrastructure.
+            </p>
+          </motion.div>
         </div>
 
         {/* THE GENESIS PROTOCOL - Asymmetric Block */}
