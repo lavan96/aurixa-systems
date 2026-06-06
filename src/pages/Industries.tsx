@@ -35,7 +35,13 @@ export default function Industries() {
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Buyers Agents</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Prove your value instantly. Instead of telling a client a property is a good investment, generate a 10-year cash flow analysis that proves it mathematically before the competition can even run a CMA. Pain point: manual property searches, slow due diligence turnaround, and lack of visual professional reporting. Transformation outcome: instant property analysis, rapid strategic briefing delivery, and institutional-grade client presentations.
+                Prove your value instantly. Instead of telling a client a property is a good investment, generate a 10-year cash flow analysis that proves it mathematically before the competition can even run a CMA.
+                <br />
+                <br />
+                Pain point: manual property searches, slow due diligence turnaround, and lack of visual professional reporting.
+                <br />
+                <br />
+                Transformation outcome: instant property analysis, rapid strategic briefing delivery, and institutional-grade client presentations.
               </p>
               <div className="w-full h-px bg-[#00A8B5]/20" />
            </div>
@@ -44,7 +50,13 @@ export default function Industries() {
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Wealth Advisors</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Integrate property into your wider wealth strategies without the compliance risk. Sync our matrices directly with your CRM and stop guessing on borrowing capacities. Pain point: difficulty standardising property advice within wider wealth strategies, manual compliance checking, and risk of providing unregulated advice. Transformation outcome: governed, white-labelled financial modelling infrastructure ensuring compliance and delivering board-grade strategic direction.
+                Integrate property into your wider wealth strategies without the compliance risk. Sync our matrices directly with your CRM and stop guessing on borrowing capacities.
+                <br />
+                <br />
+                Pain point: difficulty standardising property advice within wider wealth strategies, manual compliance checking, and risk of providing unregulated advice.
+                <br />
+                <br />
+                Transformation outcome: governed, white-labelled financial modelling infrastructure ensuring compliance and delivering board-grade strategic direction.
               </p>
               <div className="w-full h-px bg-[#C89B3C]/20" />
            </div>
@@ -53,7 +65,13 @@ export default function Industries() {
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Enterprise Firms</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Standardize output across 50+ brokers effortlessly. Ensure every presentation that leaves your office carries the same elite, mathematically air-tight Aurixa seal of approval, white-labeled to your brand. Scaling operations involves exponential headcount and maintaining consistency across a massive footprint. Transformation outcome: enterprise infrastructure featuring deep systems administration, role-based permissions, and complete brand governance across all sub-entities.
+                Standardize output across 50+ brokers effortlessly. Ensure every presentation that leaves your office carries the same elite, mathematically air-tight Aurixa seal of approval, white-labeled to your brand.
+                <br />
+                <br />
+                Scaling operations involves exponential headcount and maintaining consistency across a massive footprint.
+                <br />
+                <br />
+                Transformation outcome: enterprise infrastructure featuring deep systems administration, role-based permissions, and complete brand governance across all sub-entities.
               </p>
               <div className="w-full h-px bg-white/20" />
            </div>
