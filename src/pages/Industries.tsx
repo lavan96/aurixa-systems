@@ -153,12 +153,18 @@ export default function Industries() {
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>
-            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Join The <span className="italic text-chrome-prismatic">Vanguard.</span></h3>
+            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Ready To Scale With Control.</h3>
             <p className="text-[#9CA3B8] mb-12 max-w-2xl mx-auto text-lg leading-relaxed font-light">
-              If your firm falls into one of these categories and you demand superiority, apply to enter our restricted network today. Aurixa Systems allows property businesses to build scalable operations through intelligent infrastructure. Contact us to establish your platform.
+              Aurixa is built for property and finance businesses that have outgrown manual processes, disconnected platforms, and reactive operations.
+              <br />
+              <br />
+              Join the ecosystem that connects client engagement, CRM workflows, reporting, integrations, administration, governance, and operational intelligence into one structured environment.
+              <br />
+              <br />
+              Book your demo to explore whether your firm qualifies for the next deployment cycle.
             </p>
-            <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.3)]">
-              <span className="drop-shadow-md">Book Enterprise Demo</span>
+            <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.3)]">
+              <span className="drop-shadow-md">Book Your Free Demo</span>
               <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
             </Link>
           </div>
