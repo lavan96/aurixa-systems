@@ -1,10 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { BrandLogo } from "./BrandLogo";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#040B16]/90 backdrop-blur-xl border-b border-[#00A8B5]/20">
@@ -25,7 +31,8 @@ export function Navbar() {
             <Link 
               key={item.label} 
               to={item.href}
-              className="text-[13px] font-semibold text-gray-300 hover:text-white transition-colors tracking-wide"
+              aria-current={isActive(item.href) ? "page" : undefined}
+              className={`text-[13px] font-semibold text-gray-300 hover:text-white transition-colors tracking-wide ${isActive(item.href) ? "relative text-white after:absolute after:-bottom-2 after:left-0 after:h-px after:w-full after:bg-[#C89B3C] after:content-['']" : ""}`}
             >
               {item.label}
             </Link>
@@ -56,12 +63,12 @@ export function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-[#0B162C] border-b border-[#00A8B5]/20 p-6 flex flex-col gap-4 shadow-[0_20px_40px_rgba(0,168,181,0.1)]">
-          <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">Home</Link>
-          <Link to="/platform" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">Platform</Link>
-          <Link to="/solutions" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">Solutions</Link>
-          <Link to="/industries" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">Industries</Link>
-          <Link to="/about" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">About</Link>
-          <Link to="/resources" onClick={() => setIsOpen(false)} className="text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5]">Resources</Link>
+          <Link to="/" onClick={() => setIsOpen(false)} aria-current={isActive("/") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Home</Link>
+          <Link to="/platform" onClick={() => setIsOpen(false)} aria-current={isActive("/platform") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/platform") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Platform</Link>
+          <Link to="/solutions" onClick={() => setIsOpen(false)} aria-current={isActive("/solutions") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/solutions") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Solutions</Link>
+          <Link to="/industries" onClick={() => setIsOpen(false)} aria-current={isActive("/industries") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/industries") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Industries</Link>
+          <Link to="/about" onClick={() => setIsOpen(false)} aria-current={isActive("/about") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/about") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>About</Link>
+          <Link to="/resources" onClick={() => setIsOpen(false)} aria-current={isActive("/resources") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/resources") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Resources</Link>
           <hr className="border-white/10 my-2" />
           <Link to="/contact" onClick={() => setIsOpen(false)} className="text-lg font-bold text-[#C89B3C] uppercase tracking-widest hover:text-[#00A8B5]">Join Waitlist</Link>
         </div>
