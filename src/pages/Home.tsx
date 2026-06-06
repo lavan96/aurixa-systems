@@ -120,7 +120,7 @@ export default function Home() {
                 id: "LYR-01",
                 name: "Operational Intelligence",
                 spec: "Workflow & Oversight",
-                desc: "Streamline operations and reduce business complexity through one unified operational environment. Features business process systems and centralised platform control.",
+                desc: "Unify operations. Reduce complexity. Centralise control.\n\nBuilt to help property and finance businesses operate with less friction and more control. Aurixa streamlines business processes, centralises platform management, and creates one unified environment for clearer, more efficient operations.",
                 img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2004_32_43%20PM.png",
                 imagePosition: "center center"
               },
