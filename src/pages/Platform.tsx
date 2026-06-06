@@ -93,7 +93,7 @@ export default function Platform() {
               </div>
               <h2 className="text-3xl md:text-5xl font-display font-light tracking-tight mb-6 text-white drop-shadow-md">10-Year Cashflow & <span className="italic text-chrome-prismatic drop-shadow-lg text-transparent bg-clip-text">Reporting</span></h2>
               <p className="text-gray-400 text-lg font-light leading-relaxed mb-8">
-                Project property performance precisely over 10 years. Our patented reporting mechanism generates fully white-labeled, custom-branded briefs. Standardize your strategy and deliver bespoke intelligence. Layer 02 strategic intelligence engine shifts advisory services from reactive reporting to proactive insight generation instantly.
+                Our patented reporting mechanism generates fully white-labeled, custom-branded briefs. Standardize your strategy and deliver bespoke intelligence. Layer 02 strategic intelligence engine shifts advisory services from reactive reporting to proactive insight generation instantly.
               </p>
               <ul className="space-y-4">
                 {['Patented white-label reporting & custom branding', '10-year pre and post-tax yield analysis', 'Direct CRM integration & data syncing', 'Property analysis and AI-guided reporting', 'Market intelligence and automated insight generation', 'Governed analytical systems'].map(item => (
