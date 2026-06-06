@@ -149,13 +149,13 @@ export default function About() {
                  </div>
                  <h3 className="text-4xl md:text-5xl font-display text-white mb-8 tracking-wide drop-shadow-md">The Data Sovereignty Framework</h3>
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed mb-6">
-                   We do not compromise on structural sovereignty. Aurixa’s backend infrastructure is built with enterprise-grade SSL/TLS encryption, isolated sub-database partitioning per partner tenant, and end-to-end data protection frameworks. Our proprietary Australian framework technology is packaged for seamless enterprise operation and designed to aggregate, organise, and unify property operations across the market.
+                   We do not compromise on structural sovereignty. Our backend infrastructure utilizes defense-grade SSL/TLS encryption matrices, heavily isolated sub-database partitioning per specific partner tenant, and end-to-end mathematical data obfuscation vectors. Proprietary Australian Framework technology is packaged for seamless enterprise operation and designed to aggregate and unify property operations across the continent. 
                  </p>
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed mb-6">
-                   Your client intelligence, proprietary operational strategies, and financial modelling frameworks remain securely insulated. <span className="text-white font-medium">We do not scrape, aggregate, or repurpose your data for internal machine-learning models.</span> Our infrastructure aligns operational systems with enterprise-level authority, giving partners the control, confidence, and security required to scale.
+                   Your client intelligence, proprietary operational strategies, and financial modeling blueprints are permanently insulated. <span className="text-white font-medium">We do not scrape or aggregate your data for internal machine learning variants.</span> Our institute-grade technology aligns operational infrastructure with enterprise authority, built by industry and engineered for scale. 
                  </p>
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed">
-                   Aurixa runs as a secure, high-performance infrastructure engine, positioning your brand interface professionally upfront while maintaining resilient backend architecture behind the scenes. The result is operational supremacy via three directives: end-to-end framework, proprietary algorithms, and rapid implementation.
+                   Aurixa runs strictly as a high-velocity, black-site engine—projecting your brand interface securely upfront while enforcing an impenetrable, dark-web level of backend resilience. The result is operational supremacy via three directives: end-to-end framework, proprietary algorithms, and rapid implementation.
                  </p>
               </div>
               <div className="w-full lg:w-1/2 flex justify-end">
