@@ -69,9 +69,9 @@ export default function Platform() {
                 <div className="w-8 h-px bg-white/30" />
                 <span className="text-[10px] font-bold tracking-widest uppercase text-white/50">Core Module 01</span>
               </div>
-              <h2 className="text-3xl md:text-5xl font-display font-light tracking-tight mb-6 text-white drop-shadow-md">Serviceability & <span className="italic text-liquid-chrome text-transparent bg-clip-text">Lending Matrix</span></h2>
+              <h2 className="text-3xl md:text-5xl font-display font-light tracking-tight mb-6 text-white drop-shadow-md">Serviceability & <span className="italic text-liquid-chrome-clean text-transparent bg-clip-text">Lending Matrix</span></h2>
               <p className="text-gray-400 text-lg font-light leading-relaxed mb-8">
-                Calculate complex lending scenarios in milliseconds. Aurixa ingests policy rules, APRA buffers, and client data to provide down-to-the-dollar borrowing capacity snapshots before you even consult a broker. This operational intelligence infrastructure provides the foundation for scalable real estate businesses to govern and accelerate every internal process.
+                Calculate complex lending scenarios in Seconds. Aurixa ingests policy rules, APRA buffers, and client data to provide down-to-the-dollar borrowing capacity snapshots before you even consult a broker. This operational intelligence infrastructure provides the foundation for scalable real estate businesses to govern and accelerate every internal process.
               </p>
               <ul className="space-y-4">
                 {['Multi-lender policy matching & APRA buffers', 'Real-time borrowing capacity snapshot reports', 'Automated data influx from CoreLogic', 'Layer 01 operational intelligence infrastructure', 'Workflow management and operational oversight', 'Business process systems with centralised platform control'].map(item => (
