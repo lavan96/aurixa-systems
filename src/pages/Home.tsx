@@ -84,7 +84,7 @@ export default function Home() {
       <section className="w-full py-32 bg-[#040B16] relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(200,155,60,0.02)_50%,transparent_100%)]" />
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="mb-20 grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
+          <div className="mb-20 grid grid-cols-1 md:grid-cols-2 gap-12 items-start md:items-center">
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <span className="w-12 h-px bg-[#C89B3C]" />
@@ -95,20 +95,20 @@ export default function Home() {
                 <span className="text-chrome-prismatic italic drop-shadow-xl">Infrastructure Layers.</span>
               </h2>
             </div>
-            <div>
-              <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
+            <div className="space-y-3">
+              <p className="text-gray-400 text-lg font-light leading-7">
                 Real estate businesses do not need more isolated platforms.
               </p>
-              <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
+              <p className="text-gray-400 text-lg font-light leading-7">
                 They need connected infrastructure that helps them manage opportunity, capital, clients, data, compliance, and growth with greater clarity.
               </p>
-              <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
+              <p className="text-gray-400 text-lg font-light leading-7">
                 Each layer supports the systems behind modern property businesses — from market intelligence, portfolio insights, investor communication, finance coordination, and strategic forecasting through to administration, compliance, and operational oversight.
               </p>
-              <p className="text-gray-400 text-lg font-light leading-relaxed mb-4">
+              <p className="text-gray-400 text-lg font-light leading-7">
                 Rather than operating through fragmented systems, businesses can create a clearer view of opportunity, performance, risk, and long-term wealth creation.
               </p>
-              <p className="text-gray-400 text-lg font-light leading-relaxed">
+              <p className="text-gray-400 text-lg font-light leading-7">
                 This is a single infrastructure for the next generation of property, proptech, fintech, and investment-led businesses.
               </p>
             </div>
