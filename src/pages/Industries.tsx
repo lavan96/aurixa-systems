@@ -115,7 +115,10 @@ export default function Industries() {
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Investment Groups</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: slow deployment of capital due to inefficient asset qualification and disjointed multi-office communication and reporting lines. Transformation outcome: rapid operational oversight and centralised platform control, accelerating asset acquisition and internal portfolio reporting.
+                Pain Point: Slow deployment of capital due to inefficient asset qualification and disjointed multi-office communication and reporting lines.
+                <br />
+                <br />
+                Transformation Outcome: Rapid operational oversight and centralised platform control, accelerating asset acquisition and internal portfolio reporting.
               </p>
               <div className="w-full h-px bg-[#00A8B5]/20" />
            </div>
@@ -124,7 +127,10 @@ export default function Industries() {
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Developers</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: inability to project individual lot yields for potential buyers and selling purely on price rather than long-term strategic value to the investor. Transformation outcome: sales teams equipped with snapshot intelligence and cash flow mechanics to validate off-the-plan acquisitions mathematically.
+                Pain Point: Inability to project individual lot yields for potential buyers and selling purely on price rather than long-term strategic value to the investor.
+                <br />
+                <br />
+                Transformation Outcome: Sales teams equipped with snapshot intelligence and cash flow mechanics to validate off-the-plan acquisitions mathematically.
               </p>
               <div className="w-full h-px bg-[#C89B3C]/20" />
            </div>
@@ -133,7 +139,10 @@ export default function Industries() {
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Enterprise Property Networks</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
-                Pain point: scaling operations involves exponential headcount while maintaining consistency and quality control across a massive geographic footprint. Transformation outcome: enterprise infrastructure featuring deep systems administration, role-based permissions, and complete brand governance across all sub-entities.
+                Pain Point: Scaling operations involves exponential headcount while maintaining consistency and quality control across a massive geographic footprint.
+                <br />
+                <br />
+                Transformation Outcome: Enterprise infrastructure featuring deep systems administration, role-based permissions, and complete brand governance across all sub-entities.
               </p>
               <div className="w-full h-px bg-white/20" />
            </div>
