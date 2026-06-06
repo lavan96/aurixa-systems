@@ -239,8 +239,8 @@ export default function Home() {
           <p className="text-xl text-[#9CA3AF] mb-12 max-w-2xl font-light leading-relaxed">
             Aurixa helps property businesses scale smarter through unified operational intelligence. Experience governed automation infrastructure designed to modernise how you analyse, advise, and scale.
           </p>
-          <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_40px_rgba(0,168,181,0.2)] hover:shadow-[0_0_50px_rgba(200,155,60,0.4)]">
-            <span className="drop-shadow-md">Book Enterprise Demo</span>
+          <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_40px_rgba(0,168,181,0.2)] hover:shadow-[0_0_50px_rgba(200,155,60,0.4)]">
+            <span className="drop-shadow-md">Book Your Free Demo</span>
             <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
           </Link>
         </div>
