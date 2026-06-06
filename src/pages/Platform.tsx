@@ -55,7 +55,7 @@ export default function Platform() {
                  <Cpu className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                  <h3 className="text-2xl font-display font-light text-white mb-4">Algorithmic Processing</h3>
                  <p className="text-gray-400 font-light text-sm leading-relaxed mb-8">
-                   The core engine ingests thousands of data points instantaneously. We bypass manual entry friction by directly parsing documents and intercepting live data streams. Unified environment infrastructure breaks down operational silos permanently.
+                   The core engine ingests thousands of data points instantaneously. We bypass manual entry friction by directly parsing documents and intercepting live data streams. Turn complex data into clear, usable business intelligence.
                  </p>
                  <div className="space-y-3">
                    <div className="h-px w-full bg-gradient-to-r from-[#00A8B5]/50 to-transparent" />
