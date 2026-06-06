@@ -64,16 +64,21 @@ export default function Solutions() {
                 <p className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl">
                   Stop losing prospects to competitors with glossier but hollow presentations. By deploying Aurixa's mathematically air-tight serviceability models in your initial consultation, trust is established instantly. Competitors attempting to sell on intuition will look primitive by comparison. Operational efficiency reduces administrative workload, eliminates fragmented systems, accelerates internal processes, and radically improves team productivity with connected operational tools.
                 </p>
-                <div className="flex gap-8 relative z-10 border-t border-white/10 pt-8">
-                   <div className="flex flex-col gap-2">
-                      <span className="text-3xl font-display text-white">400%</span>
-                      <span className="text-xs uppercase tracking-widest text-[#00A8B5] font-bold">Conversion Lift / Model Convergence</span>
+                <div className="relative z-10 border-t border-white/10 pt-8">
+                   <div className="flex gap-8">
+                      <div className="flex flex-col gap-2">
+                         <span className="text-3xl font-display text-white">100%</span>
+                         <span className="text-xs uppercase tracking-widest text-[#00A8B5] font-bold">Conversion Lift / Model Convergence</span>
+                      </div>
+                      <div className="w-px h-12 bg-white/10" />
+                      <div className="flex flex-col gap-2">
+                         <span className="text-3xl font-display text-white">15 Min</span>
+                         <span className="text-xs uppercase tracking-widest text-[#00A8B5] font-bold">DETAILED REPORT DELIVERABLE TIME</span>
+                      </div>
                    </div>
-                   <div className="w-px h-12 bg-white/10" />
-                   <div className="flex flex-col gap-2">
-                      <span className="text-3xl font-display text-white">&lt;5 min</span>
-                      <span className="text-xs uppercase tracking-widest text-[#00A8B5] font-bold">Audit Time / Alignment Locked</span>
-                   </div>
+                   <p className="mx-auto mt-6 max-w-xl text-center text-sm font-light leading-relaxed text-[#9CA3B8]">
+                      By combining Speed &amp; Accuracy, we enhance business operations to deliver faster, more reliable results that drive growth and client confidence.
+                   </p>
                 </div>
              </div>
            </div>
