@@ -46,7 +46,7 @@ export default function About() {
         <div className="mb-40 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6 relative z-10">
                <h2 className="text-[#C89B3C] font-mono text-sm tracking-[0.3em] uppercase mb-4">Phase 01 // Origin</h2>
-               <h3 className="text-4xl md:text-5xl font-display text-white mb-6 tracking-wide drop-shadow-md">The Genesis Protocol</h3>
+               <h3 className="text-4xl md:text-5xl font-display text-white mb-6 tracking-wide drop-shadow-md">The Aurixa Origin</h3>
                <div className="space-y-6">
                  <p className="text-[#9CA3B8] font-light text-lg leading-relaxed">
                    A clandestine coalition of quantitative engineers and former apex-tier advisory figures recognized a critical systemic flaw: the industry's catastrophic reliance on fragmented spreadsheets, decaying CRM data, and severely manual workflows spanning disjointed portals. The Aurixa mandate is to confront fragmented tools, decaying CRM data, and severely manual workflows spanning disjointed platforms.
