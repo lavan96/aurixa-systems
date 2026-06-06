@@ -336,7 +336,9 @@ export default function Platform() {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-4xl md:text-5xl font-display font-light tracking-tight mb-6 text-white">The Framework <span className="italic text-liquid-chrome text-transparent bg-clip-text">Protocol.</span></h2>
             <p className="text-gray-400 text-lg font-light leading-relaxed">
-              We don't just supply software; we overhaul your entire operational pipeline. Our infrastructure removes manual dependencies, eliminating human error margins and allowing your executives to focus entirely on high-level strategy and client acquisition. Layer 05 enterprise governance and administration maintains operational control as your business scales.
+              We don't just supply software; we overhaul your entire operational pipeline. Our infrastructure removes manual dependencies, eliminating human error margins and allowing your executives to focus entirely on high-level strategy and client acquisition.
+              <br />
+              Layer 05 Enterprise Governance &amp; Administration maintains operational control as your business scales.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
