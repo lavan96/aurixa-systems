@@ -26,10 +26,10 @@ export default function Contact() {
             
             <div className="space-y-6 text-gray-400 text-lg font-light leading-relaxed mb-12">
               <p>
-                Immediate deployment operations are currently <strong className="text-white">frozen</strong> for Q3. We strictly cap our active partner ecosystem to ensure our infrastructure provides an unassailable, asymmetrical advantage in the market. This restricted action protects infrastructure fidelity for active partners while preserving a controlled path for firms seeking enterprise operational intelligence.
+                We strictly cap our active partner ecosystem to ensure our infrastructure provides an unassailable, asymmetrical advantage in the market. This restricted action protects infrastructure fidelity for active partners while preserving a controlled path for firms seeking enterprise operational intelligence.
               </p>
               <p>
-                Applications for the Q4 review cycle are now open. Firms will be selected via strict merit-based hierarchy regarding transaction volume, market stance, and alignment with Aurixa's strategic objectives. Submit credentials that demonstrate operational maturity, systemic capability, and the current bottlenecks preventing your firm from scaling through unified infrastructure. 
+                Application review cycle is now open. Firms will be selected via strict merit-based hierarchy regarding transaction volume, market stance, and alignment with Aurixa's strategic objectives. Submit credentials that demonstrate operational maturity, systemic capability, and the current bottlenecks preventing your firm from scaling through unified infrastructure.
               </p>
             </div>
           </motion.div>
