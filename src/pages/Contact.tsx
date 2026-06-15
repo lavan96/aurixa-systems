@@ -1,8 +1,84 @@
+import { FormEvent, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, ShieldAlert } from "lucide-react";
 import { HeroBackground } from "../components/HeroBackgrounds";
 
+const MAKE_WAITLIST_WEBHOOK_URL = "https://hook.eu2.make.com/589rb23xwbgovfj3iuemtcuxm75cccut";
+
+const WAITLIST_FIELD_NAMES = [
+  "directiveFirstName",
+  "directiveLastName",
+  "corporateEmail",
+  "entityName",
+  "entityClassification",
+  "annualOriginationTransactionVolume",
+  "currentTechStackBottlenecks",
+] as const;
+
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 export default function Contact() {
+  const [submissionStatus, setSubmissionStatus] = useState<"idle" | "success" | "error">("idle");
+  const [submissionMessage, setSubmissionMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleWaitlistSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmissionStatus("idle");
+    setSubmissionMessage("");
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const values = Object.fromEntries(
+      WAITLIST_FIELD_NAMES.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? "").trim()]),
+    ) as Record<(typeof WAITLIST_FIELD_NAMES)[number], string>;
+
+    if (WAITLIST_FIELD_NAMES.some((fieldName) => values[fieldName] === "")) {
+      setSubmissionStatus("error");
+      setSubmissionMessage("Please complete all required fields.");
+      return;
+    }
+
+    if (!isValidEmail(values.corporateEmail)) {
+      setSubmissionStatus("error");
+      setSubmissionMessage("Please enter a valid corporate email address.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        ...values,
+        source: "AURIXA Contact Waitlist Page",
+        page: "/contact",
+        submittedAt: new Date().toISOString(),
+      };
+
+      const response = await fetch(MAKE_WAITLIST_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Waitlist webhook submission failed");
+      }
+
+      form.reset();
+      setSubmissionStatus("success");
+      setSubmissionMessage("Waitlist application submitted successfully.");
+    } catch (error) {
+      console.error(error);
+      setSubmissionStatus("error");
+      setSubmissionMessage("Submission failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="w-full relative pt-32 pb-20 min-h-screen bg-[#040B16] overflow-hidden">
       <HeroBackground variant="contact" />
@@ -72,31 +148,31 @@ export default function Contact() {
               </div>
             </div>
 
-            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-6" onSubmit={handleWaitlistSubmit} noValidate>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Directive First Name</label>
-                  <input type="text" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                  <input type="text" name="directiveFirstName" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Directive Last Name</label>
-                  <input type="text" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                  <input type="text" name="directiveLastName" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Corporate Email</label>
-                <input type="email" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                <input type="email" name="corporateEmail" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Entity Name</label>
-                  <input type="text" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                  <input type="text" name="entityName" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Entity Classification</label>
-                  <select required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm appearance-none">
+                  <select name="entityClassification" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm appearance-none">
                     <option value="" className="bg-[#040B16]">Select Segment...</option>
                     <option value="buyers_agent" className="bg-[#040B16]">Buyers Agency</option>
                     <option value="property_advisory" className="bg-[#040B16]">Property Advisory Firm</option>
@@ -114,7 +190,7 @@ export default function Contact() {
 
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Annual Origination / Transaction Volume</label>
-                <select required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm appearance-none">
+                <select name="annualOriginationTransactionVolume" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm appearance-none">
                   <option value="" className="bg-[#040B16]">Select Volume Bracket...</option>
                   <option value="tier_1" className="bg-[#040B16]">Under $50M</option>
                   <option value="tier_2" className="bg-[#040B16]">$50M - $150M</option>
@@ -125,11 +201,23 @@ export default function Contact() {
 
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Current Tech Stack Bottlenecks</label>
-                <textarea required rows={3} className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" placeholder="Detail the fragmentation or inefficiencies currently stalling your firm's pipeline..."></textarea>
+                <textarea name="currentTechStackBottlenecks" required rows={3} className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" placeholder="Detail the fragmentation or inefficiencies currently stalling your firm's pipeline..."></textarea>
               </div>
 
-              <button type="submit" className="w-full mt-8 group relative flex items-center justify-center px-8 py-5 text-[12px] font-black tracking-[0.25em] uppercase text-white btn-chrome-prismatic outline-none transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(200,155,60,0.2)] hover:shadow-[0_0_40px_rgba(0,168,181,0.4)] border-none rounded-sm overflow-hidden">
-                <span className="relative z-10 text-white transition-colors duration-300 drop-shadow-md">Submit Waitlist Application</span>
+              {submissionMessage && (
+                <p
+                  className={`text-sm font-light ${
+                    submissionStatus === "success" ? "text-[#C89B3C]" : "text-red-300"
+                  }`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  {submissionMessage}
+                </p>
+              )}
+
+              <button type="submit" disabled={isSubmitting} className="w-full mt-8 group relative flex items-center justify-center px-8 py-5 text-[12px] font-black tracking-[0.25em] uppercase text-white btn-chrome-prismatic outline-none transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 shadow-[0_0_20px_rgba(200,155,60,0.2)] hover:shadow-[0_0_40px_rgba(0,168,181,0.4)] border-none rounded-sm overflow-hidden">
+                <span className="relative z-10 text-white transition-colors duration-300 drop-shadow-md">{isSubmitting ? "Transmitting Credentials..." : "Submit Waitlist Application"}</span>
                 <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 relative z-10 transition-all duration-300 drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[0%] transition-transform duration-500 ease-out z-0"></div>
               </button>
