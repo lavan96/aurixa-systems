@@ -9,6 +9,7 @@ import Industries from "./pages/Industries";
 import About from "./pages/About";
 import Resources from "./pages/Resources";
 import Contact from "./pages/Contact";
+import Pricing from "./pages/Pricing";
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/platform" element={<Platform />} />
             <Route path="/solutions" element={<Solutions />} />
             <Route path="/industries" element={<Industries />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/about" element={<About />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/contact" element={<Contact />} />
