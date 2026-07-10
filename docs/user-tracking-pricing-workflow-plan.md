@@ -1,5 +1,39 @@
 # User-Attributed Pricing & Purchase Workflow — Implementation Plan (Marketing Site Entry Point)
 
+---
+
+## ⚠ REVISION 2 (2026-07-10) — This site IS the customer pricing page. Supersedes the "entry point / redirect" framing below.
+
+The corrected topology: **all user-centric monetisation — tokens, plans, seats, from the prime
+repo and every clone — flows through THIS site's `/pricing` page.** Mission Control is the
+headless billing engine behind it (Stripe, webhook, catalog, handoffs, the purchases oversight
+ledger, and the operators' discretionary grant/upgrade console); customers never see its UI.
+
+### What implements Revision 2 in this repo
+
+1. **`src/lib/billing.ts`** — client for Mission Control's CORS-enabled storefront API
+   (`VITE_BILLING_API_URL`): `GET /api/public/storefront/catalog`, `GET …/handoff?h=`,
+   `POST …/checkout`, `GET …/session`. Auth is possession-based (the unguessable single-use
+   handoff token; receipts need the `(session_id, h)` pair) — no cookies, no keys in the browser.
+2. **`/pricing`** (`src/pages/Pricing.tsx`) — the full storefront: live plans / credit packs /
+   onboarding packages / report credit costs rendered from the catalog. With `?h=` (a handoff
+   minted server-to-server by a command center) purchases are live: banner shows
+   *"Purchasing for \<clone\> as \<user\>"*, buys go straight to Stripe with no login, and a
+   baked-in `<mode>:<item_id>` intent auto-launches checkout. Without a token the page is
+   browse-only and CTAs route to `/contact` — anonymous web visitors have no billing scope,
+   and this site never invents identity (trusted attribution comes only from handoffs).
+3. **`/pricing/success` + `/pricing/cancel`** — the post-Stripe receipt pages (Stripe redirects
+   here, not to Mission Control): fulfilment polling until credits/seats are live, then a
+   "Return to \<clone\>" button using the handoff's validated `return_url`.
+4. Mission Control side (see its plan, Revision 2): handoff deep links and packs `topup_url`s
+   are minted against `PUBLIC_PRICING_SITE_URL` — set it to this site's `/pricing` URL to route
+   all command-center purchase traffic here.
+
+The pre-revision sections below describe the interim "redirect to Mission Control" shape and
+are retained for history only.
+
+---
+
 > **Repo role in this plan:** `aurixa-systems` is the public marketing site (React + Vite,
 > routes: `/`, `/platform`, `/solutions`, `/industries`, `/about`, `/resources`, `/contact`).
 > It currently has **no pricing page, no Stripe code, and no link into the billing flow at all** —

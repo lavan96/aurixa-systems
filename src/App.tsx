@@ -10,6 +10,8 @@ import About from "./pages/About";
 import Resources from "./pages/Resources";
 import Contact from "./pages/Contact";
 import Pricing from "./pages/Pricing";
+import PricingSuccess from "./pages/PricingSuccess";
+import PricingCancel from "./pages/PricingCancel";
 
 export default function App() {
   return (
@@ -33,6 +35,8 @@ export default function App() {
             <Route path="/solutions" element={<Solutions />} />
             <Route path="/industries" element={<Industries />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/pricing/success" element={<PricingSuccess />} />
+            <Route path="/pricing/cancel" element={<PricingCancel />} />
             <Route path="/about" element={<About />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/contact" element={<Contact />} />

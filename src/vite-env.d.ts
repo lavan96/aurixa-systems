@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_PRICING_URL?: string;
+  /** Mission Control base URL — the headless billing engine behind /pricing. */
+  readonly VITE_BILLING_API_URL?: string;
 }
 
 interface ImportMeta {
