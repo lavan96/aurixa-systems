@@ -137,9 +137,14 @@ export async function startCheckout(input: {
   itemId: string;
   quantity?: number;
 }): Promise<{ url: string }> {
+  // text/plain keeps this a CORS "simple request" (no OPTIONS preflight):
+  // Mission Control's framework answers preflights itself without an
+  // Access-Control-Allow-Origin header, which would block a preflighted
+  // cross-origin POST. The server parses the body as JSON regardless of the
+  // content type, and the actual response carries ACAO: * — verified.
   const res = await fetch(`${API_BASE}/api/public/storefront/checkout`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "text/plain;charset=UTF-8" },
     body: JSON.stringify({
       h: input.h,
       mode: input.mode,
