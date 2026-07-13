@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { ScrollToTop } from "./components/ScrollToTop";
@@ -13,9 +13,12 @@ import Pricing from "./pages/Pricing";
 import PricingSuccess from "./pages/PricingSuccess";
 import PricingCancel from "./pages/PricingCancel";
 
-export default function App() {
+function AppShell() {
+  const { pathname } = useLocation();
+  const isPricingPage = pathname === "/pricing";
+
   return (
-    <BrowserRouter>
+    <>
       <ScrollToTop />
       <svg width="0" height="0" className="absolute pointer-events-none">
         <defs>
@@ -27,7 +30,7 @@ export default function App() {
         </defs>
       </svg>
       <div className="min-h-screen flex flex-col bg-[#040B16] text-white overflow-x-hidden selection:bg-[#C89B3C] selection:text-white">
-        <Navbar />
+        {!isPricingPage && <Navbar />}
         <main className="flex-grow flex flex-col items-center">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -42,8 +45,16 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
           </Routes>
         </main>
-        <Footer />
+        {!isPricingPage && <Footer />}
       </div>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
     </BrowserRouter>
   );
 }
