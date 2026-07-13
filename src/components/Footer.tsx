@@ -40,7 +40,6 @@ export function Footer() {
             <h4 className="text-sm font-semibold tracking-wider uppercase text-white mb-6">Company</h4>
             <ul className="flex flex-col items-center md:items-start gap-4 text-sm text-gray-400">
               <li><Link to="/about" className="hover:text-white transition-colors">About Aurixa</Link></li>
-              <li><Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
               <li><Link to="/resources" className="hover:text-white transition-colors">Intelligence Hub</Link></li>
               <li><Link to="/contact" className="hover:text-white transition-colors">Join Waitlist</Link></li>
               <li><a href="#" className="hover:text-white transition-colors">Legal & Privacy</a></li>

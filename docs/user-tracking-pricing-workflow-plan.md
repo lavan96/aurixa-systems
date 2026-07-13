@@ -2,6 +2,18 @@
 
 ---
 
+## ⚠ REVISION 3 (2026-07-13) — `/pricing` unlinked from public navigation.
+
+Mission Control's `/pricing` route has been removed entirely; this site's `/pricing` page is
+now the only pricing surface. It is intentionally **not linked** from the public front-end
+(Navbar and Footer no longer carry a Pricing item). The route still exists and is reached via:
+
+- handoff deep links (`/pricing?h=<token>`) minted by Mission Control for command-center users,
+- the `/pricing/success` and `/pricing/cancel` receipt redirects from Stripe,
+- direct URL entry.
+
+---
+
 ## ⚠ REVISION 2 (2026-07-10) — This site IS the customer pricing page. Supersedes the "entry point / redirect" framing below.
 
 The corrected topology: **all user-centric monetisation — tokens, plans, seats, from the prime
