@@ -19,14 +19,14 @@ export default function Home() {
             className="inline-flex items-center gap-3 px-5 py-2 rounded-full border border-white/10 bg-[#0B162C]/80 backdrop-blur-md mb-8 shadow-[0_0_15px_rgba(200,155,60,0.15)]"
           >
             <span className="w-2 h-2 rounded-full bg-[#C89B3C] animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-white">SYS.CORE.ACTIVE</span>
+            <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-white">SYS.CORE.ACTIVE</span>
           </motion.div>
           
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-            className="text-5xl md:text-7xl lg:text-[5.5rem] font-display font-light tracking-[-0.02em] leading-[1.05] mb-8"
+            className="text-[2.4rem] md:text-[3.6rem] lg:text-[4.4rem] font-display font-light tracking-[-0.02em] leading-[1.05] mb-8"
           >
             <span className="block text-liquid-chrome mb-2 drop-shadow-lg">The Operational Intelligence Infrastructure</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Powering Modern Property Businesses.</span>
@@ -36,7 +36,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            className="text-lg md:text-xl text-[#9CA3AF] max-w-3xl mb-12 font-light leading-relaxed"
+            className="text-[0.9rem] md:text-base text-[#9CA3AF] max-w-3xl mb-12 font-light leading-relaxed"
           >
             Aurixa Systems unifies operational workflows, strategic reporting, financial modelling, client ecosystems, and enterprise intelligence into one scalable business infrastructure platform built for modern property enterprises.
           </motion.p>
@@ -47,11 +47,11 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
             className="flex flex-col sm:flex-row items-center gap-6 w-full justify-center"
           >
-            <Link to="/contact" className="w-full sm:w-auto group relative inline-flex items-center justify-center px-10 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-none transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.2)] hover:shadow-[0_0_40px_rgba(0,168,181,0.4)]">
+            <Link to="/contact" className="w-full sm:w-auto group relative inline-flex items-center justify-center px-10 py-5 text-[9.6px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-none transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.2)] hover:shadow-[0_0_40px_rgba(0,168,181,0.4)]">
               <span className="drop-shadow-md">Book Your Free Demo</span>
-              <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
+              <ArrowRight className="w-[13px] h-[13px] ml-3 group-hover:translate-x-1 transition-transform drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
             </Link>
-            <Link to="/platform" className="w-full sm:w-auto inline-flex items-center justify-center px-10 py-5 text-[12px] uppercase tracking-[0.25em] font-medium text-white border border-white/20 hover:bg-white/5 rounded-none transition-colors">
+            <Link to="/platform" className="w-full sm:w-auto inline-flex items-center justify-center px-10 py-5 text-[9.6px] uppercase tracking-[0.25em] font-medium text-white border border-white/20 hover:bg-white/5 rounded-none transition-colors">
               Explore The Ecosystem
             </Link>
           </motion.div>
@@ -230,8 +230,12 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-radial from-[#111827] to-[#040B16] z-0" />
         <div className="absolute right-0 bottom-0 w-[800px] h-[800px] bg-gradient-radial from-[#0A192F]/10 to-transparent blur-[120px] opacity-40 pointer-events-none" />
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
-          <div className="w-16 h-16 rounded-md bg-chrome-prismatic flex items-center justify-center mb-8 mx-auto shadow-[0_0_40px_rgba(200,155,60,0.3)] border border-white/50">
-            <span className="text-white font-display font-bold text-3xl drop-shadow-md">A</span>
+          <div className="mb-8 mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-md border border-white/50 bg-[#040B16] p-2 shadow-[0_0_40px_rgba(200,155,60,0.3)]">
+            <img
+              src="/brand/aurixa-symbol.svg"
+              alt="Aurixa Systems logo"
+              className="block h-full w-full object-contain object-center"
+            />
           </div>
           <h2 className="text-6xl md:text-7xl lg:text-[5rem] font-display font-light mb-8 tracking-tight leading-[1.05] text-white">
             Unifying strategic intelligence <br /><span className="italic text-chrome-prismatic drop-shadow-2xl">into one platform.</span>
