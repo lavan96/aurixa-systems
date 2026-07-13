@@ -184,9 +184,9 @@ export default function Home() {
       </section>
 
       {/* Brand Positioning Section */}
-      <section className="w-full py-32 relative bg-[#0B162C] border-y border-white/5">
+      <section className="w-full py-20 md:py-32 relative bg-[#0B162C] border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-20 items-center">
             <div>
               <h2 className="text-4xl md:text-5xl font-display font-light tracking-tight mb-8 drop-shadow-md text-white">
                 The Industry Problem: <br /><span className="italic text-chrome-prismatic drop-shadow-xl">Fragmented Systems.</span>
@@ -205,18 +205,18 @@ export default function Home() {
             </div>
             <div className="relative">
               {/* Premium Dashboard Abstract */}
-              <div className="aspect-[4/3] glass-panel p-8 relative overflow-hidden group">
+              <div className="min-h-[280px] sm:aspect-[4/3] glass-panel p-4 sm:p-8 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent z-10" />
-                <div className="w-full h-full border border-white/10 rounded-sm relative z-20 bg-[#040B16] p-6 shadow-2xl flex flex-col gap-6">
+                <div className="w-full h-full border border-white/10 rounded-sm relative z-20 bg-[#040B16] p-4 sm:p-6 shadow-2xl flex flex-col gap-6">
                   {/* Typographic Arsenal Block */}
                   <div className="absolute inset-0 bg-chrome-prismatic opacity-10 group-hover:opacity-20 transition-opacity duration-1000" />
                   <div className="h-full w-full relative z-20 flex flex-col items-center justify-center text-center">
-                    <span className="text-[10px] uppercase font-mono tracking-[0.3em] text-[#00A8B5] mb-6">Enterprise Infrastructure</span>
-                    <div className="text-3xl lg:text-4xl font-display font-light text-white leading-tight mb-6 drop-shadow-md">
+                    <span className="text-[9px] sm:text-[10px] uppercase font-mono tracking-[0.22em] sm:tracking-[0.3em] text-[#00A8B5] mb-5 sm:mb-6">Enterprise Infrastructure</span>
+                    <div className="text-2xl sm:text-3xl lg:text-4xl font-display font-light text-white leading-tight mb-5 sm:mb-6 drop-shadow-md">
                       "Scale smarter through<br/><span className="text-chrome-prismatic italic drop-shadow-2xl">unified intelligence.</span>"
                     </div>
-                    <div className="w-12 h-px bg-gradient-to-r from-transparent via-[#C89B3C] to-transparent mb-6 opacity-50" />
-                    <p className="text-xs font-light text-[#9CA3AF] uppercase tracking-widest font-mono">Centralised Platform Control</p>
+                    <div className="w-12 h-px bg-gradient-to-r from-transparent via-[#C89B3C] to-transparent mb-5 sm:mb-6 opacity-50" />
+                    <p className="text-[10px] sm:text-xs font-light text-[#9CA3AF] uppercase tracking-[0.22em] sm:tracking-widest font-mono">Centralised Platform Control</p>
                   </div>
                 </div>
               </div>
