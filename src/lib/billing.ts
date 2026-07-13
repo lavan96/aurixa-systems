@@ -11,9 +11,12 @@
  * value, and receipts require the (session_id, h) pair. No cookies, no keys.
  */
 
+// Default to Mission Control's production domain. The old lovable.app URL
+// 302-redirects here, and a redirect inside the CORS flow can drop the
+// checkout POST's headers — call the real origin directly.
 const API_BASE = (
   (import.meta.env.VITE_BILLING_API_URL as string | undefined) ??
-  "https://aurixa-mission-control.lovable.app"
+  "https://mission-control.aurixasystems.com.au"
 ).replace(/\/+$/, "");
 
 export type CheckoutMode = "topup" | "seat_plan" | "setup_package";
