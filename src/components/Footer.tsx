@@ -49,10 +49,6 @@ export function Footer() {
         
         <div className="w-full pt-8 border-t border-[#C89B3C]/15 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
           <p>&copy; {new Date().getFullYear()} Aurixa Systems. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
-            <a href="#" className="hover:text-white transition-colors">Twitter</a>
-          </div>
         </div>
       </div>
     </footer>

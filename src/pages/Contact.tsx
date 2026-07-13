@@ -9,6 +9,7 @@ const WAITLIST_FIELD_NAMES = [
   "directiveFirstName",
   "directiveLastName",
   "corporateEmail",
+  "mobileNumber",
   "entityName",
   "entityClassification",
   "annualOriginationTransactionVolume",
@@ -16,6 +17,55 @@ const WAITLIST_FIELD_NAMES = [
 ] as const;
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const cleanTextValue = (value: string) =>
+  value
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const cleanEmailValue = (value: string) => cleanTextValue(value).toLowerCase();
+
+const formatAustralianMobileNumber = (value: string) => {
+  const compactValue = value.replace(/[\s().-]/g, "");
+
+  if (/^04\d{8}$/.test(compactValue)) {
+    return `+61${compactValue.slice(1)}`;
+  }
+
+  if (/^614\d{8}$/.test(compactValue)) {
+    return `+${compactValue}`;
+  }
+
+  if (/^\+614\d{8}$/.test(compactValue)) {
+    return compactValue;
+  }
+
+  return "";
+};
+
+const cleanWaitlistValue = (fieldName: (typeof WAITLIST_FIELD_NAMES)[number], value: string) => {
+  if (fieldName === "corporateEmail") {
+    return cleanEmailValue(value);
+  }
+
+  if (fieldName === "mobileNumber") {
+    return formatAustralianMobileNumber(value);
+  }
+
+  return cleanTextValue(value);
+};
+
+const cleanFieldOnBlur = (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const field = event.currentTarget;
+  const fieldName = field.name as (typeof WAITLIST_FIELD_NAMES)[number];
+
+  if (!WAITLIST_FIELD_NAMES.includes(fieldName)) {
+    return;
+  }
+
+  field.value = cleanWaitlistValue(fieldName, field.value);
+};
 
 export default function Contact() {
   const [submissionStatus, setSubmissionStatus] = useState<"idle" | "success" | "error">("idle");
@@ -30,12 +80,21 @@ export default function Contact() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const values = Object.fromEntries(
-      WAITLIST_FIELD_NAMES.map((fieldName) => [fieldName, String(formData.get(fieldName) ?? "").trim()]),
+      WAITLIST_FIELD_NAMES.map((fieldName) => [
+        fieldName,
+        cleanWaitlistValue(fieldName, String(formData.get(fieldName) ?? "")),
+      ]),
     ) as Record<(typeof WAITLIST_FIELD_NAMES)[number], string>;
 
-    if (WAITLIST_FIELD_NAMES.some((fieldName) => values[fieldName] === "")) {
+    if (WAITLIST_FIELD_NAMES.some((fieldName) => fieldName !== "mobileNumber" && values[fieldName] === "")) {
       setSubmissionStatus("error");
       setSubmissionMessage("Please complete all required fields.");
+      return;
+    }
+
+    if (!values.mobileNumber) {
+      setSubmissionStatus("error");
+      setSubmissionMessage("Please enter a valid Australian mobile number starting with 04 or +614.");
       return;
     }
 
@@ -152,23 +211,29 @@ export default function Contact() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Directive First Name</label>
-                  <input type="text" name="directiveFirstName" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                  <input type="text" name="directiveFirstName" required onBlur={cleanFieldOnBlur} autoComplete="given-name" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Directive Last Name</label>
-                  <input type="text" name="directiveLastName" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                  <input type="text" name="directiveLastName" required onBlur={cleanFieldOnBlur} autoComplete="family-name" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Corporate Email</label>
-                <input type="email" name="corporateEmail" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                <input type="email" name="corporateEmail" required onBlur={cleanFieldOnBlur} autoComplete="email" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Mobile Number</label>
+                <input type="tel" name="mobileNumber" required onBlur={cleanFieldOnBlur} autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" pattern="(?:\+?61|0)4[0-9 ]{8,12}" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                <p className="text-[10px] uppercase tracking-widest text-gray-600 font-mono ml-1">Australian mobile only. Stored as +614XXXXXXXX.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Entity Name</label>
-                  <input type="text" name="entityName" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+                  <input type="text" name="entityName" required onBlur={cleanFieldOnBlur} autoComplete="organization" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Entity Classification</label>
@@ -201,7 +266,7 @@ export default function Contact() {
 
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Current Tech Stack Bottlenecks</label>
-                <textarea name="currentTechStackBottlenecks" required rows={3} className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" placeholder="Detail the fragmentation or inefficiencies currently stalling your firm's pipeline..."></textarea>
+                <textarea name="currentTechStackBottlenecks" required rows={3} onBlur={cleanFieldOnBlur} className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" placeholder="Detail the fragmentation or inefficiencies currently stalling your firm's pipeline..."></textarea>
               </div>
 
               {submissionMessage && (
