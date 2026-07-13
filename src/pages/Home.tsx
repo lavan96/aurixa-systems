@@ -230,8 +230,12 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-radial from-[#111827] to-[#040B16] z-0" />
         <div className="absolute right-0 bottom-0 w-[800px] h-[800px] bg-gradient-radial from-[#0A192F]/10 to-transparent blur-[120px] opacity-40 pointer-events-none" />
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
-          <div className="w-16 h-16 rounded-md bg-chrome-prismatic flex items-center justify-center mb-8 mx-auto shadow-[0_0_40px_rgba(200,155,60,0.3)] border border-white/50">
-            <span className="text-white font-display font-bold text-3xl drop-shadow-md">A</span>
+          <div className="relative mb-8 mx-auto h-24 w-24 overflow-hidden rounded-md border border-white/50 bg-[#040B16] shadow-[0_0_40px_rgba(200,155,60,0.3)]">
+            <img
+              src="/brand/aurixa-systems-logo-source.jpg"
+              alt="Aurixa Systems logo"
+              className="h-full w-auto max-w-none -translate-x-[26px] scale-110 object-cover"
+            />
           </div>
           <h2 className="text-6xl md:text-7xl lg:text-[5rem] font-display font-light mb-8 tracking-tight leading-[1.05] text-white">
             Unifying strategic intelligence <br /><span className="italic text-chrome-prismatic drop-shadow-2xl">into one platform.</span>
