@@ -234,7 +234,7 @@ export default function Home() {
             <img
               src="/brand/aurixa-symbol.svg"
               alt="Aurixa Systems logo"
-              className="h-full w-full object-contain"
+              className="block h-full w-full object-contain object-center"
             />
           </div>
           <h2 className="text-6xl md:text-7xl lg:text-[5rem] font-display font-light mb-8 tracking-tight leading-[1.05] text-white">
