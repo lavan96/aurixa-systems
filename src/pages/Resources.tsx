@@ -162,7 +162,7 @@ export default function Resources() {
                 </div>
 
                 {/* Sub-item Grid Elements */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {category.items.map((item, itemIdx) => {
                     const Icon = item.icon;
                     return (
