@@ -65,10 +65,24 @@ export interface CatalogReport {
   credit_cost: number;
 }
 
+export interface CatalogAddon {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  price_min_cents: number | null;
+  price_max_cents: number | null;
+  currency: string;
+  billing_period: string | null;
+  category: string | null;
+  included_in_plans: string[] | null;
+}
+
 export interface Catalog {
   plans: CatalogPlan[];
   packs: CatalogPack[];
   setups: CatalogSetup[];
+  addons: CatalogAddon[];
   reports: CatalogReport[];
 }
 
@@ -107,6 +121,7 @@ export async function fetchCatalog(): Promise<Catalog> {
     plans: body.plans ?? [],
     packs: body.packs ?? [],
     setups: body.setups ?? [],
+    addons: body.addons ?? [],
     reports: body.reports ?? [],
   };
 }
