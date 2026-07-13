@@ -25,7 +25,6 @@ export function Navbar() {
             { label: "Platform", href: "/platform" },
             { label: "Solutions", href: "/solutions" },
             { label: "Industries", href: "/industries" },
-            { label: "Pricing", href: "/pricing" },
             { label: "About", href: "/about" },
             { label: "Resources", href: "/resources" }
           ].map((item) => (
@@ -68,7 +67,6 @@ export function Navbar() {
           <Link to="/platform" onClick={() => setIsOpen(false)} aria-current={isActive("/platform") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/platform") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Platform</Link>
           <Link to="/solutions" onClick={() => setIsOpen(false)} aria-current={isActive("/solutions") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/solutions") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Solutions</Link>
           <Link to="/industries" onClick={() => setIsOpen(false)} aria-current={isActive("/industries") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/industries") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Industries</Link>
-          <Link to="/pricing" onClick={() => setIsOpen(false)} aria-current={isActive("/pricing") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/pricing") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Pricing</Link>
           <Link to="/about" onClick={() => setIsOpen(false)} aria-current={isActive("/about") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/about") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>About</Link>
           <Link to="/resources" onClick={() => setIsOpen(false)} aria-current={isActive("/resources") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/resources") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Resources</Link>
           <hr className="border-white/10 my-2" />
