@@ -230,7 +230,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-radial from-[#111827] to-[#040B16] z-0" />
         <div className="absolute right-0 bottom-0 w-[800px] h-[800px] bg-gradient-radial from-[#0A192F]/10 to-transparent blur-[120px] opacity-40 pointer-events-none" />
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
-          <div className="mb-8 mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-md border border-white/50 bg-[#040B16] p-2 shadow-[0_0_40px_rgba(200,155,60,0.3)]">
+          <div className="mb-8 mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-md bg-[#040B16] p-2 shadow-[0_0_40px_rgba(200,155,60,0.3)]">
             <img
               src="/brand/aurixa-symbol.svg"
               alt="Aurixa Systems logo"
