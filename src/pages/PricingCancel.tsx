@@ -9,6 +9,11 @@ import { XCircle } from "lucide-react";
 export default function PricingCancel() {
   const [params] = useSearchParams();
   const h = params.get("h");
+  const uid = params.get("uid");
+  // A uid link is stable and reusable, so we can send the buyer straight back
+  // into their pricing page to retry. A handoff is single-use and already
+  // spent, so retry means a fresh link from the dashboard.
+  const backToPricing = uid ? `/pricing?uid=${encodeURIComponent(uid)}` : "/pricing";
 
   return (
     <div className="w-full pt-[100px]">
@@ -20,13 +25,15 @@ export default function PricingCancel() {
           </div>
           <p className="mt-4 text-sm leading-relaxed text-[#94A3B8]">
             No charge was made.{" "}
-            {h
-              ? "To pick the purchase back up, head back to your dashboard and start it again — that refreshes your secure checkout link."
-              : "You can come back to pricing any time."}
+            {uid
+              ? "Your checkout link is still valid — head back to pricing to pick it up again."
+              : h
+                ? "To pick the purchase back up, head back to your dashboard and start it again — that refreshes your secure checkout link."
+                : "You can come back to pricing any time."}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              to="/pricing"
+              to={backToPricing}
               className="rounded-sm bg-[#00A8B5] px-6 py-2.5 text-[12px] font-black uppercase tracking-[0.2em] text-white transition-transform hover:scale-105"
             >
               Back to pricing

@@ -96,6 +96,15 @@ export interface ResolvedHandoff {
   intent: string | null;
 }
 
+export interface ResolvedIdentity {
+  uid: string;
+  cloneName: string | null;
+  originUsername: string | null;
+}
+
+/** Purchase credential: a single-use handoff, or a stable operator uid. */
+export type Credential = { h: string } | { uid: string };
+
 export interface SessionReceipt {
   mode: string | null;
   itemSlug: string | null;
@@ -149,8 +158,26 @@ export async function resolveHandoff(h: string): Promise<ResolvedHandoff | null>
   }
 }
 
+export async function resolveIdentity(uid: string): Promise<ResolvedIdentity | null> {
+  try {
+    const body = await apiGet<{
+      uid: string;
+      clone_name: string | null;
+      origin_username: string | null;
+    }>(`/api/public/storefront/identity?uid=${encodeURIComponent(uid)}`);
+    return {
+      uid: body.uid,
+      cloneName: body.clone_name,
+      originUsername: body.origin_username,
+    };
+  } catch {
+    // Unknown/invalid uid → degrade to the browse-only page.
+    return null;
+  }
+}
+
 export async function startCheckout(input: {
-  h: string;
+  credential: Credential;
   mode: CheckoutMode;
   itemId: string;
   quantity?: number;
@@ -164,7 +191,7 @@ export async function startCheckout(input: {
     method: "POST",
     headers: { "content-type": "text/plain;charset=UTF-8" },
     body: JSON.stringify({
-      h: input.h,
+      ...input.credential,
       mode: input.mode,
       item_id: input.itemId,
       quantity: input.quantity ?? 1,
@@ -177,7 +204,14 @@ export async function startCheckout(input: {
   return { url: body.url };
 }
 
-export async function fetchSessionReceipt(sessionId: string, h: string): Promise<SessionReceipt> {
+export async function fetchSessionReceipt(
+  sessionId: string,
+  credential: Credential,
+): Promise<SessionReceipt> {
+  const credParam =
+    "h" in credential
+      ? `h=${encodeURIComponent(credential.h)}`
+      : `uid=${encodeURIComponent(credential.uid)}`;
   const body = await apiGet<{
     mode: string | null;
     item_slug: string | null;
@@ -190,7 +224,7 @@ export async function fetchSessionReceipt(sessionId: string, h: string): Promise
     webhook_error: string | null;
     return_url: string | null;
   }>(
-    `/api/public/storefront/session?session_id=${encodeURIComponent(sessionId)}&h=${encodeURIComponent(h)}`,
+    `/api/public/storefront/session?session_id=${encodeURIComponent(sessionId)}&${credParam}`,
   );
   return {
     mode: body.mode,
