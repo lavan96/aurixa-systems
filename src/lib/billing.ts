@@ -1,23 +1,26 @@
 /**
  * Billing API client (user-attributed pricing workflow, Revision 2).
  *
- * This site hosts THE customer-facing pricing page: all user-centric
- * monetisation (tokens, plans, seats — prime repo and every clone) flows
- * through /pricing here. Mission Control is the headless billing engine
- * behind these endpoints; customers never see its UI.
+ * This site hosts THE customer-facing pricing page. The browser now talks only
+ * to Aurixa Systems' OWN backend (Supabase edge functions): catalog is served
+ * from a local mirror, and checkout/handoff/identity/session forward to Mission
+ * Control server-to-server (MC stays the headless billing engine + Stripe).
  *
- * Auth model: possession-based. Command centers mint a single-use handoff
- * token server-to-server; the browser only ever carries the opaque `?h=`
- * value, and receipts require the (session_id, h) pair. No cookies, no keys.
+ * Auth model: possession-based. The pricing link carries a single-use `?h=`
+ * handoff or a stable `?uid=`; receipts require the (session_id, credential)
+ * pair. No cookies, no keys.
  */
 
-// Default to Mission Control's production domain. The old lovable.app URL
-// 302-redirects here, and a redirect inside the CORS flow can drop the
-// checkout POST's headers — call the real origin directly.
-const API_BASE = (
-  (import.meta.env.VITE_BILLING_API_URL as string | undefined) ??
-  "https://mission-control.aurixasystems.com.au"
-).replace(/\/+$/, "");
+// Aurixa Systems storefront backend (Supabase functions). Prefer an explicit
+// override, else derive from the project URL, else fall back to the known
+// production project.
+const STOREFRONT_BASE = (() => {
+  const explicit = import.meta.env.VITE_STOREFRONT_API_URL as string | undefined;
+  if (explicit) return explicit.replace(/\/+$/, "");
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (supabaseUrl) return `${supabaseUrl.replace(/\/+$/, "")}/functions/v1`;
+  return "https://moeyytuduycrvvncdtme.supabase.co/functions/v1";
+})();
 
 export type CheckoutMode = "topup" | "seat_plan" | "setup_package";
 
@@ -119,7 +122,7 @@ export interface SessionReceipt {
 }
 
 async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { method: "GET" });
+  const res = await fetch(`${STOREFRONT_BASE}${path}`, { method: "GET" });
   const body = (await res.json()) as T & { ok?: boolean; error?: string };
   if (!res.ok || body.ok === false) {
     throw new Error(body.error ?? `billing_api_${res.status}`);
@@ -128,7 +131,7 @@ async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function fetchCatalog(): Promise<Catalog> {
-  const body = await apiGet<Catalog>("/api/public/storefront/catalog");
+  const body = await apiGet<Catalog>("/storefront-catalog");
   return {
     plans: body.plans ?? [],
     packs: body.packs ?? [],
@@ -145,7 +148,7 @@ export async function resolveHandoff(h: string): Promise<ResolvedHandoff | null>
       clone_name: string | null;
       origin_username: string | null;
       intent: string | null;
-    }>(`/api/public/storefront/handoff?h=${encodeURIComponent(h)}`);
+    }>(`/storefront-handoff?h=${encodeURIComponent(h)}`);
     return {
       handoffId: body.handoff_id,
       cloneName: body.clone_name,
@@ -164,7 +167,7 @@ export async function resolveIdentity(uid: string): Promise<ResolvedIdentity | n
       uid: string;
       clone_name: string | null;
       origin_username: string | null;
-    }>(`/api/public/storefront/identity?uid=${encodeURIComponent(uid)}`);
+    }>(`/storefront-identity?uid=${encodeURIComponent(uid)}`);
     return {
       uid: body.uid,
       cloneName: body.clone_name,
@@ -182,12 +185,11 @@ export async function startCheckout(input: {
   itemId: string;
   quantity?: number;
 }): Promise<{ url: string }> {
-  // text/plain keeps this a CORS "simple request" (no OPTIONS preflight):
-  // Mission Control's framework answers preflights itself without an
-  // Access-Control-Allow-Origin header, which would block a preflighted
-  // cross-origin POST. The server parses the body as JSON regardless of the
-  // content type, and the actual response carries ACAO: * — verified.
-  const res = await fetch(`${API_BASE}/api/public/storefront/checkout`, {
+  // text/plain keeps this a CORS "simple request" (no OPTIONS preflight). The
+  // storefront-checkout function reads the raw body and forwards it to Mission
+  // Control, which parses JSON regardless of content type; the response carries
+  // ACAO: *.
+  const res = await fetch(`${STOREFRONT_BASE}/storefront-checkout`, {
     method: "POST",
     headers: { "content-type": "text/plain;charset=UTF-8" },
     body: JSON.stringify({
@@ -224,7 +226,7 @@ export async function fetchSessionReceipt(
     webhook_error: string | null;
     return_url: string | null;
   }>(
-    `/api/public/storefront/session?session_id=${encodeURIComponent(sessionId)}&${credParam}`,
+    `/storefront-session?session_id=${encodeURIComponent(sessionId)}&${credParam}`,
   );
   return {
     mode: body.mode,

@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, ShieldAlert } from "lucide-react";
 import { HeroBackground } from "../components/HeroBackgrounds";
-import { mirrorLeadToMissionControl } from "../lib/leads";
+import { captureLead } from "../lib/leads";
 
 const MAKE_WAITLIST_WEBHOOK_URL = "https://hook.eu2.make.com/589rb23xwbgovfj3iuemtcuxm75cccut";
 
@@ -127,10 +127,11 @@ export default function Contact() {
         throw new Error("Waitlist webhook submission failed");
       }
 
-      // Primary capture (Make.com → Airtable) succeeded — mirror the lead
-      // into Mission Control so operators are notified in real time.
+      // Primary capture (Make.com → Airtable) succeeded — persist the lead in
+      // Aurixa Systems' own backend (store of record) and mirror it into
+      // Mission Control so operators are notified in real time.
       // Fire-and-forget: never blocks or fails the visitor's submission.
-      mirrorLeadToMissionControl(payload);
+      captureLead(payload);
 
       form.reset();
       setSubmissionStatus("success");

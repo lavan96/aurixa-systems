@@ -1,0 +1,8 @@
+# Supabase project config for the Aurixa Systems storefront backend.
+project_id = "moeyytuduycrvvncdtme"
+
+[functions.catalog-sync]
+verify_jwt = true
+
+[functions.storefront-catalog]
+verify_jwt = false
