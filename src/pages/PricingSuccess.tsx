@@ -22,19 +22,21 @@ export default function PricingSuccess() {
   const [params] = useSearchParams();
   const sessionId = params.get("session_id");
   const h = params.get("h");
+  const uid = params.get("uid");
+  const credential = h ? { h } : uid ? { uid } : null;
 
   const [receipt, setReceipt] = useState<SessionReceipt | null>(null);
   const [error, setError] = useState<string | null>(null);
   const startedAt = useRef(Date.now());
 
   useEffect(() => {
-    if (!sessionId || !h) return;
+    if (!sessionId || !credential) return;
     let cancelled = false;
     let timer: number | undefined;
 
     const poll = async () => {
       try {
-        const r = await fetchSessionReceipt(sessionId, h);
+        const r = await fetchSessionReceipt(sessionId, credential);
         if (cancelled) return;
         setReceipt(r);
         if (!r.fulfilled && !r.webhookError && Date.now() - startedAt.current < POLL_MAX_MS) {
@@ -49,7 +51,9 @@ export default function PricingSuccess() {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, [sessionId, h]);
+    // credential is derived from these two primitives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, h, uid]);
 
   const timedOut =
     !!receipt && !receipt.fulfilled && !receipt.webhookError &&

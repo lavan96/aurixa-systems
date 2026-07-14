@@ -18,10 +18,13 @@ import {
 import {
   fetchCatalog,
   resolveHandoff,
+  resolveIdentity,
   startCheckout,
   type Catalog,
   type CheckoutMode,
+  type Credential,
   type ResolvedHandoff,
+  type ResolvedIdentity,
 } from "../lib/billing";
 
 /**
@@ -68,10 +71,12 @@ const MARQUEE_WORDS = [
 export default function Pricing() {
   const [params] = useSearchParams();
   const h = params.get("h");
+  const uid = params.get("uid");
 
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [handoff, setHandoff] = useState<ResolvedHandoff | null>(null);
+  const [identity, setIdentity] = useState<ResolvedIdentity | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
@@ -87,6 +92,9 @@ export default function Pricing() {
     };
   }, []);
 
+  // Identity-carrying links: a single-use `?h=` handoff (minted from a command
+  // center) or a stable `?uid=` billing id (assigned by an operator in Mission
+  // Control). Either pins the tenant/clone a purchase attributes to.
   useEffect(() => {
     if (!h) return;
     let cancelled = false;
@@ -96,22 +104,38 @@ export default function Pricing() {
     };
   }, [h]);
 
-  const canBuy = !!handoff;
+  useEffect(() => {
+    if (!uid || h) return; // a handoff, if present, wins
+    let cancelled = false;
+    resolveIdentity(uid).then((r) => !cancelled && setIdentity(r));
+    return () => {
+      cancelled = true;
+    };
+  }, [uid, h]);
+
+  // The purchase credential + who it bills, resolved from whichever link we got.
+  const credential: Credential | null = handoff
+    ? { h: handoff.handoffId }
+    : identity
+      ? { uid: identity.uid }
+      : null;
+  const purchaser = handoff ?? identity;
+  const canBuy = !!credential;
 
   const buy = useCallback(
     async (mode: CheckoutMode, itemId: string) => {
-      if (!handoff) return;
+      if (!credential) return;
       setBusyId(itemId);
       setCheckoutError(null);
       try {
-        const { url } = await startCheckout({ h: handoff.handoffId, mode, itemId });
+        const { url } = await startCheckout({ credential, mode, itemId });
         window.location.href = url;
       } catch (e) {
         setCheckoutError(e instanceof Error ? e.message : "Checkout failed");
         setBusyId(null);
       }
     },
-    [handoff],
+    [credential],
   );
 
   // Auto-launch a baked-in '<mode>:<item_id>' intent straight into checkout.
@@ -202,7 +226,7 @@ export default function Pricing() {
 
           {/* Attributed handoff — purchase scope is pinned to the clone user
               who initiated this visit from their command center. */}
-          {handoff && (
+          {purchaser && (
             <div
               className="pricing-reveal-up mx-auto mt-8 flex max-w-xl flex-col items-center gap-2"
               style={{ animationDelay: "440ms" }}
@@ -211,16 +235,16 @@ export default function Pricing() {
                 Purchasing for
               </span>
               <div className="inline-flex h-11 items-center rounded-full border border-[#00A8B5]/40 bg-[#0B162C]/60 px-6 font-mono text-[12px] uppercase tracking-[0.18em] backdrop-blur-xl">
-                {handoff.cloneName ?? "your workspace"}
-                {handoff.originUsername && (
+                {purchaser.cloneName ?? "your workspace"}
+                {purchaser.originUsername && (
                   <span className="ml-3 normal-case tracking-normal text-[#94A3B8]">
-                    as {handoff.originUsername}
+                    as {purchaser.originUsername}
                   </span>
                 )}
               </div>
               <p className="font-mono text-[10px] tracking-[0.2em] text-[#94A3B8]/70">
-                {handoff.cloneName
-                  ? `Charges, seats & credits will apply to ${handoff.cloneName}.`
+                {purchaser.cloneName
+                  ? `Charges, seats & credits will apply to ${purchaser.cloneName}.`
                   : "Charges will apply to your workspace."}
               </p>
             </div>
@@ -229,6 +253,12 @@ export default function Pricing() {
             <div className="pricing-reveal-up mx-auto mt-8 max-w-xl rounded-md border border-[#C89B3C]/40 bg-[#0B162C] px-6 py-3 text-sm text-[#94A3B8]">
               This purchase link has expired. Head back to your dashboard and start the purchase
               again to get a fresh one.
+            </div>
+          )}
+          {!h && uid && identity === null && (
+            <div className="pricing-reveal-up mx-auto mt-8 max-w-xl rounded-md border border-[#C89B3C]/40 bg-[#0B162C] px-6 py-3 text-sm text-[#94A3B8]">
+              We couldn't recognise this purchase link. Double-check it, or contact us and we'll sort
+              it out.
             </div>
           )}
           {checkoutError && (
@@ -304,7 +334,10 @@ export default function Pricing() {
                       : "Starter";
 
               const isEnterprise = p.seat_limit >= 999;
-              const buyable = canBuy && !isEnterprise;
+              // Everything is purchasable once we have a purchase credential —
+              // including Enterprise. Without one, Enterprise still routes to
+              // sales and the rest to the contact funnel.
+              const buyable = canBuy;
               return (
                 <PlanCard
                   key={p.id}
@@ -318,7 +351,7 @@ export default function Pricing() {
                   ribbon={tierName}
                   seats={isEnterprise ? "Custom seats" : `${p.seat_limit} seats included`}
                   highlights={highlights}
-                  cta={isEnterprise ? "Talk to sales" : "Get started"}
+                  cta={isEnterprise && !canBuy ? "Talk to sales" : "Get started"}
                   busy={busyId === p.id}
                   buyable={buyable}
                   onBuy={() => void buy("seat_plan", p.id)}
