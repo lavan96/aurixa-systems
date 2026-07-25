@@ -206,6 +206,59 @@ export async function startCheckout(input: {
   return { url: body.url };
 }
 
+/**
+ * Wallet flow: starts a Stripe Checkout session in `setup` mode so the buyer
+ * can save a card for later. Card details are entered on Stripe's hosted page
+ * — they never touch this site or Mission Control. Same credential model and
+ * transport as startCheckout.
+ */
+export async function startCardSetup(input: { credential: Credential }): Promise<{ url: string }> {
+  const res = await fetch(`${STOREFRONT_BASE}/storefront-setup`, {
+    method: "POST",
+    headers: { "content-type": "text/plain;charset=UTF-8" },
+    body: JSON.stringify({ ...input.credential }),
+  });
+  const body = (await res.json()) as { ok?: boolean; url?: string; error?: string };
+  if (!res.ok || body.ok === false || !body.url) {
+    throw new Error((body.error ?? "card_setup_failed").replaceAll("_", " "));
+  }
+  return { url: body.url };
+}
+
+export interface WalletStatus {
+  saved: boolean;
+  brand: string | null;
+  last4: string | null;
+  priority: number | null;
+  returnUrl: string | null;
+}
+
+/** Card-saved receipt: polled by /pricing/card-saved until the webhook has
+ * persisted the card. Authorised by the (session_id, credential) pair. */
+export async function fetchWalletStatus(
+  sessionId: string,
+  credential: Credential,
+): Promise<WalletStatus> {
+  const credParam =
+    "h" in credential
+      ? `h=${encodeURIComponent(credential.h)}`
+      : `uid=${encodeURIComponent(credential.uid)}`;
+  const body = await apiGet<{
+    saved: boolean;
+    brand: string | null;
+    last4: string | null;
+    priority: number | null;
+    return_url: string | null;
+  }>(`/storefront-wallet?session_id=${encodeURIComponent(sessionId)}&${credParam}`);
+  return {
+    saved: body.saved,
+    brand: body.brand,
+    last4: body.last4,
+    priority: body.priority,
+    returnUrl: body.return_url,
+  };
+}
+
 export async function fetchSessionReceipt(
   sessionId: string,
   credential: Credential,

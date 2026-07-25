@@ -12,6 +12,7 @@ import Contact from "./pages/Contact";
 import Pricing from "./pages/Pricing";
 import PricingSuccess from "./pages/PricingSuccess";
 import PricingCancel from "./pages/PricingCancel";
+import CardSaved from "./pages/CardSaved";
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -40,6 +41,7 @@ function AppShell() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/pricing/success" element={<PricingSuccess />} />
             <Route path="/pricing/cancel" element={<PricingCancel />} />
+            <Route path="/pricing/card-saved" element={<CardSaved />} />
             <Route path="/about" element={<About />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/contact" element={<Contact />} />
