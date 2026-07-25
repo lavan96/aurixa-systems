@@ -19,6 +19,7 @@ import {
   fetchCatalog,
   resolveHandoff,
   resolveIdentity,
+  startCardSetup,
   startCheckout,
   type Catalog,
   type CheckoutMode,
@@ -154,15 +155,40 @@ export default function Pricing() {
     [credential],
   );
 
-  // Auto-launch a baked-in '<mode>:<item_id>' intent straight into checkout.
+  // Wallet flow: redirect to Stripe's hosted card-save page (setup-mode
+  // Checkout). Card details go browser → Stripe only.
+  const saveCard = useCallback(async () => {
+    if (!credential) return;
+    setBusyId("save-card");
+    setCheckoutError(null);
+    try {
+      const { url } = await startCardSetup({ credential });
+      window.location.href = url;
+    } catch (e) {
+      setCheckoutError(e instanceof Error ? e.message : "Card setup failed");
+      setBusyId(null);
+    }
+  }, [credential]);
+
+  // Auto-launch a baked-in '<mode>:<item_id>' intent straight into checkout,
+  // and the 'save_card' intent (or ?action=save-card fallback link) straight
+  // into Stripe's card-save page.
   useEffect(() => {
-    if (autoLaunchedRef.current || !handoff?.intent || !catalog) return;
+    if (autoLaunchedRef.current || !credential || !catalog) return;
+    const wantsSaveCard =
+      handoff?.intent === "save_card" || params.get("action") === "save-card";
+    if (wantsSaveCard) {
+      autoLaunchedRef.current = true;
+      void saveCard();
+      return;
+    }
+    if (!handoff?.intent) return;
     const [mode, itemId] = handoff.intent.split(":");
     if (!itemId) return;
     if (mode !== "topup" && mode !== "seat_plan" && mode !== "setup_package") return;
     autoLaunchedRef.current = true;
     void buy(mode, itemId);
-  }, [handoff, catalog, buy]);
+  }, [handoff, credential, catalog, buy, saveCard, params]);
 
   const plans = useMemo(() => catalog?.plans ?? [], [catalog]);
   const packs = catalog?.packs ?? [];
