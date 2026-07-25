@@ -72,11 +72,23 @@ export default function Pricing() {
   const [params] = useSearchParams();
   const h = params.get("h");
   const uid = params.get("uid");
+  // Display-only purchaser hint carried by the static fallback link
+  // (?uid=…&u=<name>). Attributed handoffs carry the username server-side;
+  // this only fills the gap when the dashboard couldn't mint a handoff.
+  const usernameHint = (params.get("u") ?? "").trim().slice(0, 80) || null;
 
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [handoff, setHandoff] = useState<ResolvedHandoff | null>(null);
-  const [identity, setIdentity] = useState<ResolvedIdentity | null>(null);
+  // Tri-state resolution: `undefined` = lookup in flight, `null` = the link is
+  // definitively invalid/expired, object = resolved. Collapsing "pending" into
+  // `null` made the expired-link banner flash on EVERY load before the lookup
+  // finished.
+  const [handoff, setHandoff] = useState<ResolvedHandoff | null | undefined>(
+    h ? undefined : null,
+  );
+  const [identity, setIdentity] = useState<ResolvedIdentity | null | undefined>(
+    uid && !h ? undefined : null,
+  );
   const [busyId, setBusyId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
@@ -98,6 +110,7 @@ export default function Pricing() {
   useEffect(() => {
     if (!h) return;
     let cancelled = false;
+    setHandoff(undefined); // pending — keep the expired banner from flashing
     resolveHandoff(h).then((r) => !cancelled && setHandoff(r));
     return () => {
       cancelled = true;
@@ -107,6 +120,7 @@ export default function Pricing() {
   useEffect(() => {
     if (!uid || h) return; // a handoff, if present, wins
     let cancelled = false;
+    setIdentity(undefined); // pending — keep the unknown-link banner from flashing
     resolveIdentity(uid).then((r) => !cancelled && setIdentity(r));
     return () => {
       cancelled = true;
@@ -119,7 +133,9 @@ export default function Pricing() {
     : identity
       ? { uid: identity.uid }
       : null;
-  const purchaser = handoff ?? identity;
+  const purchaser = handoff ?? identity ?? null;
+  const resolvingLink = (!!h && handoff === undefined) || (!h && !!uid && identity === undefined);
+  const purchaserName = purchaser?.originUsername ?? usernameHint;
   const canBuy = !!credential;
 
   const buy = useCallback(
@@ -226,6 +242,17 @@ export default function Pricing() {
 
           {/* Attributed handoff — purchase scope is pinned to the clone user
               who initiated this visit from their command center. */}
+          {resolvingLink && (
+            <div
+              className="pricing-reveal-up mx-auto mt-8 flex max-w-xl flex-col items-center gap-2"
+              style={{ animationDelay: "440ms" }}
+            >
+              <div className="inline-flex h-11 items-center gap-3 rounded-full border border-white/10 bg-[#0B162C]/60 px-6 font-mono text-[12px] uppercase tracking-[0.18em] text-[#94A3B8] backdrop-blur-xl">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00A8B5]" />
+                Linking your workspace…
+              </div>
+            </div>
+          )}
           {purchaser && (
             <div
               className="pricing-reveal-up mx-auto mt-8 flex max-w-xl flex-col items-center gap-2"
@@ -236,16 +263,18 @@ export default function Pricing() {
               </span>
               <div className="inline-flex h-11 items-center rounded-full border border-[#00A8B5]/40 bg-[#0B162C]/60 px-6 font-mono text-[12px] uppercase tracking-[0.18em] backdrop-blur-xl">
                 {purchaser.cloneName ?? "your workspace"}
-                {purchaser.originUsername && (
+                {purchaserName && (
                   <span className="ml-3 normal-case tracking-normal text-[#94A3B8]">
-                    as {purchaser.originUsername}
+                    as {purchaserName}
                   </span>
                 )}
               </div>
               <p className="font-mono text-[10px] tracking-[0.2em] text-[#94A3B8]/70">
-                {purchaser.cloneName
-                  ? `Charges, seats & credits will apply to ${purchaser.cloneName}.`
-                  : "Charges will apply to your workspace."}
+                {purchaserName
+                  ? `${purchaserName} is purchasing on behalf of ${purchaser.cloneName ?? "this workspace"}.`
+                  : purchaser.cloneName
+                    ? `Charges, seats & credits will apply to ${purchaser.cloneName}.`
+                    : "Charges will apply to your workspace."}
               </p>
             </div>
           )}
