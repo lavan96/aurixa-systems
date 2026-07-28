@@ -82,7 +82,10 @@ import {
   ReadinessSession,
   authoriseQuestionnaire,
   completeQuestionnaire,
+  isAuthorisedSession,
   isPreviewAvailable,
+  openAccessSession,
+  requiresSecureToken,
   saveQuestionnaireDraft,
 } from "../lib/readinessQuestionnaireService";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
@@ -104,6 +107,8 @@ type Ctx = {
   answers: AnswerMap;
   errors: QuestionErrors;
   set: (questionId: string, value: AnswerValue) => void;
+  /** True when a verified token backs the session (prefill, autosave, resume). */
+  authorised: boolean;
 };
 
 const optionLabel = (options: { value: string; label: string }[], value: string) =>
@@ -157,11 +162,35 @@ export default function Questionnaire() {
 
   // ── Secure access: exchange the opaque token for an authorised session, then
   // strip the raw token from the visible URL. ───────────────────────────────
+  const startOpenAccess = useCallback(() => {
+    const open = openAccessSession();
+    setSession(open);
+    setAnswers({});
+    setResponseVersion(open.responseVersion);
+    savedSnapshotRef.current = "";
+    setPhase("form");
+  }, []);
+
   const authorise = useCallback(async (token: string) => {
+    // Token gate off (the default while link issuance does not exist): show the
+    // questionnaire. A token, if supplied, is still exchanged for prefill and
+    // an existing draft.
+    if (!token && !requiresSecureToken()) {
+      startOpenAccess();
+      return;
+    }
+
     setPhase("loading");
     const result = await authoriseQuestionnaire(token);
 
     if (!result.ok || !result.session) {
+      // A completed questionnaire always blocks — that is duplicate-submission
+      // protection, not access control. Everything else falls through to open
+      // access unless the gate is on.
+      if (result.reason !== "already_completed" && !requiresSecureToken()) {
+        startOpenAccess();
+        return;
+      }
       setBlockedBy(result.reason ?? "invalid_token");
       if (result.reason === "already_completed" && result.applicationId) {
         setCompletion({
@@ -244,7 +273,7 @@ export default function Questionnaire() {
   );
 
   useEffect(() => {
-    if (phase !== "form" || !session) return;
+    if (phase !== "form" || !isAuthorisedSession(session)) return;
     if (Object.keys(answers).length === 0) return;
     if (!startedAtRef.current) startedAtRef.current = new Date().toISOString();
 
@@ -267,7 +296,7 @@ export default function Questionnaire() {
     });
   }, []);
 
-  const ctx: Ctx = { answers, errors, set };
+  const ctx: Ctx = { answers, errors, set, authorised: isAuthorisedSession(session) };
 
   const focusQuestion = (questionId: string) => {
     const element = document.getElementById(questionId);
@@ -366,7 +395,11 @@ export default function Questionnaire() {
         setPhase("blocked");
         return;
       }
-      setSubmissionError(READINESS_COPY.submissionError);
+      setSubmissionError(
+        result.reason === "not_configured"
+          ? READINESS_COPY.submissionNotConfigured
+          : READINESS_COPY.submissionError,
+      );
       return;
     }
 
@@ -424,13 +457,14 @@ export default function Questionnaire() {
   if (!session) return null;
 
   const section = SECTIONS[sectionIndex];
+  const authorised = isAuthorisedSession(session);
   const activeErrors = Object.keys(errors).filter((questionId) => errors[questionId]);
 
   return (
     <QuestionnaireShell>
-      <QuestionnaireHeader />
+      <QuestionnaireHeader authorised={authorised} />
 
-      <ApplicationSummary session={session} />
+      {authorised && <ApplicationSummary session={session} />}
 
       <div className="mt-8">
         <QuestionnaireProgress
@@ -481,7 +515,7 @@ export default function Questionnaire() {
             </div>
 
             <div className="mt-9 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <SaveStatus state={saveState} />
+              <SaveStatus state={saveState} authorised={authorised} />
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   type="button"
@@ -539,7 +573,7 @@ function QuestionnaireShell({ children }: { children: ReactNode }) {
   );
 }
 
-function QuestionnaireHeader() {
+function QuestionnaireHeader({ authorised }: { authorised: boolean }) {
   return (
     <header className="space-y-4">
       <div className="flex items-center gap-3">
@@ -561,7 +595,7 @@ function QuestionnaireHeader() {
         <span className="font-mono uppercase tracking-[0.14em] text-[#C89B3C]">
           {READINESS_COPY.timeEstimate}
         </span>
-        <span>{READINESS_COPY.saveMessage}</span>
+        <span>{authorised ? READINESS_COPY.saveMessage : READINESS_COPY.saveMessageLocal}</span>
       </div>
 
       <p className="border-l-2 border-[#C89B3C]/40 pl-4 text-[13px] font-light leading-relaxed text-[#9CA3B8]">
@@ -615,7 +649,22 @@ function ApplicationSummary({ session }: { session: ReadinessSession }) {
   );
 }
 
-function SaveStatus({ state }: { state: "idle" | "saving" | "saved" | "failed" }) {
+function SaveStatus({
+  state,
+  authorised,
+}: {
+  state: "idle" | "saving" | "saved" | "failed";
+  authorised: boolean;
+}) {
+  if (!authorised) {
+    return (
+      <p className="flex items-center gap-2 text-[12px] font-light text-[#9CA3B8]">
+        <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#C89B3C]" />
+        {READINESS_COPY.save.local}
+      </p>
+    );
+  }
+
   const text =
     state === "saving"
       ? READINESS_COPY.save.saving
@@ -829,12 +878,14 @@ function CompletionFacts({ applicationId, completedAt }: { applicationId: string
 
   return (
     <dl className="mt-6 border border-white/10 divide-y divide-white/10">
-      <div className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#9CA3B8]">
-          Application reference
-        </dt>
-        <dd className="break-all font-mono text-[14px] text-[#C89B3C]">{applicationId}</dd>
-      </div>
+      {applicationId && (
+        <div className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#9CA3B8]">
+            Application reference
+          </dt>
+          <dd className="break-all font-mono text-[14px] text-[#C89B3C]">{applicationId}</dd>
+        </div>
+      )}
       {completedDate && (
         <div className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#9CA3B8]">Completed</dt>
@@ -914,7 +965,11 @@ function SectionOrganisation({ ctx }: { ctx: Ctx }) {
           options={READINESS_ROLE_OPTIONS}
           value={asText(answers[Q.role])}
           error={errors[Q.role]}
-          helper="Prefilled from your Priority Access Application. Correct it here if it has changed."
+          helper={
+            ctx.authorised
+              ? "Prefilled from your Priority Access Application. Correct it here if it has changed."
+              : undefined
+          }
           onSelect={(value) => set(Q.role, value)}
         />
         {asText(answers[Q.role]) === "other" && (

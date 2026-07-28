@@ -93,6 +93,34 @@ restores it, and inactive answers are never submitted as live responses. The one
 case that genuinely discards answers — choosing a mutually exclusive option while
 named options are selected — shows an inline confirmation first.
 
+## Access
+
+**The token gate is OFF by default.** Link issuance does not exist yet, so
+requiring a token would lock out every visitor — including Aurixa — from a page
+nothing can currently produce a link for. `/questionnaire` renders the
+questionnaire straight away.
+
+Set `VITE_QUESTIONNAIRE_REQUIRE_TOKEN="true"` once Stage 1 is issuing links. The
+secure path below is unchanged and takes over the moment it is set.
+
+| Situation | Gate off (now) | Gate on (later) |
+| --- | --- | --- |
+| No token | Form, no prefill, no autosave | Access-required state |
+| Valid token | Form with prefill and resumed draft | Same |
+| Invalid or expired token | Falls through to the form | Invalid / expired state |
+| Service unreachable | Falls through to the form | Temporarily-unavailable state |
+| Already completed | Already-submitted state | Already-submitted state |
+
+Already-completed always blocks in both modes: that is duplicate-submission
+protection, not access control.
+
+With the gate off there is no session, so the page does not pretend otherwise —
+the application summary panel is hidden, the header says "Your answers are kept
+as you move between sections", the status line says "Your answers are kept in
+this browser until you submit", and no autosave request is made. Final
+submission reports that the questionnaire is not yet connected rather than
+showing a completion screen for a submission nobody received.
+
 ## Secure access and prefill
 
 1. The applicant opens `/questionnaire?t=<opaque token>`.
@@ -110,7 +138,7 @@ from the URL. It is displayed read-only in the application summary, with the wor
 email masked. Only BRQ-01 is editable, as section 6.2 allows; other corrections
 are directed to Aurixa.
 
-Without a valid session the form does not render. Missing and invalid tokens
+With the gate on, the form does not render without a valid session. Missing and invalid tokens
 share one message so the page cannot be used to test whether an application or
 email exists. Expired links, already-completed questionnaires and service
 failures each get their own state.
@@ -129,6 +157,9 @@ in flight and are never written to `localStorage`, the URL or analytics.
 `responseVersion` is optimistic-concurrency control: the client sends the version
 it holds and the server rejects a stale write instead of overwriting a newer
 draft from another device.
+
+Autosave only runs against an authorised session. With the token gate off there
+is nothing to save to, and the page says so rather than showing "Saved".
 
 **Cross-device resume is implemented but not yet live** — it depends on the
 migration and edge function below being applied and deployed.
@@ -190,8 +221,15 @@ drag-and-drop.
 
 ## Outstanding before launch
 
-- **Apply the migration and deploy the edge function.** Neither has been run;
-  until then `/questionnaire` shows the access-required state for every visitor.
+- **Submission has no destination.** With no backend deployed, completing the
+  questionnaire shows "not yet connected for submission" and the answers are
+  lost when the tab closes. Either deploy the service below, or route Stage 2
+  submissions through the existing Make.com webhook the way Stage 1 does — that
+  decision has not been made.
+- **Apply the migration and deploy the edge function.** Neither has been run.
+- **Turn the token gate on** (`VITE_QUESTIONNAIRE_REQUIRE_TOKEN="true"`) once
+  links are being issued. Until then the page is open to anyone with the URL —
+  it is unlisted, but unlisted is not access control.
 - **Set `READINESS_ADMIN_SECRET`** in the function's environment.
 - **Issue links from Stage 1.** The Make.com scenario (or `capture-lead`) must
   call the `issue` action after a Priority Access Application and put the

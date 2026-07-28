@@ -92,8 +92,58 @@ export type CompleteResult = {
   applicationId?: string;
   completedAt?: string;
   responseVersion?: number;
-  reason?: "unauthorised" | "already_completed" | "invalid" | "unavailable";
+  reason?: "unauthorised" | "already_completed" | "invalid" | "unavailable" | "not_configured";
 };
+
+/**
+ * Whether a valid questionnaire token is required to see the form.
+ *
+ * OFF by default. Link issuance (Stage 1 → `issue` → welcome email) does not
+ * exist yet, so requiring a token would lock every visitor — including Aurixa —
+ * out of a page nothing can currently produce a link for.
+ *
+ * Set `VITE_QUESTIONNAIRE_REQUIRE_TOKEN="true"` once tokens are being issued.
+ * The secure path below is unchanged and takes over the moment it is set: a
+ * supplied token is still exchanged for a session, prefill and draft even while
+ * this is off.
+ */
+export const requiresSecureToken = () =>
+  (import.meta.env.VITE_QUESTIONNAIRE_REQUIRE_TOKEN as string | undefined) === "true";
+
+/**
+ * Open access, used while the token gate is off. There is no session, so there
+ * is nothing to autosave against and no verified Stage 1 details to prefill —
+ * the page states both plainly rather than implying persistence it does not
+ * have.
+ */
+export function openAccessSession(): ReadinessSession {
+  return {
+    sessionToken: "",
+    applicationId: "",
+    questionnaireVersion: QUESTIONNAIRE_VERSION,
+    responseVersion: 1,
+    status: "not_started",
+    startedAt: null,
+    lastSavedAt: null,
+    completedAt: null,
+    expiresAt: null,
+    prefill: {
+      applicationId: "",
+      firstName: "",
+      lastName: "",
+      workEmail: "",
+      organisationName: "",
+      role: "",
+      organisationType: "",
+      annualVolume: "",
+    },
+    answers: {},
+  };
+}
+
+/** True once the session is backed by a verified token (prefill, autosave, resume). */
+export const isAuthorisedSession = (session: ReadinessSession | null) =>
+  Boolean(session?.sessionToken);
 
 /**
  * Development-only preview. Guarded by `import.meta.env.DEV`, which Vite
@@ -202,6 +252,9 @@ export async function saveQuestionnaireDraft(input: {
   responseVersion: number;
   answers: StoredAnswer[];
 }): Promise<SaveResult> {
+  // Open access: no session to save against. Answers stay in the page.
+  if (!input.sessionToken) return { ok: false, reason: "unavailable" };
+
   if (isPreviewAvailable() && input.sessionToken === PREVIEW_SESSION.sessionToken) {
     return {
       ok: true,
@@ -247,6 +300,11 @@ export async function completeQuestionnaire(input: {
   answers: StoredAnswer[];
   activeConditionalQuestionIds: string[];
 }): Promise<CompleteResult> {
+  // Open access: there is no authorised session and no issuance flow behind it,
+  // so there is nothing to submit to. Say so rather than showing a completion
+  // screen for a submission that was never received.
+  if (!input.sessionToken) return { ok: false, reason: "not_configured" };
+
   if (isPreviewAvailable() && input.sessionToken === PREVIEW_SESSION.sessionToken) {
     return {
       ok: true,
