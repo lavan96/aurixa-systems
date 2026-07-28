@@ -13,12 +13,15 @@ import {
   Sparkles,
   Users,
   Wrench,
+  X,
   Zap,
 } from "lucide-react";
 import { featuresForTier, type TierFeatures } from "../lib/pricing/tierFeatures";
 import {
   ANNUAL_DISCOUNT,
+  acknowledgePlanChange,
   fetchCatalog,
+  fetchPlanChange,
   gstComponentCents,
   packDiscountFraction,
   packPerCreditCents,
@@ -26,6 +29,7 @@ import {
   packValidityDays,
   planAnnualCents,
   planBaseCents,
+  planMonthlyCredits,
   resolveHandoff,
   resolveIdentity,
   smallestPack,
@@ -35,6 +39,7 @@ import {
   type CatalogPack,
   type CheckoutMode,
   type Credential,
+  type PlanChange,
   type ResolvedHandoff,
   type ResolvedIdentity,
 } from "../lib/billing";
@@ -317,6 +322,35 @@ export default function Pricing() {
       : null;
   const purchaser = handoff ?? identity ?? null;
   const resolvingLink = (!!h && handoff === undefined) || (!h && !!uid && identity === undefined);
+
+  // A plan change the workspace has not been told about yet — announced once,
+  // then acknowledged so it never returns. Deliberately not derived from
+  // `currentPlanSlug`: state can say which plan you are on, never whether you
+  // have been told you moved to it.
+  const [planChange, setPlanChange] = useState<PlanChange | null>(null);
+  const credentialKey = credential ? JSON.stringify(credential) : null;
+  useEffect(() => {
+    if (!credentialKey) return;
+    let cancelled = false;
+    void fetchPlanChange(JSON.parse(credentialKey) as Credential).then(
+      (c) => !cancelled && setPlanChange(c),
+    );
+    return () => {
+      cancelled = true;
+    };
+    // Keyed on the serialised credential: the object is rebuilt every render,
+    // so depending on it directly would refetch in a loop.
+  }, [credentialKey]);
+
+  const dismissPlanChange = useCallback(() => {
+    if (!planChange) return;
+    // Optimistic: the notice goes now, and the acknowledgement follows. Worst
+    // case it reappears on the next visit, which is far better than a banner
+    // that hangs about while a request is in flight.
+    const id = planChange.id;
+    setPlanChange(null);
+    void acknowledgePlanChange(id, credentialKey ? (JSON.parse(credentialKey) as Credential) : null);
+  }, [planChange, credentialKey]);
   const purchaserName = purchaser?.originUsername ?? usernameHint;
   // The plan this workspace already pays for, so a card can say Upgrade or
   // Downgrade instead of offering "Get started" to an existing customer.
@@ -536,6 +570,9 @@ export default function Pricing() {
               </p>
             </div>
           )}
+          {planChange && (
+            <PlanChangeNotice change={planChange} onDismiss={dismissPlanChange} />
+          )}
           {h && handoff === null && (
             <div className="pricing-reveal-up mx-auto mt-8 max-w-xl rounded-md border border-[#C89B3C]/40 bg-[#0B162C] px-6 py-3 text-sm text-[#94A3B8]">
               This purchase link has expired. Head back to your dashboard and start the purchase
@@ -644,6 +681,7 @@ export default function Pricing() {
                         ? `${meta.seat_min}\u2013${meta.seat_max} seats`
                         : `${p.seat_limit} seats included`
                   }
+                  monthlyCredits={planMonthlyCredits(p)}
                   features={tierFeatures}
                   customPricing={isEnterprise}
                   contactHref="/contact"
@@ -984,6 +1022,7 @@ function PlanCard({
   showRange,
   ribbon,
   seats,
+  monthlyCredits,
   features,
   customPricing,
   contactHref,
@@ -1018,6 +1057,8 @@ function PlanCard({
    * list titles every tier that way — so this is the stated alternative.
    */
   withoutComplianceCents?: number | null;
+  /** Report credits the plan includes each month, or null if it includes none. */
+  monthlyCredits?: number | null;
   /** Module breakdown from the price list. Falls back to `highlights`. */
   features?: TierFeatures;
   /** Quoted rather than listed — show a call to action, not a number. */
@@ -1144,6 +1185,49 @@ function PlanCard({
       <div className="mt-6 rounded-lg border border-white/10 bg-[#040B16]/40 px-4 py-2.5 font-mono text-[11px] tracking-wider text-white/80">
         {seats}
       </div>
+
+      {/* The included credits, given a treatment of their own rather than a
+          line in the feature list.
+          This is the one number on the card that is not money and not a seat
+          count, and it is what the subscription is actually metered in — every
+          report, comparison and scenario spends it. Buried among thirty
+          features it reads as one more tick; set apart, it answers "how much
+          can I actually do on this plan" at a glance. */}
+      {monthlyCredits != null && (
+        <div
+          className={`relative mt-3 overflow-hidden rounded-lg border px-4 py-3 ${
+            premium
+              ? "border-[#C89B3C]/45 bg-[#C89B3C]/[0.07]"
+              : featured
+                ? "border-[#00A8B5]/45 bg-[#00A8B5]/[0.07]"
+                : "border-[#00A8B5]/25 bg-[#00A8B5]/[0.04]"
+          }`}
+        >
+          <div className="flex items-baseline gap-2">
+            <Zap
+              className={`h-3.5 w-3.5 shrink-0 self-center ${
+                premium ? "text-[#E9C877]" : "text-[#5EDDE8]"
+              }`}
+              aria-hidden="true"
+            />
+            <span
+              className={`text-xl font-semibold tracking-tight ${
+                premium ? "text-[#F2DFA8]" : "text-white"
+              }`}
+            >
+              {monthlyCredits.toLocaleString()}
+            </span>
+            <span className="font-display text-sm italic text-[#94A3B8]">credits included</span>
+          </div>
+          {/* Every month on either billing period — an annual plan bills a year
+              up front but credits arrive monthly, because they lapse in 30
+              days and a year of them handed over at once would expire unused.
+              Saying "every month" on the annual toggle is the honest version. */}
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#94A3B8]/70">
+            Every month · renews with your plan
+          </p>
+        </div>
+      )}
 
       {features ? (
         <div className="mt-7 flex-1 space-y-5">
@@ -1459,6 +1543,96 @@ function PackCard({
         }}
       />
     </Tag>
+  );
+}
+
+/**
+ * "Your plan changed, and here is what landed in your balance." Once.
+ *
+ * Shown at the top of the page after a plan change, because that is where the
+ * change was made and where the customer returns from Stripe. It states three
+ * things and nothing else: which plan they are on now, how many credits were
+ * added, and when those credits lapse — the last because credits expire in 30
+ * days and an allowance nobody knew arrived is an allowance nobody spends.
+ *
+ * Dismissing it is what retires it, not loading it. A notice acknowledged on
+ * fetch would be lost by any render that failed, and this is the only time
+ * they are told.
+ */
+function PlanChangeNotice({ change, onDismiss }: { change: PlanChange; onDismiss: () => void }) {
+  const upgraded = change.creditsGranted > 0;
+  return (
+    <div
+      role="status"
+      className="pricing-reveal-up mx-auto mt-8 max-w-2xl overflow-hidden rounded-2xl border border-[#00A8B5]/45 bg-gradient-to-br from-[#00A8B5]/[0.14] via-[#0B162C]/85 to-[#0B162C]/50 text-left shadow-[0_36px_90px_-32px] shadow-[#00A8B5]/45 backdrop-blur-xl"
+      style={{ animationDelay: "300ms" }}
+    >
+      <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-[#00A8B5] to-transparent" />
+      <div className="flex items-start gap-4 p-6">
+        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00A8B5]/15 text-[#5EDDE8] ring-1 ring-[#00A8B5]/35">
+          <Check className="h-5 w-5" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#5EDDE8]">
+            Plan updated
+          </p>
+          <p className="mt-2 text-lg font-semibold tracking-tight text-white">
+            {change.fromPlanName ? (
+              <>
+                You moved from {change.fromPlanName} to{" "}
+                <span className="text-[#5EDDE8]">{change.toPlanName}</span>.
+              </>
+            ) : (
+              <>
+                You are now on <span className="text-[#5EDDE8]">{change.toPlanName}</span>.
+              </>
+            )}
+          </p>
+
+          {/* The number that matters, given its own line rather than buried in
+              a sentence. Zero is possible and honest: changing plan twice in
+              one month grants the allowance once. */}
+          <p className="mt-3 text-sm leading-relaxed text-[#94A3B8]">
+            {upgraded ? (
+              <>
+                <span className="font-semibold text-white">
+                  {change.creditsGranted.toLocaleString()} credits
+                </span>{" "}
+                have been added to your balance
+                {change.creditsExpireAt && (
+                  <>
+                    {" "}
+                    and stay spendable until{" "}
+                    <span className="text-white">
+                      {new Date(change.creditsExpireAt).toLocaleDateString("en-AU", {
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </span>
+                  </>
+                )}
+                . Your allowance renews with your plan each month.
+              </>
+            ) : (
+              <>
+                This month&rsquo;s allowance was already credited, so no further credits were
+                added. Your next allowance arrives when your plan renews.
+              </>
+            )}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss plan update"
+          className="-mr-1 -mt-1 shrink-0 rounded-md p-2 text-[#94A3B8] transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5EDDE8]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
   );
 }
 
