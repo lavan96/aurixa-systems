@@ -419,6 +419,8 @@ export const READINESS_COPY = {
     "Help us understand your organisation's current systems, operational requirements and implementation priorities so we can identify the most relevant Aurixa pathway.",
   timeEstimate: "Approximately 6-8 minutes",
   saveMessage: "Your progress is saved as you continue.",
+  /** Used while there is no authorised session to save against. */
+  saveMessageLocal: "Your answers are kept as you move between sections.",
   confidentiality:
     "Please do not include client identification documents, financial records or confidential client information.",
   requiredNote: "Required questions are marked *",
@@ -474,10 +476,14 @@ export const READINESS_COPY = {
     saved: "Saved",
     failed: "Save failed - retrying",
     idle: "Your progress is saved as you continue.",
+    /** No authorised session: answers live in the page only, and we say so. */
+    local: "Your answers are kept in this browser until you submit.",
   },
 
   submissionError:
     "We could not submit your readiness profile just now. Please try again - your answers have been kept.",
+  submissionNotConfigured:
+    "This questionnaire is not yet connected for submission. Your answers have been kept on screen - please contact Aurixa to complete your readiness profile.",
   validationSummary:
     "Some answers need attention before you can continue. Please review the questions marked below.",
 } as const;
