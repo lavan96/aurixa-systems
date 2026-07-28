@@ -122,6 +122,14 @@ export const WAITLIST_COPY = {
 } as const;
 
 /**
+ * Vite replaces `import.meta.env` with the resolved env object at build time.
+ * Reading it once through this constant keeps the module importable outside a
+ * Vite pipeline (the Node test runner), where `import.meta.env` is undefined.
+ */
+const viteEnv: Record<string, string | undefined> =
+  (import.meta.env as Record<string, string | undefined>) ?? {};
+
+/**
  * Section 3.3 / section 20 — the intake badge is administration-controlled and
  * expires to a safe default so stale campaign wording cannot linger on the site.
  *
@@ -141,11 +149,11 @@ const INTAKE_BADGES: Record<string, string> = {
 const DEFAULT_INTAKE_BADGE = INTAKE_BADGES.under_review;
 
 export function resolveIntakeBadge(now: Date = new Date()): string {
-  const selected = import.meta.env.VITE_INTAKE_BADGE;
+  const selected = viteEnv.VITE_INTAKE_BADGE;
   const badge = selected ? INTAKE_BADGES[selected] : undefined;
   if (!badge) return DEFAULT_INTAKE_BADGE;
 
-  const expiry = import.meta.env.VITE_INTAKE_BADGE_EXPIRES;
+  const expiry = viteEnv.VITE_INTAKE_BADGE_EXPIRES;
   if (expiry) {
     const expiresAt = new Date(expiry);
     if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
@@ -157,9 +165,9 @@ export function resolveIntakeBadge(now: Date = new Date()): string {
 }
 
 /** Stage 2 link is only offered once the readiness questionnaire is live. */
-export const READINESS_QUESTIONNAIRE_URL = import.meta.env.VITE_READINESS_QUESTIONNAIRE_URL ?? "";
+export const READINESS_QUESTIONNAIRE_URL = viteEnv.VITE_READINESS_QUESTIONNAIRE_URL ?? "";
 
-export const PRIVACY_POLICY_URL = import.meta.env.VITE_PRIVACY_POLICY_URL ?? "";
+export const PRIVACY_POLICY_URL = viteEnv.VITE_PRIVACY_POLICY_URL ?? "";
 
 // ── Normalisation ───────────────────────────────────────────────────────────
 

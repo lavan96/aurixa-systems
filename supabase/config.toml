@@ -12,3 +12,9 @@ verify_jwt = false
 
 [functions.storefront-wallet]
 verify_jwt = false
+
+# Stage 2 readiness questionnaire. Public entry point: authorisation is carried
+# by the questionnaire token, not a Supabase JWT. The admin-only `issue` action
+# is guarded by the READINESS_ADMIN_SECRET header check inside the function.
+[functions.readiness-questionnaire]
+verify_jwt = false

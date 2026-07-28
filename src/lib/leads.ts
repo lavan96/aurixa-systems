@@ -25,7 +25,7 @@ export const MISSION_CONTROL_LEAD_CAPTURE_URL = `${MISSION_CONTROL_URL}/api/publ
 // Aurixa Systems owns leads: they land in this site's own backend (Supabase
 // capture-lead function). We ALSO keep mirroring to Mission Control so the
 // operator /leads console + realtime notifications are unaffected.
-const STOREFRONT_BASE = (() => {
+export const STOREFRONT_BASE = (() => {
   const explicit = import.meta.env.VITE_STOREFRONT_API_URL as string | undefined;
   if (explicit) return explicit.replace(/\/+$/, "");
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
