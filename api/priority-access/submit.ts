@@ -26,9 +26,9 @@ import {
   cleanEmailValue,
   EMPTY_WAITLIST_FORM,
   type WaitlistFormValues,
-} from "../../src/lib/waitlist";
-import { isSameOrigin, isSecureContext, readJsonBody, sendJson, type ApiRequest, type ApiResponse } from "../_lib/http";
-import { sealSession, serialiseSessionCookie } from "../_lib/session";
+} from "../../src/lib/waitlist.js";
+import { isSameOrigin, isSecureContext, readJsonBody, sendJson, type ApiRequest, type ApiResponse } from "../_lib/http.js";
+import { sealSession, serialiseSessionCookie } from "../_lib/session.js";
 
 /** The existing Stage 1 scenario. Overridable by env; default is unchanged. */
 const MAKE_WAITLIST_WEBHOOK_URL =
