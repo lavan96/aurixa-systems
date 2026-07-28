@@ -20,6 +20,8 @@ import {
   ANNUAL_DISCOUNT,
   fetchCatalog,
   gstComponentCents,
+  packDiscountFraction,
+  packPerCreditCents,
   packValidityDays,
   planAnnualCents,
   planBaseCents,
@@ -28,6 +30,7 @@ import {
   startCardSetup,
   startCheckout,
   type Catalog,
+  type CatalogPack,
   type CheckoutMode,
   type Credential,
   type ResolvedHandoff,
@@ -110,8 +113,16 @@ const FAQ_GROUPS: FaqGroup[] = [
       {
         q: "What if I run out of credits mid-month?",
         a: [
-          "Buy a top-up pack and keep going — packs are available in several sizes and credit your balance immediately, without changing your plan or your billing date.",
+          "Buy a top-up pack and keep going — packs run from 250 credits up to 15,000 and credit your balance immediately, without changing your plan or your billing date.",
+          "Bigger packs cost less per credit: the largest works out around 43% cheaper per credit than the smallest, and every card above shows its own rate so you can compare them directly rather than by dividing prices yourself.",
           "Top-up credits follow the same 30-day rule as everything else, and because spend always takes the soonest-to-expire credit first, a top-up does not push your existing balance closer to lapsing.",
+        ],
+      },
+      {
+        q: "Which top-up pack should I buy?",
+        a: [
+          "Work backwards from the report you need. The Report economics table lists what each report type costs, so a month of planned output multiplied by its credit cost is the size you are actually after — the pack labels above say the same thing in words, from an emergency top-up through to high-volume monthly overflow.",
+          "Buying one larger pack is always cheaper per credit than buying the same credits in smaller ones, but credits lapse 30 days after they are issued, so the right pack is the biggest one you will genuinely spend inside a month rather than the biggest one on the page.",
         ],
       },
     ],
@@ -371,7 +382,17 @@ export default function Pricing() {
     const ranked = [...plans].sort((a, b) => a.price_cents - b.price_cents);
     return new Map(ranked.map((p, i) => [p.slug, i]));
   }, [plans]);
-  const packs = catalog?.packs ?? [];
+  // Sorted here rather than trusted from the wire: the ladder only reads as a
+  // ladder in order, and the saving on every card is measured against the
+  // first one.
+  const packs = useMemo(
+    () => [...(catalog?.packs ?? [])].sort((a, b) => a.tokens - b.tokens),
+    [catalog],
+  );
+  const bestDiscount = useMemo(
+    () => packs.reduce((max, p) => Math.max(max, packDiscountFraction(p, packs)), 0),
+    [packs],
+  );
   const setups = catalog?.setups ?? [];
   const addons = catalog?.addons ?? [];
   // The mirror serves report costs with no ORDER BY, so the table rendered in
@@ -662,71 +683,26 @@ export default function Pricing() {
               Top up <span className="font-display italic text-[#C89B3C]">on demand</span>.
             </>
           }
-          description="Generate more reports, scenarios and AI insights with credit packs. Credits stay spendable for 30 days from purchase and carry across billing periods."
+          description="Generate more reports, scenarios and AI insights with credit packs. The bigger the pack, the cheaper the credit — every pack lands in your balance the moment payment clears."
           icon={<Zap className="h-4 w-4" />}
         />
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {packs.slice(0, 8).map((pack, i) => {
-            const meta = pack.metadata ?? {};
-            const popular = !!meta.popular;
-            const isBusy = busyId === pack.id;
-            return (
-              <button
-                key={pack.id}
-                type="button"
-                disabled={isBusy || !canBuy}
-                onClick={() => canBuy && void buy("topup", pack.id)}
-                className={`group relative overflow-hidden rounded-2xl border bg-[#0B162C]/40 p-6 text-left backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 hover:border-[#00A8B5]/50 hover:bg-[#0B162C]/70 hover:shadow-[0_30px_80px_-30px] hover:shadow-[#00A8B5]/40 disabled:cursor-default ${
-                  popular ? "border-[#C89B3C]/60" : "border-white/10"
-                } ${isBusy ? "cursor-wait opacity-70" : ""}`}
-              >
-                <CornerTicks />
-                {popular && (
-                  <span className="absolute right-4 top-4 rounded-sm bg-[#C89B3C] px-2 py-0.5 font-mono text-[9px] font-black uppercase tracking-wider text-[#040B16]">
-                    Popular
-                  </span>
-                )}
-                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-[#94A3B8]">
-                  <span>{pack.name}</span>
-                  <span className="text-white/30">{String(i + 1).padStart(2, "0")}</span>
-                </div>
-                <div className="mt-5 flex items-baseline gap-1.5">
-                  <span className="bg-gradient-to-br from-white via-white to-[#5EDDE8] bg-clip-text text-4xl font-semibold tracking-tight text-transparent">
-                    {pack.tokens.toLocaleString()}
-                  </span>
-                  <span className="font-display text-base italic text-[#94A3B8]">credits</span>
-                </div>
-                <div className="mt-1.5 font-mono text-xs text-[#94A3B8]">
-                  {aud(pack.price_cents)} AUD
-                </div>
-                {/* The term is part of what is being bought, so it belongs on
-                    the card rather than only in the FAQ. Read from the pack
-                    itself: a pack with a shorter window advertises that window,
-                    not the 30-day platform default. */}
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
-                  Valid {packValidityDays(pack)} days
-                </div>
-                {meta.best_for && (
-                  <p className="mt-5 text-xs leading-relaxed text-[#94A3B8]">{meta.best_for}</p>
-                )}
-                <div className="mt-6 flex items-center font-mono text-[10px] uppercase tracking-[0.25em] text-[#00A8B5] opacity-0 transition-opacity group-hover:opacity-100">
-                  {isBusy ? (
-                    <>
-                      <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> Starting…
-                    </>
-                  ) : canBuy ? (
-                    <>
-                      Purchase <ArrowRight className="ml-1.5 h-3 w-3" />
-                    </>
-                  ) : (
-                    <>Purchase from your dashboard</>
-                  )}
-                </div>
-                <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(0,168,181,0.12),transparent_60%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-              </button>
-            );
-          })}
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {packs.map((pack) => (
+            <PackCard
+              key={pack.id}
+              pack={pack}
+              perCredit={packPerCreditCents(pack)}
+              discount={packDiscountFraction(pack, packs)}
+              bestDiscount={bestDiscount}
+              busy={busyId === pack.id}
+              buyable={canBuy}
+              onBuy={() => void buy("topup", pack.id)}
+            />
+          ))}
         </div>
+        <p className="mt-8 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-[#94A3B8]">
+          All prices in AUD · incl. GST · Savings measured per credit against the smallest pack
+        </p>
       </section>
 
       {/* Modules / setup / reports */}
@@ -1252,6 +1228,191 @@ function PlanCard({
  * without any of the figures being present in the DOM: the data never reaches
  * the browser at all, because the server does not send it.
  */
+/**
+ * One rung of the top-up ladder.
+ *
+ * The ladder's whole argument is that a credit gets cheaper as the pack gets
+ * bigger, and a grid of eight prices does not make that argument on its own —
+ * $713.90 next to $20.90 reads as expensive unless the per-credit rate is
+ * right there beside it. So the rate and the saving against the smallest pack
+ * are given equal billing with the price, and the rail underneath plots this
+ * pack's saving against the best one available, so the curve is visible at a
+ * glance rather than something to work out from eight cards.
+ */
+function PackCard({
+  pack,
+  perCredit,
+  discount,
+  bestDiscount,
+  busy,
+  buyable,
+  onBuy,
+}: {
+  // No @types/react in this repo, so JSX doesn't strip `key` from props.
+  key?: string;
+  pack: CatalogPack;
+  /** Cents per credit, unrounded — displayed to two decimals. */
+  perCredit: number;
+  /** Cheaper per credit than the smallest pack, as a fraction. */
+  discount: number;
+  /** The deepest saving on offer, so the rail has a full scale. */
+  bestDiscount: number;
+  busy: boolean;
+  buyable: boolean;
+  onBuy: () => void;
+}) {
+  const meta = pack.metadata ?? {};
+  const popular = !!meta.popular;
+  const bestValue = !!meta.best_value;
+  const accent = bestValue ? "#C89B3C" : "#00A8B5";
+  // Below a tenth of a percent there is nothing to claim — that is the
+  // baseline pack, and "−0.0%" would be worse than saying nothing.
+  const saving = discount >= 0.001 ? `−${(discount * 100).toFixed(1)}%` : null;
+  // Always leave a sliver showing, so the baseline pack reads as the start of
+  // a scale rather than as a missing bar.
+  const fill = bestDiscount > 0 ? Math.max(0.04, discount / bestDiscount) : 0.04;
+  const gst = gstComponentCents(pack.price_cents);
+
+  return (
+    <button
+      type="button"
+      disabled={busy || !buyable}
+      onClick={() => buyable && onBuy()}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border p-6 text-left backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 disabled:cursor-default ${
+        bestValue
+          ? "border-[#C89B3C]/55 bg-gradient-to-br from-[#C89B3C]/[0.12] via-[#131019]/80 to-[#0B162C]/45 shadow-[0_36px_90px_-32px] shadow-[#C89B3C]/45 hover:border-[#C89B3C]/80"
+          : popular
+            ? "border-[#00A8B5]/55 bg-gradient-to-br from-[#00A8B5]/[0.12] via-[#0B162C]/80 to-[#0B162C]/45 shadow-[0_36px_90px_-32px] shadow-[#00A8B5]/45 hover:border-[#00A8B5]/80"
+            : "border-white/10 bg-[#0B162C]/40 hover:border-[#00A8B5]/45 hover:bg-[#0B162C]/70 hover:shadow-[0_30px_80px_-30px] hover:shadow-[#00A8B5]/35"
+      } ${busy ? "cursor-wait opacity-70" : ""}`}
+    >
+      <CornerTicks />
+      {(bestValue || popular) && (
+        <div
+          className="absolute inset-x-0 -top-px h-px"
+          style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
+        />
+      )}
+      {bestValue && (
+        <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[#C89B3C]/20 blur-3xl" />
+      )}
+
+      {/* Fixed height so a badged card is not taller than an unbadged one —
+          otherwise the whole grid row it sits in grows with it. */}
+      <div className="flex min-h-[1.375rem] items-center justify-between">
+        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/30">
+          {String(meta.stage ?? 0).padStart(2, "0")}
+        </span>
+        {bestValue ? (
+          <span className="rounded-sm bg-gradient-to-r from-[#C89B3C] to-[#E9C877] px-2 py-0.5 font-mono text-[9px] font-black uppercase tracking-[0.2em] text-[#1A1206]">
+            Best value
+          </span>
+        ) : popular ? (
+          <span className="rounded-sm bg-gradient-to-r from-[#00A8B5] to-[#5EDDE8] px-2 py-0.5 font-mono text-[9px] font-black uppercase tracking-[0.2em] text-[#040B16]">
+            Most popular
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-5 flex items-baseline gap-1.5">
+        <span
+          className={`bg-clip-text text-4xl font-semibold tracking-tight text-transparent ${
+            bestValue
+              ? "bg-gradient-to-br from-white via-[#F2DFA8] to-[#C89B3C]"
+              : "bg-gradient-to-br from-white via-white to-[#5EDDE8]"
+          }`}
+        >
+          {pack.tokens.toLocaleString()}
+        </span>
+        <span className="font-display text-base italic text-[#94A3B8]">credits</span>
+      </div>
+
+      <div className="mt-3 text-2xl font-semibold tracking-tight text-white">
+        {aud(pack.price_cents)}
+      </div>
+      <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#94A3B8]/70">
+        Incl. {aud(gst)} GST
+      </div>
+
+      {/* The unit that actually compares one pack to another. */}
+      <div className="mt-5 rounded-lg border border-white/10 bg-[#040B16]/40 px-3 py-2.5">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="font-mono text-xs text-white">
+            {(Math.round(perCredit * 100) / 100).toFixed(2)}c
+            <span className="ml-1 text-[10px] text-[#94A3B8]">/ credit</span>
+          </span>
+          {saving && (
+            <span
+              className="font-mono text-[11px] font-bold"
+              style={{ color: bestValue ? "#E9C877" : "#5EDDE8" }}
+            >
+              {saving}
+            </span>
+          )}
+        </div>
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{
+              width: `${fill * 100}%`,
+              background: bestValue
+                ? "linear-gradient(90deg, #C89B3C, #E9C877)"
+                : "linear-gradient(90deg, #00A8B5, #5EDDE8)",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Rendered on every card, including the two whose badge says much the
+          same thing. Skipping it there reads as a hole in exactly the cards
+          that should look most considered, and the badge and the line are
+          doing different jobs: one flags, the other explains. */}
+      {meta.best_for && (
+        <p className="mt-4 text-xs leading-relaxed text-[#94A3B8]">{meta.best_for}</p>
+      )}
+
+      {/* Stacked rather than side by side: at four columns "From your
+          dashboard" and the validity term wrap into each other. The term is
+          part of what is being bought, so it belongs on the card rather than
+          only in the FAQ — and it is read from the pack itself, so a pack with
+          a shorter window advertises that window, not the 30-day default. */}
+      <div className="mt-auto pt-6">
+        <div className="space-y-2 border-t border-white/[0.07] pt-4">
+          <span className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+            Valid {packValidityDays(pack)} days
+          </span>
+          <span
+            className="flex items-center font-mono text-[10px] uppercase tracking-[0.25em] opacity-80 transition-opacity group-hover:opacity-100"
+            style={{ color: buyable ? accent : undefined }}
+          >
+            {busy ? (
+              <>
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> Starting…
+              </>
+            ) : buyable ? (
+              <>
+                Purchase{" "}
+                <ArrowRight className="ml-1.5 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </>
+            ) : (
+              <span className="text-[#94A3B8]/55">From your dashboard</span>
+            )}
+          </span>
+        </div>
+      </div>
+
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+        style={{
+          background: bestValue
+            ? "radial-gradient(circle at 50% 0%, rgba(200,155,60,0.14), transparent 60%)"
+            : "radial-gradient(circle at 50% 0%, rgba(0,168,181,0.12), transparent 60%)",
+        }}
+      />
+    </button>
+  );
+}
+
 function RestrictedGate({ loading }: { loading: boolean }) {
   return (
     <div className="relative mt-14 overflow-hidden rounded-2xl border border-white/10 bg-[#0B162C]/40 backdrop-blur-xl">
