@@ -119,6 +119,11 @@ const MODULE_CATEGORIES = [
         highlight: true
       },
       {
+        name: "Finance Portal",
+        icon: DollarSign,
+        description: "Connect Buyers’ Agents, Finance Partners and Clients through one streamlined finance journey, enabling faster information sharing, real-time progress visibility and smoother collaboration from enquiry through to approval."
+      },
+      {
         name: "Portfolio Service Hub",
         icon: Briefcase,
         description: "Coordinates portfolio reporting and client requests with clear visibility over progress and next actions."
