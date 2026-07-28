@@ -22,11 +22,13 @@ import {
   gstComponentCents,
   packDiscountFraction,
   packPerCreditCents,
+  packSavingCents,
   packValidityDays,
   planAnnualCents,
   planBaseCents,
   resolveHandoff,
   resolveIdentity,
+  smallestPack,
   startCardSetup,
   startCheckout,
   type Catalog,
@@ -393,6 +395,9 @@ export default function Pricing() {
     () => packs.reduce((max, p) => Math.max(max, packDiscountFraction(p, packs)), 0),
     [packs],
   );
+  // Named on the cards, so the saving always says which size it is measured
+  // against rather than assuming the ladder still starts at 250.
+  const baselineCredits = smallestPack(packs)?.tokens ?? 0;
   const setups = catalog?.setups ?? [];
   const addons = catalog?.addons ?? [];
   // The mirror serves report costs with no ORDER BY, so the table rendered in
@@ -687,12 +692,15 @@ export default function Pricing() {
           icon={<Zap className="h-4 w-4" />}
         />
         <div className="mt-14 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {packs.map((pack) => (
+          {packs.map((pack, i) => (
             <PackCard
               key={pack.id}
               pack={pack}
+              rank={i + 1}
               perCredit={packPerCreditCents(pack)}
               discount={packDiscountFraction(pack, packs)}
+              savingCents={packSavingCents(pack, packs)}
+              baselineCredits={baselineCredits}
               bestDiscount={bestDiscount}
               busy={busyId === pack.id}
               buyable={canBuy}
@@ -1243,7 +1251,10 @@ function PackCard({
   pack,
   perCredit,
   discount,
+  savingCents,
+  baselineCredits,
   bestDiscount,
+  rank,
   busy,
   buyable,
   onBuy,
@@ -1255,8 +1266,14 @@ function PackCard({
   perCredit: number;
   /** Cheaper per credit than the smallest pack, as a fraction. */
   discount: number;
+  /** The same saving in money, against buying these credits in smallest packs. */
+  savingCents: number;
+  /** Credits in the smallest pack — the size the saving is measured against. */
+  baselineCredits: number;
   /** The deepest saving on offer, so the rail has a full scale. */
   bestDiscount: number;
+  /** Position in the ladder, used when the catalog row carries no stage. */
+  rank: number;
   busy: boolean;
   buyable: boolean;
   onBuy: () => void;
@@ -1272,13 +1289,30 @@ function PackCard({
   // a scale rather than as a missing bar.
   const fill = bestDiscount > 0 ? Math.max(0.04, discount / bestDiscount) : 0.04;
   const gst = gstComponentCents(pack.price_cents);
+  const credits = pack.tokens.toLocaleString();
+
+  // A disabled <button> is skipped by keyboard and announced as unavailable,
+  // which is wrong here: browse-only visitors are meant to READ these cards,
+  // they just cannot buy from this page. So the card is only a control when it
+  // can actually do something.
+  const Tag = buyable ? "button" : "div";
+  const interactive = buyable
+    ? {
+        type: "button" as const,
+        disabled: busy,
+        onClick: onBuy,
+        "aria-label": `Buy ${credits} credits for ${aud(pack.price_cents)} including GST${
+          saving ? `, ${(discount * 100).toFixed(1)}% cheaper per credit than the smallest pack` : ""
+        }`,
+      }
+    : {};
 
   return (
-    <button
-      type="button"
-      disabled={busy || !buyable}
-      onClick={() => buyable && onBuy()}
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border p-6 text-left backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 disabled:cursor-default ${
+    <Tag
+      {...interactive}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border p-6 text-left backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 focus-visible:-translate-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#040B16] disabled:cursor-default ${
+        bestValue ? "focus-visible:ring-[#E9C877]" : "focus-visible:ring-[#5EDDE8]"
+      } ${
         bestValue
           ? "border-[#C89B3C]/55 bg-gradient-to-br from-[#C89B3C]/[0.12] via-[#131019]/80 to-[#0B162C]/45 shadow-[0_36px_90px_-32px] shadow-[#C89B3C]/45 hover:border-[#C89B3C]/80"
           : popular
@@ -1301,7 +1335,7 @@ function PackCard({
           otherwise the whole grid row it sits in grows with it. */}
       <div className="flex min-h-[1.375rem] items-center justify-between">
         <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/30">
-          {String(meta.stage ?? 0).padStart(2, "0")}
+          {String(meta.stage ?? rank).padStart(2, "0")}
         </span>
         {bestValue ? (
           <span className="rounded-sm bg-gradient-to-r from-[#C89B3C] to-[#E9C877] px-2 py-0.5 font-mono text-[9px] font-black uppercase tracking-[0.2em] text-[#1A1206]">
@@ -1322,7 +1356,7 @@ function PackCard({
               : "bg-gradient-to-br from-white via-white to-[#5EDDE8]"
           }`}
         >
-          {pack.tokens.toLocaleString()}
+          {credits}
         </span>
         <span className="font-display text-base italic text-[#94A3B8]">credits</span>
       </div>
@@ -1361,6 +1395,21 @@ function PackCard({
             }}
           />
         </div>
+        {/* The percentage is the honest comparison; this is the one people
+            weigh a purchase against — the same fact, stated in money. The
+            baseline pack gets a line of its own rather than none: it says what
+            the other cards are measured against, and without it this card's
+            copy sits a line higher than every other card in its row. */}
+        <p className="mt-2 text-[11px] leading-snug text-[#94A3B8]">
+          {savingCents > 0 ? (
+            <>
+              <span className="font-semibold text-white">{aud(savingCents)} less</span> than these
+              credits at the {baselineCredits.toLocaleString()}-pack rate
+            </>
+          ) : (
+            <>The rate every larger pack is measured against</>
+          )}
+        </p>
       </div>
 
       {/* Rendered on every card, including the two whose badge says much the
@@ -1409,7 +1458,7 @@ function PackCard({
             : "radial-gradient(circle at 50% 0%, rgba(0,168,181,0.12), transparent 60%)",
         }}
       />
-    </button>
+    </Tag>
   );
 }
 

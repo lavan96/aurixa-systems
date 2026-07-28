@@ -161,6 +161,24 @@ export function packDiscountFraction(
 }
 
 /**
+ * The same saving in money: what these credits would have cost bought at the
+ * smallest pack's rate, less what they cost here.
+ *
+ * A percentage off a per-credit rate is the honest way to compare packs and a
+ * poor way to feel the difference — "43.1% cheaper per credit" and "$540.10
+ * less than buying 15,000 credits 250 at a time" are the same fact, and only
+ * one of them is a number anyone weighs a purchase against.
+ */
+export function packSavingCents(
+  pack: Pick<CatalogPack, "tokens" | "price_cents">,
+  packs: readonly Pick<CatalogPack, "tokens" | "price_cents">[],
+): number {
+  const baseline = smallestPack(packs);
+  if (!baseline) return 0;
+  return Math.round(pack.tokens * (packPerCreditCents(baseline) - packPerCreditCents(pack)));
+}
+
+/**
  * Credits lapse this many days after they are issued — plan allowances,
  * top-up packs and operator-gifted credits alike. Mirrors Mission Control's
  * `TOKEN_EXPIRY_DAYS`, which is where the rule is actually enforced.
