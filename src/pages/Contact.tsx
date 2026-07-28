@@ -1,6 +1,6 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, ShieldAlert, CheckCircle2, Mail } from "lucide-react";
+import { ArrowRight, ShieldAlert, CheckCircle2, ChevronDown, Mail } from "lucide-react";
 import { HeroBackground } from "../components/HeroBackgrounds";
 import { captureLead } from "../lib/leads";
 import { getAttribution } from "../lib/attribution";
@@ -9,7 +9,9 @@ import {
   IMPROVEMENT_AREA_OPTIONS,
   MAX_ADDITIONAL_NOTES,
   MAX_IMPROVEMENT_AREAS,
+  MAX_TECH_STACK_BOTTLENECKS,
   ORGANISATION_TYPE_OPTIONS,
+  Option,
   PRIVACY_POLICY_URL,
   READINESS_QUESTIONNAIRE_URL,
   ROLE_OPTIONS,
@@ -38,6 +40,7 @@ const FIELD_ORDER: WaitlistFieldError[] = [
   "role",
   "organisationType",
   "annualVolume",
+  "currentTechStackBottlenecks",
   "improvementAreas",
   "additionalNotes",
   "privacyAcknowledged",
@@ -102,14 +105,213 @@ function Field({ id, label, required, helper, error, paired, children }: FieldPr
   );
 }
 
-/** Subtle in-form grouping — visual only, still one continuous application. */
-function GroupLabel({ children }: { children: ReactNode }) {
+/**
+ * Accessible listbox used for the three application dropdowns.
+ *
+ * The menu always renders directly beneath its trigger, overlays the content
+ * below instead of pushing it down, and scrolls internally once the list is
+ * taller than its maximum height. The trigger carries the field id so the
+ * existing error-focus logic keeps working, and a hidden input keeps the field
+ * name and value present in the DOM.
+ */
+type DropdownProps = {
+  id: string;
+  name: string;
+  label: string;
+  options: Option[];
+  value: string;
+  placeholder: string;
+  onSelect: (value: string) => void;
+  required?: boolean;
+  helper?: string;
+  error?: string;
+  paired?: boolean;
+};
+
+function Dropdown({
+  id,
+  name,
+  label,
+  options,
+  value,
+  placeholder,
+  onSelect,
+  required,
+  helper,
+  error,
+  paired,
+}: DropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  const selectedIndex = options.findIndex((option) => option.value === value);
+  const selectedLabel = selectedIndex >= 0 ? options[selectedIndex].label : "";
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || activeIndex < 0) return;
+    listRef.current?.children[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [open, activeIndex]);
+
+  const openList = (index: number) => {
+    setActiveIndex(index);
+    setOpen(true);
+  };
+
+  const commit = (index: number) => {
+    const option = options[index];
+    if (!option) return;
+    onSelect(option.value);
+    setOpen(false);
+    setActiveIndex(index);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Tab") {
+      setOpen(false);
+      return;
+    }
+
+    if (!open) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openList(selectedIndex >= 0 ? selectedIndex : 0);
+      }
+      return;
+    }
+
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setActiveIndex((current) => Math.min(current + 1, options.length - 1));
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        setActiveIndex((current) => Math.max(current - 1, 0));
+        break;
+      case "Home":
+        event.preventDefault();
+        setActiveIndex(0);
+        break;
+      case "End":
+        event.preventDefault();
+        setActiveIndex(options.length - 1);
+        break;
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        commit(activeIndex);
+        break;
+      case "Escape":
+        event.preventDefault();
+        setOpen(false);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const describedByIds =
+    [helper ? `${id}-helper` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined;
+
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[#C89B3C]/90 whitespace-nowrap">
-        {children}
-      </span>
-      <span className="h-px flex-1 bg-white/10" aria-hidden="true" />
+    <div className={paired ? "grid gap-y-2 sm:row-span-3 sm:grid-rows-subgrid" : "space-y-2"}>
+      <label htmlFor={id} className={labelClass}>
+        {label}
+        {required && (
+          <span className="text-[#C89B3C] ml-1" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+
+      <div className="relative" ref={containerRef}>
+        <input type="hidden" name={name} value={value} />
+        <button
+          type="button"
+          id={id}
+          role="combobox"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={`${id}-listbox`}
+          aria-activedescendant={open && activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
+          aria-required={required ? "true" : undefined}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedByIds}
+          onClick={() => (open ? setOpen(false) : openList(selectedIndex >= 0 ? selectedIndex : 0))}
+          onKeyDown={handleKeyDown}
+          className={`${controlClass(Boolean(error))} flex items-center justify-between gap-2 text-left`}
+        >
+          <span className={selectedLabel ? "text-white truncate" : "text-gray-500 truncate"}>
+            {selectedLabel || placeholder}
+          </span>
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 text-[#9CA3B8] transition-transform ${open ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
+
+        {open && (
+          <ul
+            id={`${id}-listbox`}
+            ref={listRef}
+            role="listbox"
+            aria-label={label}
+            tabIndex={-1}
+            className="absolute left-0 right-0 top-full z-30 mt-1 max-h-[240px] overflow-y-auto border border-[#00A8B5]/40 bg-[#040B16] shadow-[0_18px_40px_-12px_rgba(0,0,0,0.9)]"
+          >
+            {options.map((option, index) => {
+              const isSelected = option.value === value;
+              return (
+                <li
+                  key={option.value}
+                  id={`${id}-option-${index}`}
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    commit(index);
+                  }}
+                  className={`px-4 py-2.5 text-[13px] font-light cursor-pointer ${
+                    index === activeIndex ? "bg-[#00A8B5]/15 text-white" : "text-[#B6C0D4]"
+                  } ${isSelected ? "border-l-2 border-[#C89B3C]" : "border-l-2 border-transparent"}`}
+                >
+                  {option.label}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="space-y-1">
+        {helper && (
+          <p id={`${id}-helper`} className={helperClass}>
+            {helper}
+          </p>
+        )}
+        {error && (
+          <p id={`${id}-error`} className={errorClass} role="alert">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -305,19 +507,19 @@ export default function Contact() {
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="relative group p-[1px] self-start overflow-hidden rounded-sm bg-gradient-to-br from-[#00A8B5]/20 via-[#C89B3C]/20 to-transparent"
+          className="relative group p-[1px] self-start rounded-sm bg-gradient-to-br from-[#00A8B5]/20 via-[#C89B3C]/20 to-transparent"
         >
-          <div className="absolute inset-0 bg-chrome-prismatic opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-          <div className="bg-[#0B162C]/95 backdrop-blur-2xl p-6 sm:p-8 md:p-12 relative z-10 border border-t-white/10 border-l-white/10">
+          <div className="absolute inset-0 bg-chrome-prismatic opacity-20 group-hover:opacity-40 transition-opacity duration-1000 pointer-events-none" />
+          <div className="bg-[#0B162C]/95 backdrop-blur-2xl p-6 sm:p-8 md:p-10 relative z-10 border border-t-white/10 border-l-white/10">
             {receipt ? (
               <ApplicationReceipt receipt={receipt} onCorrectEmail={handleCorrectEmail} />
             ) : (
               <>
-                <div className="mb-8 pb-6 border-b border-white/10 flex flex-wrap items-start justify-between gap-4">
+                <div className="mb-7 pb-5 border-b border-white/10 flex flex-wrap items-start justify-between gap-4">
                   <div className="max-w-sm">
-                    <h2 className="text-2xl font-display font-light text-white mb-3">{WAITLIST_COPY.heading}</h2>
+                    <h2 className="text-2xl font-display font-light text-white mb-2">{WAITLIST_COPY.heading}</h2>
                     <p className="text-[#B6C0D4] text-[14px] font-light leading-relaxed">{WAITLIST_COPY.supporting}</p>
-                    <p className="text-[#9CA3B8] text-[13px] font-light leading-relaxed mt-3">
+                    <p className="text-[#9CA3B8] text-[12px] font-light leading-relaxed mt-2">
                       {WAITLIST_COPY.timeEstimate} {WAITLIST_COPY.requiredNote}
                     </p>
                   </div>
@@ -326,378 +528,363 @@ export default function Contact() {
                   </div>
                 </div>
 
-                <form className="space-y-8" onSubmit={handleWaitlistSubmit} noValidate>
-                  {/* 01 — Contact details */}
-                  <section className="space-y-5">
-                    <GroupLabel>01 / Contact Details</GroupLabel>
-
-                    <div className={pairedRowClass}>
-                      <Field id="firstName" label="First Name" required error={errors.firstName} paired>
-                        <input
-                          id="firstName"
-                          name="firstName"
-                          type="text"
-                          autoComplete="given-name"
-                          maxLength={60}
-                          value={values.firstName}
-                          onChange={(event) => setValue("firstName", event.target.value)}
-                          aria-required="true"
-                          aria-invalid={Boolean(errors.firstName)}
-                          aria-describedby={describedBy("firstName", false, Boolean(errors.firstName))}
-                          className={controlClass(Boolean(errors.firstName))}
-                        />
-                      </Field>
-                      <Field id="lastName" label="Last Name" required error={errors.lastName} paired>
-                        <input
-                          id="lastName"
-                          name="lastName"
-                          type="text"
-                          autoComplete="family-name"
-                          maxLength={60}
-                          value={values.lastName}
-                          onChange={(event) => setValue("lastName", event.target.value)}
-                          aria-required="true"
-                          aria-invalid={Boolean(errors.lastName)}
-                          aria-describedby={describedBy("lastName", false, Boolean(errors.lastName))}
-                          className={controlClass(Boolean(errors.lastName))}
-                        />
-                      </Field>
-                    </div>
-
-                    <div className={pairedRowClass}>
-                      <Field
-                        id="workEmail"
-                        label="Work Email"
-                        required
-                        helper={WAITLIST_COPY.helper.workEmail}
-                        error={errors.workEmail}
-                        paired
-                      >
-                        <input
-                          id="workEmail"
-                          name="workEmail"
-                          type="email"
-                          autoComplete="email"
-                          maxLength={320}
-                          value={values.workEmail}
-                          onChange={(event) => setValue("workEmail", event.target.value)}
-                          onBlur={(event) => setValue("workEmail", cleanEmailValue(event.target.value))}
-                          aria-required="true"
-                          aria-invalid={Boolean(errors.workEmail)}
-                          aria-describedby={describedBy("workEmail", true, Boolean(errors.workEmail))}
-                          className={controlClass(Boolean(errors.workEmail))}
-                        />
-                      </Field>
-
-                      <Field
-                        id="mobileNumber"
-                        label="Mobile Number (optional)"
-                        helper={WAITLIST_COPY.helper.mobileNumber}
-                        error={errors.mobileNumber}
-                        paired
-                      >
-                        <input
-                          id="mobileNumber"
-                          name="mobileNumber"
-                          type="tel"
-                          autoComplete="tel"
-                          inputMode="tel"
-                          placeholder="0412 345 678"
-                          value={values.mobileNumber}
-                          onChange={(event) => setValue("mobileNumber", event.target.value)}
-                          onBlur={(event) => {
-                            const normalised = normaliseMobileNumber(event.target.value);
-                            if (normalised) setValue("mobileNumber", normalised);
-                          }}
-                          aria-invalid={Boolean(errors.mobileNumber)}
-                          aria-describedby={describedBy("mobileNumber", true, Boolean(errors.mobileNumber))}
-                          className={controlClass(Boolean(errors.mobileNumber))}
-                        />
-                      </Field>
-                    </div>
-                  </section>
-
-                  {/* 02 — Organisation profile */}
-                  <section className="space-y-5">
-                    <GroupLabel>02 / Organisation Profile</GroupLabel>
-
-                    <div className={pairedRowClass}>
-                      <Field
-                        id="organisationName"
-                        label="Organisation Name"
-                        required
-                        error={errors.organisationName}
-                        paired
-                      >
-                        <input
-                          id="organisationName"
-                          name="organisationName"
-                          type="text"
-                          autoComplete="organization"
-                          maxLength={120}
-                          value={values.organisationName}
-                          onChange={(event) => setValue("organisationName", event.target.value)}
-                          aria-required="true"
-                          aria-invalid={Boolean(errors.organisationName)}
-                          aria-describedby={describedBy("organisationName", false, Boolean(errors.organisationName))}
-                          className={controlClass(Boolean(errors.organisationName))}
-                        />
-                      </Field>
-                      <Field id="role" label="Your Role" required error={errors.role} paired>
-                        <select
-                          id="role"
-                          name="role"
-                          value={values.role}
-                          onChange={(event) => setValue("role", event.target.value)}
-                          aria-required="true"
-                          aria-invalid={Boolean(errors.role)}
-                          aria-describedby={describedBy("role", false, Boolean(errors.role))}
-                          className={`${controlClass(Boolean(errors.role))} appearance-none`}
-                        >
-                          <option value="" className="bg-[#040B16]">Select your role...</option>
-                          {ROLE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value} className="bg-[#040B16]">
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-
-                    <div className={pairedRowClass}>
-                      <Field
-                        id="organisationType"
-                        label="Organisation Type"
-                        required
-                        error={errors.organisationType}
-                        paired
-                      >
-                        <select
-                          id="organisationType"
-                          name="organisationType"
-                          value={values.organisationType}
-                          onChange={(event) => setValue("organisationType", event.target.value)}
-                          aria-required="true"
-                          aria-invalid={Boolean(errors.organisationType)}
-                          aria-describedby={describedBy("organisationType", false, Boolean(errors.organisationType))}
-                          className={`${controlClass(Boolean(errors.organisationType))} appearance-none`}
-                        >
-                          <option value="" className="bg-[#040B16]">Select organisation type...</option>
-                          {ORGANISATION_TYPE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value} className="bg-[#040B16]">
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-
-                      <Field
-                        id="annualVolume"
-                        label="Approximate Annual Client or Transaction Volume"
-                        required
-                        helper={WAITLIST_COPY.helper.volume}
-                        error={errors.annualVolume}
-                        paired
-                      >
-                        <select
-                          id="annualVolume"
-                          name="annualVolume"
-                          value={values.annualVolume}
-                          onChange={(event) => setValue("annualVolume", event.target.value)}
-                          aria-required="true"
-                          aria-invalid={Boolean(errors.annualVolume)}
-                          aria-describedby={describedBy("annualVolume", true, Boolean(errors.annualVolume))}
-                          className={`${controlClass(Boolean(errors.annualVolume))} appearance-none`}
-                        >
-                          <option value="" className="bg-[#040B16]">Select volume bracket...</option>
-                          {VOLUME_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value} className="bg-[#040B16]">
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-                  </section>
-
-                  {/* 03 — Operational priorities */}
-                  <section className="space-y-5">
-                    <GroupLabel>03 / Operational Priorities</GroupLabel>
-
-                    <fieldset
-                      className="space-y-3"
-                      aria-required="true"
-                      aria-invalid={Boolean(errors.improvementAreas)}
-                      aria-describedby={describedBy("improvementAreas", true, Boolean(errors.improvementAreas))}
-                    >
-                      <legend className={labelClass}>
-                        What would you most like Aurixa to improve?
-                        <span className="text-[#C89B3C] ml-1" aria-hidden="true">*</span>
-                      </legend>
-                      <p id="improvementAreas-helper" className={helperClass}>
-                        {WAITLIST_COPY.helper.improvementAreas} ({values.improvementAreas.length}/
-                        {MAX_IMPROVEMENT_AREAS} selected)
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                        {IMPROVEMENT_AREA_OPTIONS.map((option, index) => {
-                          const checked = values.improvementAreas.includes(option.value);
-                          const atLimit =
-                            !checked && values.improvementAreas.length >= MAX_IMPROVEMENT_AREAS;
-                          return (
-                            <label
-                              key={option.value}
-                              htmlFor={index === 0 ? "improvementAreas" : `improvementAreas-${option.value}`}
-                              className={`flex h-full items-start gap-2.5 px-3 py-3 min-h-[50px] border text-[13px] font-light leading-snug transition-all focus-within:ring-1 focus-within:ring-[#00A8B5] ${
-                                checked
-                                  ? "border-[#00A8B5]/60 bg-[#00A8B5]/10 text-white cursor-pointer"
-                                  : atLimit
-                                    ? "border-white/10 text-[#6B7689] cursor-not-allowed"
-                                    : "border-white/15 text-[#B6C0D4] hover:border-white/35 cursor-pointer"
-                              }`}
-                            >
-                              <input
-                                id={index === 0 ? "improvementAreas" : `improvementAreas-${option.value}`}
-                                type="checkbox"
-                                name="improvementAreas"
-                                value={option.value}
-                                checked={checked}
-                                disabled={atLimit}
-                                onChange={() => toggleImprovementArea(option.value)}
-                                className="mt-0.5 h-4 w-4 shrink-0 accent-[#00A8B5]"
-                              />
-                              <span>{option.label}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                      {errors.improvementAreas && (
-                        <p id="improvementAreas-error" className={errorClass} role="alert">
-                          {errors.improvementAreas}
-                        </p>
-                      )}
-                    </fieldset>
-
-                    <Field
-                      id="additionalNotes"
-                      label="Anything Else We Should Know? (optional)"
-                      helper={WAITLIST_COPY.helper.additionalNotes}
-                      error={errors.additionalNotes}
-                    >
-                      <textarea
-                        id="additionalNotes"
-                        name="additionalNotes"
-                        rows={3}
-                        maxLength={MAX_ADDITIONAL_NOTES}
-                        value={values.additionalNotes}
-                        onChange={(event) => setValue("additionalNotes", event.target.value)}
-                        aria-invalid={Boolean(errors.additionalNotes)}
-                        aria-describedby={describedBy("additionalNotes", true, Boolean(errors.additionalNotes))}
-                        className={controlClass(Boolean(errors.additionalNotes))}
+                <form className="space-y-5" onSubmit={handleWaitlistSubmit} noValidate>
+                  {/* Row 1 — paired */}
+                  <div className={pairedRowClass}>
+                    <Field id="firstName" label="Directive First Name" required error={errors.firstName} paired>
+                      <input
+                        id="firstName"
+                        name="firstName"
+                        type="text"
+                        autoComplete="given-name"
+                        maxLength={60}
+                        value={values.firstName}
+                        onChange={(event) => setValue("firstName", event.target.value)}
+                        aria-required="true"
+                        aria-invalid={Boolean(errors.firstName)}
+                        aria-describedby={describedBy("firstName", false, Boolean(errors.firstName))}
+                        className={controlClass(Boolean(errors.firstName))}
                       />
-                      <p className="text-[11px] text-[#9CA3B8] font-mono text-right mt-1">
-                        {values.additionalNotes.length}/{MAX_ADDITIONAL_NOTES}
-                      </p>
                     </Field>
-                  </section>
+                    <Field id="lastName" label="Directive Last Name" required error={errors.lastName} paired>
+                      <input
+                        id="lastName"
+                        name="lastName"
+                        type="text"
+                        autoComplete="family-name"
+                        maxLength={60}
+                        value={values.lastName}
+                        onChange={(event) => setValue("lastName", event.target.value)}
+                        aria-required="true"
+                        aria-invalid={Boolean(errors.lastName)}
+                        aria-describedby={describedBy("lastName", false, Boolean(errors.lastName))}
+                        className={controlClass(Boolean(errors.lastName))}
+                      />
+                    </Field>
+                  </div>
 
-                  {/* 04 — Review and submit */}
-                  <section className="space-y-5">
-                    <GroupLabel>04 / Review and Submit</GroupLabel>
+                  {/* Row 2 — full width */}
+                  <Field
+                    id="workEmail"
+                    label="Corporate Email"
+                    required
+                    helper={WAITLIST_COPY.helper.workEmail}
+                    error={errors.workEmail}
+                  >
+                    <input
+                      id="workEmail"
+                      name="workEmail"
+                      type="email"
+                      autoComplete="email"
+                      maxLength={320}
+                      value={values.workEmail}
+                      onChange={(event) => setValue("workEmail", event.target.value)}
+                      onBlur={(event) => setValue("workEmail", cleanEmailValue(event.target.value))}
+                      aria-required="true"
+                      aria-invalid={Boolean(errors.workEmail)}
+                      aria-describedby={describedBy("workEmail", true, Boolean(errors.workEmail))}
+                      className={controlClass(Boolean(errors.workEmail))}
+                    />
+                  </Field>
 
-                    <details className="border border-white/10 bg-[#040B16]/60 px-4 py-3">
-                      <summary className="cursor-pointer text-[11px] uppercase tracking-[0.12em] text-[#C3CCDD] font-bold list-none flex items-center gap-2">
-                        <span className="text-[#C89B3C]" aria-hidden="true">+</span> Collection notice
-                      </summary>
-                      <div className="mt-3 space-y-2 text-[13px] text-[#9CA3B8] font-light leading-relaxed">
-                        <p>
-                          Aurixa Systems Pty Ltd collects the information in this form to assess your
-                          priority-access application, to send you the Business Readiness Questionnaire and to
-                          contact you about the outcome. Providing the information is voluntary, but we cannot
-                          assess an application without it.
-                        </p>
-                        <p>
-                          We may disclose the information to our service providers for hosting, email delivery,
-                          customer relationship management and scheduling. We handle it in accordance with the
-                          Australian Privacy Principles.
-                        </p>
-                        <p>
-                          To access or correct your information, withdraw your application or make a privacy
-                          complaint, contact{" "}
-                          <a className="text-[#C89B3C] hover:underline" href="mailto:privacy@aurixasystems.com.au">
-                            privacy@aurixasystems.com.au
-                          </a>
-                          .
-                        </p>
-                        <p>{WAITLIST_COPY.confidentiality}</p>
-                      </div>
-                    </details>
+                  {/* Row 3 — full width */}
+                  <Field
+                    id="mobileNumber"
+                    label="Mobile Number"
+                    required
+                    helper={WAITLIST_COPY.helper.mobileNumber}
+                    error={errors.mobileNumber}
+                  >
+                    <input
+                      id="mobileNumber"
+                      name="mobileNumber"
+                      type="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      placeholder="04XX XXX XXX"
+                      value={values.mobileNumber}
+                      onChange={(event) => setValue("mobileNumber", event.target.value)}
+                      onBlur={(event) => {
+                        const normalised = normaliseMobileNumber(event.target.value);
+                        if (normalised) setValue("mobileNumber", normalised);
+                      }}
+                      aria-required="true"
+                      aria-invalid={Boolean(errors.mobileNumber)}
+                      aria-describedby={describedBy("mobileNumber", true, Boolean(errors.mobileNumber))}
+                      className={controlClass(Boolean(errors.mobileNumber))}
+                    />
+                  </Field>
 
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="privacyAcknowledged"
-                        className="flex w-full items-start gap-3 text-[13px] text-[#B6C0D4] font-light leading-relaxed cursor-pointer"
-                      >
-                        <input
-                          id="privacyAcknowledged"
-                          name="privacyAcknowledged"
-                          type="checkbox"
-                          checked={values.privacyAcknowledged}
-                          onChange={(event) => setValue("privacyAcknowledged", event.target.checked)}
-                          aria-required="true"
-                          aria-invalid={Boolean(errors.privacyAcknowledged)}
-                          aria-describedby={describedBy("privacyAcknowledged", false, Boolean(errors.privacyAcknowledged))}
-                          className="mt-0.5 h-4 w-4 shrink-0 accent-[#00A8B5]"
-                        />
-                        <span>
-                          {WAITLIST_COPY.privacyAcknowledgement}
-                          <span className="text-[#C89B3C] ml-1" aria-hidden="true">*</span>
-                          {PRIVACY_POLICY_URL && (
-                            <>
-                              {" "}
-                              <a
-                                href={PRIVACY_POLICY_URL}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#C89B3C] hover:underline"
-                              >
-                                Read the Privacy Policy
-                              </a>
-                            </>
-                          )}
-                        </span>
-                      </label>
-                      {errors.privacyAcknowledged && (
-                        <p id="privacyAcknowledged-error" className={errorClass} role="alert">
-                          {errors.privacyAcknowledged}
-                        </p>
+                  {/* Row 4 — paired */}
+                  <div className={pairedRowClass}>
+                    <Field
+                      id="organisationName"
+                      label="Entity Name"
+                      required
+                      error={errors.organisationName}
+                      paired
+                    >
+                      <input
+                        id="organisationName"
+                        name="organisationName"
+                        type="text"
+                        autoComplete="organization"
+                        maxLength={120}
+                        value={values.organisationName}
+                        onChange={(event) => setValue("organisationName", event.target.value)}
+                        aria-required="true"
+                        aria-invalid={Boolean(errors.organisationName)}
+                        aria-describedby={describedBy("organisationName", false, Boolean(errors.organisationName))}
+                        className={controlClass(Boolean(errors.organisationName))}
+                      />
+                    </Field>
+                    <Dropdown
+                      id="role"
+                      name="role"
+                      label="Your Role"
+                      required
+                      paired
+                      placeholder="Select your role..."
+                      options={ROLE_OPTIONS}
+                      value={values.role}
+                      error={errors.role}
+                      onSelect={(value) => setValue("role", value)}
+                    />
+                  </div>
+
+                  {/* Row 5 — paired */}
+                  <div className={pairedRowClass}>
+                    <Dropdown
+                      id="organisationType"
+                      name="organisationType"
+                      label="Entity Classification"
+                      required
+                      paired
+                      placeholder="Select segment..."
+                      options={ORGANISATION_TYPE_OPTIONS}
+                      value={values.organisationType}
+                      error={errors.organisationType}
+                      onSelect={(value) => setValue("organisationType", value)}
+                    />
+                    <Dropdown
+                      id="annualVolume"
+                      name="annualVolume"
+                      label="Annual Origination / Transaction Volume"
+                      required
+                      paired
+                      placeholder="Select volume bracket..."
+                      options={VOLUME_OPTIONS}
+                      value={values.annualVolume}
+                      error={errors.annualVolume}
+                      helper={WAITLIST_COPY.helper.volume}
+                      onSelect={(value) => setValue("annualVolume", value)}
+                    />
+                  </div>
+
+                  {/* Row 6 — full width */}
+                  <Field
+                    id="currentTechStackBottlenecks"
+                    label="Current Tech Stack Bottlenecks"
+                    required
+                    error={errors.currentTechStackBottlenecks}
+                  >
+                    <textarea
+                      id="currentTechStackBottlenecks"
+                      name="currentTechStackBottlenecks"
+                      rows={3}
+                      maxLength={MAX_TECH_STACK_BOTTLENECKS}
+                      placeholder={WAITLIST_COPY.placeholder.techStackBottlenecks}
+                      value={values.currentTechStackBottlenecks}
+                      onChange={(event) => setValue("currentTechStackBottlenecks", event.target.value)}
+                      aria-required="true"
+                      aria-invalid={Boolean(errors.currentTechStackBottlenecks)}
+                      aria-describedby={describedBy(
+                        "currentTechStackBottlenecks",
+                        false,
+                        Boolean(errors.currentTechStackBottlenecks),
                       )}
-                    </div>
+                      className={controlClass(Boolean(errors.currentTechStackBottlenecks))}
+                    />
+                    <p className="text-[11px] text-[#9CA3B8] font-mono text-right mt-1">
+                      {values.currentTechStackBottlenecks.length}/{MAX_TECH_STACK_BOTTLENECKS}
+                    </p>
+                  </Field>
 
+                  {/* Row 7 — full width */}
+                  <fieldset
+                    className="space-y-2"
+                    aria-required="true"
+                    aria-invalid={Boolean(errors.improvementAreas)}
+                    aria-describedby={describedBy("improvementAreas", true, Boolean(errors.improvementAreas))}
+                  >
+                    <legend className={labelClass}>
+                      What Would You Most Like Aurixa to Improve?
+                      <span className="text-[#C89B3C] ml-1" aria-hidden="true">*</span>
+                    </legend>
+                    <p id="improvementAreas-helper" className={helperClass}>
+                      {WAITLIST_COPY.helper.improvementAreas} ({values.improvementAreas.length}/
+                      {MAX_IMPROVEMENT_AREAS} selected)
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                      {IMPROVEMENT_AREA_OPTIONS.map((option, index) => {
+                        const checked = values.improvementAreas.includes(option.value);
+                        const atLimit =
+                          !checked && values.improvementAreas.length >= MAX_IMPROVEMENT_AREAS;
+                        return (
+                          <label
+                            key={option.value}
+                            htmlFor={index === 0 ? "improvementAreas" : `improvementAreas-${option.value}`}
+                            className={`flex h-full items-start gap-2.5 px-3 py-2.5 border text-[13px] font-light leading-snug transition-all focus-within:ring-1 focus-within:ring-[#00A8B5] ${
+                              checked
+                                ? "border-[#00A8B5]/60 bg-[#00A8B5]/10 text-white cursor-pointer"
+                                : atLimit
+                                  ? "border-white/10 text-[#6B7689] cursor-not-allowed"
+                                  : "border-white/15 text-[#B6C0D4] hover:border-white/35 cursor-pointer"
+                            }`}
+                          >
+                            <input
+                              id={index === 0 ? "improvementAreas" : `improvementAreas-${option.value}`}
+                              type="checkbox"
+                              name="improvementAreas"
+                              value={option.value}
+                              checked={checked}
+                              disabled={atLimit}
+                              onChange={() => toggleImprovementArea(option.value)}
+                              className="mt-0.5 h-4 w-4 shrink-0 accent-[#00A8B5]"
+                            />
+                            <span>{option.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {errors.improvementAreas && (
+                      <p id="improvementAreas-error" className={errorClass} role="alert">
+                        {errors.improvementAreas}
+                      </p>
+                    )}
+                  </fieldset>
+
+                  {/* Row 8 — full width */}
+                  <Field
+                    id="additionalNotes"
+                    label="Anything Else We Should Know? (Optional)"
+                    helper={WAITLIST_COPY.helper.additionalNotes}
+                    error={errors.additionalNotes}
+                  >
+                    <textarea
+                      id="additionalNotes"
+                      name="additionalNotes"
+                      rows={3}
+                      maxLength={MAX_ADDITIONAL_NOTES}
+                      value={values.additionalNotes}
+                      onChange={(event) => setValue("additionalNotes", event.target.value)}
+                      aria-invalid={Boolean(errors.additionalNotes)}
+                      aria-describedby={describedBy("additionalNotes", true, Boolean(errors.additionalNotes))}
+                      className={controlClass(Boolean(errors.additionalNotes))}
+                    />
+                    <p className="text-[11px] text-[#9CA3B8] font-mono text-right mt-1">
+                      {values.additionalNotes.length}/{MAX_ADDITIONAL_NOTES}
+                    </p>
+                  </Field>
+
+                  {/* Row 9 — collection notice and consent */}
+                  <details className="border border-white/10 bg-[#040B16]/60 px-4 py-3">
+                    <summary className="cursor-pointer text-[11px] uppercase tracking-[0.12em] text-[#C3CCDD] font-bold list-none flex items-center gap-2">
+                      <span className="text-[#C89B3C]" aria-hidden="true">+</span> Collection notice
+                    </summary>
+                    <div className="mt-3 space-y-2 text-[13px] text-[#9CA3B8] font-light leading-relaxed">
+                      <p>
+                        Aurixa Systems Pty Ltd collects the information in this form to assess your
+                        priority-access application, to send you the Business Readiness Questionnaire and to
+                        contact you about the outcome. Providing the information is voluntary, but we cannot
+                        assess an application without it.
+                      </p>
+                      <p>
+                        We may disclose the information to our service providers for hosting, email delivery,
+                        customer relationship management and scheduling. We handle it in accordance with the
+                        Australian Privacy Principles.
+                      </p>
+                      <p>
+                        To access or correct your information, withdraw your application or make a privacy
+                        complaint, contact{" "}
+                        <a className="text-[#C89B3C] hover:underline" href="mailto:privacy@aurixasystems.com.au">
+                          privacy@aurixasystems.com.au
+                        </a>
+                        .
+                      </p>
+                      <p>{WAITLIST_COPY.confidentiality}</p>
+                    </div>
+                  </details>
+
+                  <div className="space-y-2">
                     <label
-                      htmlFor="marketingConsent"
+                      htmlFor="privacyAcknowledged"
                       className="flex w-full items-start gap-3 text-[13px] text-[#B6C0D4] font-light leading-relaxed cursor-pointer"
                     >
                       <input
-                        id="marketingConsent"
-                        name="marketingConsent"
+                        id="privacyAcknowledged"
+                        name="privacyAcknowledged"
                         type="checkbox"
-                        checked={values.marketingConsent}
-                        onChange={(event) => setValue("marketingConsent", event.target.checked)}
+                        checked={values.privacyAcknowledged}
+                        onChange={(event) => setValue("privacyAcknowledged", event.target.checked)}
+                        aria-required="true"
+                        aria-invalid={Boolean(errors.privacyAcknowledged)}
+                        aria-describedby={describedBy("privacyAcknowledged", false, Boolean(errors.privacyAcknowledged))}
                         className="mt-0.5 h-4 w-4 shrink-0 accent-[#00A8B5]"
                       />
-                      <span>{WAITLIST_COPY.marketingConsent}</span>
+                      <span>
+                        {WAITLIST_COPY.privacyAcknowledgement}
+                        <span className="text-[#C89B3C] ml-1" aria-hidden="true">*</span>
+                        {PRIVACY_POLICY_URL && (
+                          <>
+                            {" "}
+                            <a
+                              href={PRIVACY_POLICY_URL}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#C89B3C] hover:underline"
+                            >
+                              Read the Privacy Policy
+                            </a>
+                          </>
+                        )}
+                      </span>
                     </label>
-
-                    <p className="text-[13px] text-[#9CA3B8] font-light leading-relaxed border-l-2 border-[#00A8B5]/40 pl-4">
-                      {WAITLIST_COPY.preSubmit}
-                    </p>
-
-                    {submissionError && (
-                      <p className={errorClass} role="alert">
-                        {submissionError}
+                    {errors.privacyAcknowledged && (
+                      <p id="privacyAcknowledged-error" className={errorClass} role="alert">
+                        {errors.privacyAcknowledged}
                       </p>
                     )}
+                  </div>
 
+                  <label
+                    htmlFor="marketingConsent"
+                    className="flex w-full items-start gap-3 text-[13px] text-[#B6C0D4] font-light leading-relaxed cursor-pointer"
+                  >
+                    <input
+                      id="marketingConsent"
+                      name="marketingConsent"
+                      type="checkbox"
+                      checked={values.marketingConsent}
+                      onChange={(event) => setValue("marketingConsent", event.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-[#00A8B5]"
+                    />
+                    <span>{WAITLIST_COPY.marketingConsent}</span>
+                  </label>
+
+                  {/* Row 10 — pre-submit explanation */}
+                  <p className="text-[13px] text-[#9CA3B8] font-light leading-relaxed border-l-2 border-[#00A8B5]/40 pl-4">
+                    {WAITLIST_COPY.preSubmit}
+                  </p>
+
+                  {submissionError && (
+                    <p className={errorClass} role="alert">
+                      {submissionError}
+                    </p>
+                  )}
+
+                  {/* Row 11 — submit */}
+                  <div className="pt-2">
                     <button
                       type="submit"
                       disabled={isSubmitting}
@@ -709,17 +896,18 @@ export default function Contact() {
                       <ArrowRight className="w-5 h-5 shrink-0 relative z-10 group-hover:translate-x-1 transition-transform duration-300 drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                       <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[0%] transition-transform duration-500 ease-out z-0"></div>
                     </button>
+                  </div>
 
-                    <div className="pt-5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-[10px] text-[#9CA3B8] uppercase tracking-widest font-mono flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" aria-hidden="true"></span>
-                        {WAITLIST_COPY.queueStatus}
-                      </p>
-                      <p className="text-[10px] text-[#C89B3C] uppercase tracking-widest font-mono">
-                        {WAITLIST_COPY.reviewStatus}
-                      </p>
-                    </div>
-                  </section>
+                  {/* Row 12 — status footer */}
+                  <div className="pt-5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[10px] text-[#9CA3B8] uppercase tracking-widest font-mono flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" aria-hidden="true"></span>
+                      {WAITLIST_COPY.queueStatus}
+                    </p>
+                    <p className="text-[10px] text-[#C89B3C] uppercase tracking-widest font-mono">
+                      {WAITLIST_COPY.reviewStatus}
+                    </p>
+                  </div>
                 </form>
               </>
             )}
