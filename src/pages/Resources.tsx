@@ -16,10 +16,26 @@ const MODULE_CATEGORIES = [
     title: "OPERATIONAL CORE",
     description: "Primary workflow orchestration & strategic data structuring. Workflow systems, business scalability, operational infrastructure.",
     items: [
-      { name: "Execution Engine", icon: LayoutGrid },
-      { name: "Opportunity Flow", icon: TrendingUp },
-      { name: "Property Grid", icon: Building },
-      { name: "Strategic Delivery", icon: Map },
+      {
+        name: "Execution Engine",
+        icon: LayoutGrid,
+        description: "Keeps responsibilities, recurring activity and follow-up aligned so priorities move forward without operational drift."
+      },
+      {
+        name: "Opportunity Flow",
+        icon: TrendingUp,
+        description: "Provides live visibility across opportunities, next actions and deal progression from first interest through completion."
+      },
+      {
+        name: "Property Grid",
+        icon: Building,
+        description: "Brings listings, source channels and commercial opportunities into one structured view for faster prioritisation."
+      },
+      {
+        name: "Strategic Delivery",
+        icon: Map,
+        description: "Turns plans into accountable execution through clear ownership, structured documentation and visible progress."
+      },
     ]
   },
   {
@@ -27,11 +43,31 @@ const MODULE_CATEGORIES = [
     title: "INTELLIGENCE & AI",
     description: "Automated analysis, live telemetry, & generative outputs. Property analysis, scenario modelling, strategic recommendations.",
     items: [
-      { name: "Property Intelligence", icon: BarChart2 },
-      { name: "Scenario Engine", icon: PieChart },
-      { name: "Decision Intelligence", icon: Sparkles },
-      { name: "Insight Reporting", icon: FileText },
-      { name: "White-Label Reports", icon: Palette },
+      {
+        name: "Property Intelligence",
+        icon: BarChart2,
+        description: "Converts complex property information into decision-ready insight for stronger assessments and client conversations."
+      },
+      {
+        name: "Scenario Engine",
+        icon: PieChart,
+        description: "Compares alternative property and financial pathways before recommendations are finalised or presented."
+      },
+      {
+        name: "Decision Intelligence",
+        icon: Sparkles,
+        description: "Surfaces relevant considerations through AI-assisted analysis that strengthens judgement and strategic discussion."
+      },
+      {
+        name: "Insight Reporting",
+        icon: FileText,
+        description: "Transforms complex information into clear visual reports clients can understand, trust and act on."
+      },
+      {
+        name: "White-Label Reports",
+        icon: Palette,
+        description: "Creates polished, organisation-branded reports that reinforce credibility at every client presentation."
+      },
     ]
   },
   {
@@ -39,9 +75,21 @@ const MODULE_CATEGORIES = [
     title: "FINANCIAL INTELLIGENCE",
     description: "Borrowing capacity, cash flow, depreciation integration, and financial operations.",
     items: [
-      { name: "Lending Position", icon: DollarSign },
-      { name: "Cash Flow Intelligence", icon: Activity },
-      { name: "Depreciation Intelligence", icon: Layers },
+      {
+        name: "Lending Position",
+        icon: DollarSign,
+        description: "Clarifies borrowing capacity and financial readiness before an opportunity or strategy progresses."
+      },
+      {
+        name: "Cash Flow Intelligence",
+        icon: Activity,
+        description: "Connects current, projected and scenario-based cash flow to support stronger planning and decisions."
+      },
+      {
+        name: "Depreciation Intelligence",
+        icon: Layers,
+        description: "Integrates depreciation data and comparisons into a more complete financial assessment."
+      },
     ]
   },
   {
@@ -49,11 +97,32 @@ const MODULE_CATEGORIES = [
     title: "CLIENT ECOSYSTEM",
     description: "Secure portals, tracking, & communications logging. CRM workflows, client engagement, lifecycle infrastructure.",
     items: [
-      { name: "Client Continuum", icon: UserCheck },
-      { name: "Lifecycle Orchestration", icon: Users },
-      { name: "Engagement Centre", icon: MessageSquare },
-      { name: "Client Portal", icon: Sliders, highlight: true },
-      { name: "Portfolio Service Hub", icon: Briefcase },
+      {
+        name: "Client Continuum",
+        icon: UserCheck,
+        description: "Keeps the complete client relationship visible from first engagement through ongoing service."
+      },
+      {
+        name: "Lifecycle Orchestration",
+        icon: Users,
+        description: "Guides each client through the right stages, actions and responsibilities across the team."
+      },
+      {
+        name: "Engagement Centre",
+        icon: MessageSquare,
+        description: "Centralises communications and interaction history so every conversation remains informed and timely."
+      },
+      {
+        name: "Client Portal",
+        icon: Sliders,
+        description: "Provides a secure, branded space for reports, documents, requests and relevant client information.",
+        highlight: true
+      },
+      {
+        name: "Portfolio Service Hub",
+        icon: Briefcase,
+        description: "Coordinates portfolio reporting and client requests with clear visibility over progress and next actions."
+      },
     ]
   },
   {
@@ -61,11 +130,31 @@ const MODULE_CATEGORIES = [
     title: "ENTERPRISE INFRASTRUCTURE",
     description: "Root access, global configurations, API management, administration, governance, and scalability systems.",
     items: [
-       { name: "Platform Control", icon: Settings },
-       { name: "Access Governance", icon: ShieldCheck },
-       { name: "Automation Studio", icon: Zap },
-       { name: "Integration Fabric", icon: Plug },
-       { name: "Service Resolution Hub", icon: AlertTriangle },
+       {
+         name: "Platform Control",
+         icon: Settings,
+         description: "Centralises configuration, administration and operational oversight across the platform environment."
+       },
+       {
+         name: "Access Governance",
+         icon: ShieldCheck,
+         description: "Controls users, roles and permissions to protect sensitive information and organisational access."
+       },
+       {
+         name: "Automation Studio",
+         icon: Zap,
+         description: "Reduces repetitive work through configurable automations and reusable operational structures."
+       },
+       {
+         name: "Integration Fabric",
+         icon: Plug,
+         description: "Connects external systems and data sources while reducing unnecessary duplication and manual movement."
+       },
+       {
+         name: "Service Resolution Hub",
+         icon: AlertTriangle,
+         description: "Turns support requests into accountable resolutions through structured ticketing, routing and status tracking."
+       },
     ]
   }
 ];
@@ -130,25 +219,32 @@ export default function Resources() {
                   {category.items.map((item, itemIdx) => {
                     const Icon = item.icon;
                     return (
-                      <div 
-                        key={itemIdx} 
-                        className={`group/item flex items-center gap-4 p-3 rounded-sm border transition-all duration-300 relative overflow-hidden
-                          ${item.highlight 
-                            ? "bg-[#C89B3C]/10 border-[#C89B3C]/50 shadow-[0_0_20px_rgba(200,155,60,0.15)]" 
+                      <div
+                        key={itemIdx}
+                        className={`group/item flex items-start gap-4 p-4 min-h-[112px] h-full rounded-sm border transition-all duration-300 relative overflow-hidden
+                          ${item.highlight
+                            ? "bg-[#C89B3C]/10 border-[#C89B3C]/50 shadow-[0_0_20px_rgba(200,155,60,0.15)]"
                             : "bg-[#0B162C]/40 border-[#00A8B5]/10 hover:border-[#00A8B5]/40 hover:bg-[#00A8B5]/5"
                           }`}
                       >
                         {/* Glow Sweep Effect on Hover */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#C89B3C]/5 to-transparent -translate-x-[150%] group-hover/item:translate-x-[150%] transition-transform duration-700 ease-in-out" />
-                        
-                        <div className={`p-1.5 rounded-sm flex items-center justify-center border ${item.highlight ? 'bg-[#C89B3C]/20 border-[#C89B3C]/50' : 'bg-[#040B16] border-[#00A8B5]/20'}`}>
+
+                        <div className={`p-1.5 rounded-sm flex items-center justify-center border mt-0.5 shrink-0 ${item.highlight ? 'bg-[#C89B3C]/20 border-[#C89B3C]/50' : 'bg-[#040B16] border-[#00A8B5]/20'}`}>
                           <Icon className={`w-3.5 h-3.5 ${item.highlight ? 'text-[#C89B3C]' : 'text-[#00A8B5]/70 group-hover/item:text-[#00A8B5]'}`} />
                         </div>
-                        <span className={`text-[12px] uppercase font-mono tracking-wider truncate
-                          ${item.highlight ? 'text-[#C89B3C] font-semibold' : 'text-gray-400 group-hover/item:text-white'}
-                        `}>
-                          {item.name}
-                        </span>
+                        <div className="min-w-0 flex-1">
+                          <span className={`block text-[12px] uppercase font-mono tracking-wider leading-snug
+                            ${item.highlight ? 'text-[#C89B3C] font-semibold' : 'text-gray-400 group-hover/item:text-white'}
+                          `}>
+                            {item.name}
+                          </span>
+                          <p className={`mt-2 text-[11px] leading-relaxed font-light
+                            ${item.highlight ? 'text-[#D7C79F]/80' : 'text-[#7F8A9A] group-hover/item:text-[#AAB4C3]'}
+                          `}>
+                            {item.description}
+                          </p>
+                        </div>
                       </div>
                     )
                   })}
