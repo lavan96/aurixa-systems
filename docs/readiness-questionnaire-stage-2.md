@@ -49,7 +49,7 @@ Identifiers are stable; labels may be reworded. Questionnaire version:
 | BRQ-02 | Authority for technology purchases | Single select | Yes |
 | BRQ-03 | People requiring access | Single select | Yes |
 | BRQ-04 | Offices, entities or divisions | Single select | Yes |
-| BRQ-05 | Operating locations | Multi-select | Yes |
+| BRQ-05 | Operating locations (Australian states and territories) | Multi-select | Yes |
 | BRQ-06 | Systems currently used | Multi-select + optional product names | Yes |
 | BRQ-07 | Three biggest operational problems | Multi-select, max 3 | Yes |
 | BRQ-08 | Weekly repetitive administration | Single select | Yes |
@@ -66,8 +66,33 @@ BRQ-01 reuses `ROLE_OPTIONS` from `src/lib/waitlist.ts` — there is no second
 role list.
 
 Conditional detail fields hang off their parent with a suffixed identifier
-(`BRQ-01-OTHER`, `BRQ-11-CUSTOM-NAME`, `BRQ-12-SOURCES`, `BRQ-14-CONTEXT`,
-`BRQ-16-SPONSOR`, …). Optional product names use `BRQ-06-PRODUCT:<system>`.
+(`BRQ-01-OTHER`, `BRQ-11-PHONE-SYSTEM`, `BRQ-11-CUSTOM-NAME`, `BRQ-12-SOURCES`,
+`BRQ-14-CONTEXT`, `BRQ-16-SPONSOR`, …). Optional product names use
+`BRQ-06-PRODUCT:<system>`.
+
+### Deviations from Appendix B
+
+Requested by Aurixa after review of the live page:
+
+- **BRQ-05 is Australian states and territories only.** New Zealand, Malaysia and
+  "Other international markets" were removed, so the `BRQ-05-OTHER` follow-up has
+  no trigger and was removed with them. BRQ-04 still offers "International or
+  multi-jurisdiction organisation" if an applicant needs to signal offshore
+  operations.
+- **BRQ-10 "Voice automation" reads "AI Voice Agents & Call Logging"** — the
+  Aurixa capability (inbound and outbound agents, lead follow-up, qualification,
+  appointment scheduling, call logging, record updates and workflow actions)
+  rather than the mechanism. Slug remains `voice_automation`.
+- **BRQ-11 "Telephony" reads "Existing Phone or VoIP System"** and, when
+  selected, asks "Which phone or VoIP system does your organisation currently
+  use?" (`BRQ-11-PHONE-SYSTEM`, required, 160 chars). This keeps Aurixa Voice
+  positioned as the product capability while the applicant's own phone system is
+  only ever an integration target. Slug remains `telephony`.
+
+Slugs are deliberately unchanged: labels may be reworded, identifiers must not
+move. The questionnaire version stays `business-readiness-v1` because no response
+has ever been stored — the first bump belongs to the first option change made
+*after* responses start being persisted.
 
 ## Conditional logic (section 6.6)
 
@@ -79,6 +104,7 @@ on every stored answer.
 - "No central system", "None initially", "Not yet known" and "None" are mutually
   exclusive with the named options in their group.
 - Migration follow-ups appear for the five migration categories only.
+- The phone-system follow-up appears only for "Existing Phone or VoIP System".
 - Custom-integration follow-ups appear only for "Custom internal system".
 - The security context field appears only when a named requirement is selected.
 - More than 100 users, or multiple legal entities / national / international

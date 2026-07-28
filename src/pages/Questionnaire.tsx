@@ -1059,17 +1059,6 @@ function SectionOrganisation({ ctx }: { ctx: Ctx }) {
           onChange={(next) => set(Q.regions, next)}
           invalid={Boolean(errors[Q.regions])}
         />
-        {regions.includes("other_international") && (
-          <ConditionalBlock>
-            <TextQuestion
-              ctx={ctx}
-              id={Q.regionsOther}
-              label="Please specify the other markets."
-              required
-              limit={LIMITS.regionsOther}
-            />
-          </ConditionalBlock>
-        )}
       </QuestionFieldset>
     </>
   );
@@ -1301,6 +1290,20 @@ function SectionCapabilities({ ctx, session }: { ctx: Ctx; session: ReadinessSes
           onChange={(next) => set(Q.integrations, next)}
           invalid={Boolean(errors[Q.integrations])}
         />
+
+        {integrations.includes("telephony") && (
+          <ConditionalBlock>
+            <TextQuestion
+              ctx={ctx}
+              id={Q.phoneSystem}
+              label="Which phone or VoIP system does your organisation currently use?"
+              question
+              required
+              limit={LIMITS.phoneSystem}
+              helper="The provider or platform name is enough."
+            />
+          </ConditionalBlock>
+        )}
 
         {integrations.includes("custom_internal_system") && (
           <ConditionalBlock>
@@ -1579,6 +1582,8 @@ function TextQuestion({
   required,
   limit,
   helper,
+  /** Set for a full-sentence prompt so it matches the other questions. */
+  question,
 }: {
   ctx: Ctx;
   id: string;
@@ -1586,10 +1591,18 @@ function TextQuestion({
   required?: boolean;
   limit: number;
   helper?: string;
+  question?: boolean;
 }) {
   const value = asText(ctx.answers[id]);
   return (
-    <Field id={id} label={label} required={required} helper={helper} error={ctx.errors[id]}>
+    <Field
+      id={id}
+      label={label}
+      required={required}
+      helper={helper}
+      error={ctx.errors[id]}
+      labelClassName={question ? questionLabelClass : undefined}
+    >
       <input
         id={id}
         name={id}

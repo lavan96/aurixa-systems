@@ -67,7 +67,6 @@ export const Q = {
   entityStructure: "BRQ-04",
 
   regions: "BRQ-05",
-  regionsOther: "BRQ-05-OTHER",
 
   systems: "BRQ-06",
   systemsOther: "BRQ-06-OTHER",
@@ -89,6 +88,7 @@ export const Q = {
   customSystemApi: "BRQ-11-CUSTOM-API",
   customSystemOwner: "BRQ-11-CUSTOM-OWNER",
   customSystemWorkflow: "BRQ-11-CUSTOM-WORKFLOW",
+  phoneSystem: "BRQ-11-PHONE-SYSTEM",
 
   migration: "BRQ-12",
   migrationSources: "BRQ-12-SOURCES",
@@ -158,9 +158,6 @@ export const REGION_OPTIONS: Option[] = [
   { value: "tas", label: "TAS" },
   { value: "vic", label: "VIC" },
   { value: "wa", label: "WA" },
-  { value: "new_zealand", label: "New Zealand" },
-  { value: "malaysia", label: "Malaysia" },
-  { value: "other_international", label: "Other international markets" },
 ];
 
 export const SYSTEM_OPTIONS: Option[] = [
@@ -230,7 +227,9 @@ export const CAPABILITY_OPTIONS: Option[] = [
   { value: "suburb_market_reporting", label: "Suburb and market reporting" },
   { value: "template_builder", label: "Template builder" },
   { value: "ai_communications", label: "AI communications" },
-  { value: "voice_automation", label: "Voice automation" },
+  // Slug stays `voice_automation`: labels may be reworded, identifiers must not
+  // change or historical reporting breaks (Appendix B).
+  { value: "voice_automation", label: "AI Voice Agents & Call Logging" },
   { value: "calendar_task_automation", label: "Calendar and task automation" },
   { value: "aml_compliance", label: "AML and compliance" },
   { value: "smsf_workflow", label: "SMSF workflow" },
@@ -293,7 +292,7 @@ export const INTEGRATION_OPTIONS: Option[] = [
   { value: "cotality_corelogic", label: "Cotality or CoreLogic" },
   { value: "existing_crm", label: "Existing CRM" },
   { value: "identity_verification", label: "Identity-verification provider" },
-  { value: "telephony", label: "Telephony" },
+  { value: "telephony", label: "Existing Phone or VoIP System" },
   { value: "electronic_signing", label: "Electronic signing" },
   { value: "custom_internal_system", label: "Custom internal system" },
   { value: "none_initially", label: "None initially" },
@@ -393,13 +392,13 @@ export const YES_NO_UNKNOWN_OPTIONS: Option[] = [
 export const LIMITS = {
   roleOther: 120,
   authorityOther: 200,
-  regionsOther: 250,
   systemsOther: 200,
   systemProduct: 80,
   informationManagementOther: 200,
   problemsOther: 200,
   difficultWorkflow: 750,
   customSystemName: 160,
+  phoneSystem: 160,
   customSystemOwner: 160,
   customSystemWorkflow: 500,
   migrationSources: 300,
@@ -580,7 +579,6 @@ export function activeQuestionIds(answers: AnswerMap): string[] {
   add(Q.userCount);
   add(Q.entityStructure);
   add(Q.regions);
-  if (has(asList(answers[Q.regions]), "other_international")) add(Q.regionsOther);
 
   // Section 2
   add(Q.systems);
@@ -601,6 +599,7 @@ export function activeQuestionIds(answers: AnswerMap): string[] {
   // Section 3
   add(Q.capabilities);
   add(Q.integrations);
+  if (has(asList(answers[Q.integrations]), "telephony")) add(Q.phoneSystem);
   if (has(asList(answers[Q.integrations]), "custom_internal_system")) {
     add(Q.customSystemName);
     add(Q.customSystemApi);
@@ -738,14 +737,6 @@ function validateOrganisation(answers: AnswerMap, errors: QuestionErrors) {
 
   if (asList(answers[Q.regions]).length === 0)
     errors[Q.regions] = "Select at least one location where the organisation operates.";
-  else if (has(asList(answers[Q.regions]), "other_international"))
-    requireText(
-      errors,
-      answers,
-      Q.regionsOther,
-      "Please specify the other markets.",
-      LIMITS.regionsOther,
-    );
 }
 
 /** Section 2 — Current Systems and Workflows. */
@@ -815,7 +806,17 @@ function validateCapabilities(answers: AnswerMap, errors: QuestionErrors) {
 
   const integrations = asList(answers[Q.integrations]);
   if (integrations.length === 0) errors[Q.integrations] = "Select at least one option.";
-  else if (has(integrations, "custom_internal_system")) {
+
+  if (has(integrations, "telephony"))
+    requireText(
+      errors,
+      answers,
+      Q.phoneSystem,
+      "Name the phone or VoIP system your organisation uses.",
+      LIMITS.phoneSystem,
+    );
+
+  if (has(integrations, "custom_internal_system")) {
     requireText(
       errors,
       answers,
@@ -903,11 +904,11 @@ const trimAnswer = (questionId: string, value: AnswerValue): AnswerValue => {
   const limits: Record<string, number> = {
     [Q.roleOther]: LIMITS.roleOther,
     [Q.authorityOther]: LIMITS.authorityOther,
-    [Q.regionsOther]: LIMITS.regionsOther,
     [Q.systemsOther]: LIMITS.systemsOther,
     [Q.informationManagementOther]: LIMITS.informationManagementOther,
     [Q.problemsOther]: LIMITS.problemsOther,
     [Q.difficultWorkflow]: LIMITS.difficultWorkflow,
+    [Q.phoneSystem]: LIMITS.phoneSystem,
     [Q.customSystemName]: LIMITS.customSystemName,
     [Q.customSystemOwner]: LIMITS.customSystemOwner,
     [Q.customSystemWorkflow]: LIMITS.customSystemWorkflow,
@@ -982,7 +983,6 @@ const QUESTION_TEXT: Record<string, string> = {
   [Q.userCount]: "How many people may require access to Aurixa?",
   [Q.entityStructure]: "How many offices, entities or business divisions would use the platform?",
   [Q.regions]: "Where does the organisation currently operate?",
-  [Q.regionsOther]: "Please specify the other markets.",
   [Q.systems]: "Which systems does your organisation currently use?",
   [Q.systemsOther]: "Please describe the other system.",
   [Q.informationManagement]: "How is information currently managed?",
@@ -994,6 +994,7 @@ const QUESTION_TEXT: Record<string, string> = {
   [Q.difficultWorkflow]: "Describe the workflow causing the greatest operational difficulty.",
   [Q.capabilities]: "Which Aurixa capabilities are most relevant to your organisation?",
   [Q.integrations]: "Which systems would need to integrate with Aurixa?",
+  [Q.phoneSystem]: "Which phone or VoIP system does your organisation currently use?",
   [Q.customSystemName]: "Custom internal system name",
   [Q.customSystemApi]: "Is an API available?",
   [Q.customSystemOwner]: "Internal business owner",
@@ -1108,9 +1109,9 @@ export function buildReviewSections(answers: AnswerMap): ReviewSection[] {
 const SECTION_BY_QUESTION: Record<string, SectionKey> = {};
 {
   const register = (ids: string[], key: SectionKey) => ids.forEach((id) => (SECTION_BY_QUESTION[id] = key));
-  register([Q.role, Q.roleOther, Q.authority, Q.authorityOther, Q.userCount, Q.entityStructure, Q.regions, Q.regionsOther], "organisation");
+  register([Q.role, Q.roleOther, Q.authority, Q.authorityOther, Q.userCount, Q.entityStructure, Q.regions], "organisation");
   register([Q.systems, Q.systemsOther, Q.informationManagement, Q.informationManagementOther, Q.problems, Q.problemsOther, Q.adminTime, Q.difficultWorkflow], "systems");
-  register([Q.capabilities, Q.integrations, Q.customSystemName, Q.customSystemApi, Q.customSystemOwner, Q.customSystemWorkflow, Q.migration, Q.migrationSources, Q.migrationRecords, Q.migrationDocuments, Q.migrationQuality, Q.migrationTiming], "capabilities");
+  register([Q.capabilities, Q.integrations, Q.phoneSystem, Q.customSystemName, Q.customSystemApi, Q.customSystemOwner, Q.customSystemWorkflow, Q.migration, Q.migrationSources, Q.migrationRecords, Q.migrationDocuments, Q.migrationQuality, Q.migrationTiming], "capabilities");
   register([Q.timing, Q.security, Q.securityContext, Q.enterpriseSso, Q.enterpriseBoundaries, Q.enterpriseProcurement, Q.nextStep, Q.investmentRange, Q.projectSponsor], "readiness");
 }
 

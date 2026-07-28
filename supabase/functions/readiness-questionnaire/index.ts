@@ -128,7 +128,6 @@ function missingRequiredAnswers(answers: AnswerRow[]): string[] {
 
   if (text("BRQ-01") === "other") require("BRQ-01-OTHER");
   if (text("BRQ-02") === "other") require("BRQ-02-OTHER");
-  if (list("BRQ-05").includes("other_international")) require("BRQ-05-OTHER");
 
   const systems = list("BRQ-06");
   if (systems.includes("other")) require("BRQ-06-OTHER");
@@ -143,6 +142,8 @@ function missingRequiredAnswers(answers: AnswerRow[]): string[] {
 
   const capabilities = list("BRQ-10");
   if (capabilities.length !== 5 || new Set(capabilities).size !== 5) missing.push("BRQ-10");
+
+  if (list("BRQ-11").includes("telephony")) require("BRQ-11-PHONE-SYSTEM");
 
   if (list("BRQ-11").includes("custom_internal_system")) {
     require("BRQ-11-CUSTOM-NAME");
