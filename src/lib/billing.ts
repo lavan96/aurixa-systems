@@ -52,6 +52,28 @@ export interface CatalogPack {
   metadata?: { best_for?: string | null; popular?: boolean } | null;
 }
 
+/**
+ * Credits lapse this many days after they are issued — plan allowances,
+ * top-up packs and operator-gifted credits alike. Mirrors Mission Control's
+ * `TOKEN_EXPIRY_DAYS`, which is where the rule is actually enforced.
+ */
+export const TOKEN_EXPIRY_DAYS = 30;
+
+/**
+ * How long a pack's credits stay spendable.
+ *
+ * The 30-day platform policy is a CEILING, not a fixed term: a pack that
+ * deliberately expires sooner keeps its own shorter window, and a pack with a
+ * longer window (or none at all) is capped at 30 days. Same arithmetic as
+ * Mission Control's `resolveIssueExpiry`, so the page can never advertise a
+ * term the billing engine will not honour.
+ */
+export function packValidityDays(pack: Pick<CatalogPack, "expires_after_days">): number {
+  const packDays = pack.expires_after_days;
+  if (packDays == null || packDays <= 0) return TOKEN_EXPIRY_DAYS;
+  return Math.min(packDays, TOKEN_EXPIRY_DAYS);
+}
+
 export interface CatalogSetup {
   id: string;
   slug: string;

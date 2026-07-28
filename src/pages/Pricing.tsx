@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import {
   fetchCatalog,
+  packValidityDays,
   resolveHandoff,
   resolveIdentity,
   startCardSetup,
@@ -431,7 +432,7 @@ export default function Pricing() {
               Top up <span className="font-display italic text-[#C89B3C]">on demand</span>.
             </>
           }
-          description="Generate more reports, scenarios and AI insights with credit packs. Never expires for active accounts."
+          description="Generate more reports, scenarios and AI insights with credit packs. Credits stay spendable for 30 days from purchase and carry across billing periods."
           icon={<Zap className="h-4 w-4" />}
         />
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -467,6 +468,13 @@ export default function Pricing() {
                 </div>
                 <div className="mt-1.5 font-mono text-xs text-[#94A3B8]">
                   {aud(pack.price_cents)} AUD
+                </div>
+                {/* The term is part of what is being bought, so it belongs on
+                    the card rather than only in the FAQ. Read from the pack
+                    itself: a pack with a shorter window advertises that window,
+                    not the 30-day platform default. */}
+                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+                  Valid {packValidityDays(pack)} days
                 </div>
                 {meta.best_for && (
                   <p className="mt-5 text-xs leading-relaxed text-[#94A3B8]">{meta.best_for}</p>
@@ -677,7 +685,11 @@ export default function Pricing() {
         <div className="mt-10">
           <FaqItem
             q="How do credits work?"
-            a="Every AI-generated report or scenario consumes credits based on its complexity. Each plan includes a monthly allowance; you can top up anytime with credit packs that never expire while your account is active."
+            a="Every AI-generated report or scenario consumes credits based on its complexity. Each plan includes a monthly allowance, and you can top up anytime with credit packs."
+          />
+          <FaqItem
+            q="Do credits expire?"
+            a="Credits stay spendable for 30 days from the day they are issued — whether they came from your plan allowance or a top-up pack. Nothing is wiped at the end of a billing period: unused credits carry over and run out on their own 30-day clock. When you generate a report we always spend your soonest-to-expire credits first, so what stays in your balance is always the credit with the most time left on it."
           />
           <FaqItem
             q="Can I change plans later?"
