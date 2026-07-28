@@ -24,6 +24,30 @@ const STOREFRONT_BASE = (() => {
 
 export type CheckoutMode = "topup" | "seat_plan" | "setup_package";
 
+/**
+ * Every price this site displays is TAX-INCLUSIVE — GST is contained in the
+ * figure, not added at checkout. So GST is derived by dividing by 11, never by
+ * multiplying by 1.1. Getting that backwards overstates every price by 10%.
+ *
+ * These mirror Mission Control's `aurixa-catalog.ts`, which is the source of
+ * truth. They are duplicated rather than imported because the storefront is a
+ * separate deployment that only talks to MC over HTTP.
+ */
+export const GST_DIVISOR = 11;
+export const ANNUAL_DISCOUNT = 0.1;
+
+/** The GST contained within a tax-inclusive amount. */
+export const gstComponentCents = (inclGstCents: number): number =>
+  Math.round(inclGstCents / GST_DIVISOR);
+
+/** The ex-GST (net) amount of a tax-inclusive total. */
+export const exGstCents = (inclGstCents: number): number =>
+  inclGstCents - gstComponentCents(inclGstCents);
+
+/** Annual charge for a monthly tax-inclusive price: twelve months less 10%. */
+export const annualCents = (monthlyInclGstCents: number): number =>
+  Math.round(monthlyInclGstCents * 12 * (1 - ANNUAL_DISCOUNT));
+
 export interface CatalogPlan {
   id: string;
   slug: string;
@@ -38,8 +62,23 @@ export interface CatalogPlan {
     best_for?: string | null;
     highlights?: string[];
     tier?: number;
+    /** Seat band from the price list, e.g. 1–4. */
+    seat_min?: number | null;
+    seat_max?: number | null;
+    /**
+     * The annual price as Mission Control minted it in Stripe. Preferred over
+     * computing it here: what is displayed must be what is charged, and only
+     * the Stripe price is authoritative. Falls back to the 10% calculation for
+     * a catalog that predates the cutover.
+     */
+    annual_price_cents?: number | null;
+    tax_inclusive?: boolean | null;
   } | null;
 }
+
+/** The annual figure to show: the minted price if we have one, else derived. */
+export const planAnnualCents = (plan: CatalogPlan): number =>
+  plan.metadata?.annual_price_cents ?? annualCents(plan.price_cents);
 
 export interface CatalogPack {
   id: string;

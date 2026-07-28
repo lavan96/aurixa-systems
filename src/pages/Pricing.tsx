@@ -16,8 +16,12 @@ import {
   Zap,
 } from "lucide-react";
 import {
+  ANNUAL_DISCOUNT,
+  annualCents,
   fetchCatalog,
+  gstComponentCents,
   packValidityDays,
+  planAnnualCents,
   resolveHandoff,
   resolveIdentity,
   startCardSetup,
@@ -44,11 +48,15 @@ import {
  * one, this is a browse-only page whose CTAs route to the contact funnel.
  */
 
+// Tax-inclusive prices rarely land on whole dollars ($5,443.20 a year, $63.55
+// of GST), so cents show when they are non-zero and drop when they are not —
+// round numbers stay clean, exact ones stay exact.
 const aud = (cents: number) =>
   new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: "AUD",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
   }).format(cents / 100);
 
 const range = (min: number | null | undefined, max: number | null | undefined) => {
@@ -196,6 +204,21 @@ export default function Pricing() {
   const setups = catalog?.setups ?? [];
   const addons = catalog?.addons ?? [];
   const reports = catalog?.reports ?? [];
+  // The AML/CTF module is exactly what separates a tier's two headline prices
+  // in the signed-off list, so the "with compliance" figure is derived from
+  // the catalog rather than hardcoded — reprice the module and both move.
+  const amlCents = addons.find((a) => a.slug === "aml-ctf")?.price_min_cents ?? null;
+  // Grouped the way the price list is organised. Category order follows first
+  // appearance in the catalog, which Mission Control already sorts.
+  const addonsByCategory = useMemo(() => {
+    const groups = new Map<string, typeof addons>();
+    for (const a of addons) {
+      const key = a.category ?? "Other";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(a);
+    }
+    return [...groups.entries()];
+  }, [addons]);
   const isLoading = !catalog && !catalogError;
 
   return (
@@ -210,7 +233,7 @@ export default function Pricing() {
             <span className="h-1 w-1 animate-pulse rounded-full bg-[#C89B3C]" />
             Index · 001 / Pricing
           </span>
-          <span className="hidden md:inline">v.2026 · AUD · ex GST</span>
+          <span className="hidden md:inline">v.2026 · AUD · incl GST</span>
         </div>
 
         <div className="mx-auto max-w-5xl text-center">
@@ -260,7 +283,7 @@ export default function Pricing() {
                         : "bg-[#C89B3C]/20 text-[#C89B3C]"
                     }`}
                   >
-                    -15%
+                    -{Math.round(ANNUAL_DISCOUNT * 100)}%
                   </span>
                 )}
               </button>
@@ -376,8 +399,11 @@ export default function Pricing() {
               const meta = p.metadata ?? {};
               const minP = meta.price_min_cents ?? p.price_cents;
               const maxP = meta.price_max_cents ?? p.price_cents;
-              const annual = Math.round(minP * 0.85);
+              // The annual figure Mission Control minted in Stripe, so what is
+              // displayed is what will be charged. Twelve months less 10%.
+              const annual = planAnnualCents(p);
               const display = billing === "annual" ? annual : minP;
+              const gst = gstComponentCents(display);
               const isFeatured = idx === plans.length - 2 || meta.tier === 3;
               const highlights: string[] = meta.highlights ?? [];
               const tierName =
@@ -405,7 +431,20 @@ export default function Pricing() {
                   priceMax={maxP ?? minP}
                   showRange={maxP !== minP && billing === "monthly"}
                   ribbon={tierName}
-                  seats={isEnterprise ? "Custom seats" : `${p.seat_limit} seats included`}
+                  seats={
+                    isEnterprise
+                      ? "Custom seats"
+                      : meta.seat_min && meta.seat_max
+                        ? `${meta.seat_min}\u2013${meta.seat_max} seats`
+                        : `${p.seat_limit} seats included`
+                  }
+                  period={billing === "annual" ? "per year" : "per month"}
+                  gstIncluded={gst}
+                  withComplianceCents={
+                    amlCents && !isEnterprise
+                      ? display + (billing === "annual" ? annualCents(amlCents) : amlCents)
+                      : null
+                  }
                   highlights={highlights}
                   cta={isEnterprise && !canBuy ? "Talk to sales" : "Get started"}
                   busy={busyId === p.id}
@@ -418,7 +457,8 @@ export default function Pricing() {
         )}
 
         <p className="mt-8 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-[#94A3B8]">
-          All prices in AUD · excl. GST · Annual saves 15%
+          All prices in AUD · incl. GST · Annual saves{" "}
+          {Math.round(ANNUAL_DISCOUNT * 100)}%
         </p>
       </section>
 
@@ -516,8 +556,14 @@ export default function Pricing() {
 
         <StackTabs
           addons={
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {addons.map((a) => (
+            <div className="space-y-10">
+              {addonsByCategory.map(([category, items]) => (
+                <div key={category}>
+                  <h3 className="mb-4 font-mono text-[10px] uppercase tracking-[0.3em] text-[#00A8B5]">
+                    {category}
+                  </h3>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {items.map((a) => (
                 <div
                   key={a.id}
                   className="group relative overflow-hidden rounded-lg border border-white/10 bg-[#0B162C]/40 p-6 backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-[#00A8B5]/40 hover:bg-[#0B162C]/60"
@@ -556,6 +602,9 @@ export default function Pricing() {
                       ))}
                     </div>
                   )}
+                </div>
+              ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -701,7 +750,7 @@ export default function Pricing() {
           />
           <FaqItem
             q="Do you offer annual billing?"
-            a="Yes — flip the toggle at the top of the page for a 15% discount on annual prepayment. We also offer multi-year terms for Enterprise customers."
+            a="Yes — flip the toggle at the top of the page for a 10% discount on annual prepayment. We also offer multi-year terms for Enterprise customers."
           />
           <FaqItem
             q="Is there a free trial?"
@@ -762,6 +811,9 @@ function PlanCard({
   showRange,
   ribbon,
   seats,
+  period,
+  gstIncluded,
+  withComplianceCents,
   highlights,
   cta,
   busy,
@@ -779,6 +831,12 @@ function PlanCard({
   showRange: boolean;
   ribbon: string;
   seats: string;
+  /** "per month" / "per year" — which cadence `price` is for. */
+  period?: string;
+  /** GST contained in `price`. Australian pricing must show tax-inclusive. */
+  gstIncluded?: number;
+  /** Same plan with the AML/CTF module added, or null where it does not apply. */
+  withComplianceCents?: number | null;
   highlights: string[];
   cta: string;
   busy?: boolean;
@@ -828,8 +886,20 @@ function PlanCard({
           )}
         </div>
         <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-[#94A3B8]">
-          AUD / month · ex GST
+          AUD {period ? `/ ${period.replace("per ", "")}` : "/ month"} · incl GST
         </div>
+        {gstIncluded != null && gstIncluded > 0 && (
+          // Australian pricing is quoted tax-inclusive, so the GST is shown as
+          // a component of the figure above rather than added underneath it.
+          <div className="mt-1 font-mono text-[10px] tracking-wider text-[#94A3B8]/70">
+            includes {aud(gstIncluded)} GST
+          </div>
+        )}
+        {withComplianceCents != null && (
+          <div className="mt-2 font-mono text-[10px] tracking-wider text-[#C89B3C]">
+            {aud(withComplianceCents)} with AML/CTF Compliance
+          </div>
+        )}
       </div>
 
       <div className="mt-5 rounded-lg border border-white/10 bg-[#040B16]/40 px-3 py-2 font-mono text-[11px] tracking-wider text-white/80">
