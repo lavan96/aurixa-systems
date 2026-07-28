@@ -147,6 +147,9 @@ export default function Pricing() {
   const purchaser = handoff ?? identity ?? null;
   const resolvingLink = (!!h && handoff === undefined) || (!h && !!uid && identity === undefined);
   const purchaserName = purchaser?.originUsername ?? usernameHint;
+  // The plan this workspace already pays for, so a card can say Upgrade or
+  // Downgrade instead of offering "Get started" to an existing customer.
+  const currentPlanSlug = purchaser?.currentPlanSlug ?? null;
   const canBuy = !!credential;
 
   const buy = useCallback(
@@ -155,14 +158,17 @@ export default function Pricing() {
       setBusyId(itemId);
       setCheckoutError(null);
       try {
-        const { url } = await startCheckout({ credential, mode, itemId });
+        // Seat plans have a separate annual Stripe price; everything else is a
+        // one-off and always bills at its single price.
+        const period = mode === "seat_plan" ? billing : "monthly";
+        const { url } = await startCheckout({ credential, mode, itemId, period });
         window.location.href = url;
       } catch (e) {
         setCheckoutError(e instanceof Error ? e.message : "Checkout failed");
         setBusyId(null);
       }
     },
-    [credential],
+    [credential, billing],
   );
 
   // Wallet flow: redirect to Stripe's hosted card-save page (setup-mode
@@ -201,6 +207,12 @@ export default function Pricing() {
   }, [handoff, credential, catalog, buy, saveCard, params]);
 
   const plans = useMemo(() => catalog?.plans ?? [], [catalog]);
+  // Ranked by what they cost, so up/down follows the catalog rather than a
+  // hardcoded list that would rot the next time a tier is added.
+  const planRank = useMemo(() => {
+    const ranked = [...plans].sort((a, b) => a.price_cents - b.price_cents);
+    return new Map(ranked.map((p, i) => [p.slug, i]));
+  }, [plans]);
   const packs = catalog?.packs ?? [];
   const setups = catalog?.setups ?? [];
   const addons = catalog?.addons ?? [];
@@ -383,7 +395,7 @@ export default function Pricing() {
         />
 
         {isLoading && (
-          <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-14 grid gap-8 md:grid-cols-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-[500px] animate-pulse rounded-2xl bg-[#0B162C]/40" />
             ))}
@@ -391,7 +403,7 @@ export default function Pricing() {
         )}
 
         {!isLoading && plans.length > 0 && (
-          <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-14 grid gap-8 md:grid-cols-2">
             {plans.map((p, idx) => {
               const meta = p.metadata ?? {};
               const minP = meta.price_min_cents ?? p.price_cents;
@@ -401,16 +413,10 @@ export default function Pricing() {
               const annual = planAnnualCents(p);
               const display = billing === "annual" ? annual : minP;
               const gst = gstComponentCents(display);
-              const isFeatured = idx === plans.length - 2 || meta.tier === 3;
+              // Starter sits on Launch — position in the array is not a
+              // meaningful signal, and it previously landed the badge on Scale.
+              const isStarter = p.slug === "launch";
               const highlights: string[] = meta.highlights ?? [];
-              const tierName =
-                meta.tier === 4
-                  ? "Enterprise"
-                  : meta.tier === 3
-                    ? "Most popular"
-                    : meta.tier === 2
-                      ? "Recommended"
-                      : "Starter";
 
               // Enterprise is quoted, not listed. Recognised by slug first so
               // it survives someone changing the seat cap.
@@ -424,13 +430,14 @@ export default function Pricing() {
                 <PlanCard
                   key={p.id}
                   index={String(idx + 1).padStart(2, "0")}
-                  featured={isFeatured}
+                  featured={isStarter}
+                  premium={isEnterprise}
                   name={p.name}
                   tagline={meta.best_for ?? p.description ?? ""}
                   price={display}
                   priceMax={maxP ?? minP}
                   showRange={maxP !== minP && billing === "monthly"}
-                  ribbon={tierName}
+                  ribbon={isStarter ? "Starter" : isEnterprise ? "Premium" : ""}
                   seats={
                     isEnterprise
                       ? "Custom seats"
@@ -445,7 +452,18 @@ export default function Pricing() {
                   gstIncluded={gst}
                   withoutComplianceCents={planBaseCents(p, billing)}
                   highlights={highlights}
-                  cta={isEnterprise ? "Talk to sales" : "Get started"}
+                  cta={
+                    isEnterprise
+                      ? "Talk to sales"
+                      : currentPlanSlug === p.slug
+                        ? "Current plan"
+                        : currentPlanSlug && planRank.has(currentPlanSlug)
+                          ? (planRank.get(p.slug) ?? 0) > (planRank.get(currentPlanSlug) ?? 0)
+                            ? "Upgrade"
+                            : "Downgrade"
+                          : "Get started"
+                  }
+                  isCurrentPlan={currentPlanSlug === p.slug}
                   busy={busyId === p.id}
                   buyable={buyable}
                   onBuy={() => void buy("seat_plan", p.id)}
@@ -813,6 +831,8 @@ function PlanCard({
   features,
   customPricing,
   contactHref,
+  premium,
+  isCurrentPlan,
   period,
   gstIncluded,
   withoutComplianceCents,
@@ -848,6 +868,10 @@ function PlanCard({
   customPricing?: boolean;
   /** Where the CTA goes when there is no self-serve price. */
   contactHref?: string;
+  /** Top-of-range treatment — gold rather than the teal used for Starter. */
+  premium?: boolean;
+  /** The workspace is already on this tier, so there is nothing to buy. */
+  isCurrentPlan?: boolean;
   highlights: string[];
   cta: string;
   busy?: boolean;
@@ -855,21 +879,40 @@ function PlanCard({
   buyable: boolean;
   onBuy: () => void;
 }) {
-  const ctaClasses = `flex w-full items-center justify-center rounded-sm py-2.5 font-mono text-[11px] uppercase tracking-[0.25em] transition-all ${
-    featured
-      ? "bg-gradient-to-r from-[#00A8B5] to-[#5EDDE8] font-black text-[#040B16] shadow-[0_0_40px_-8px] shadow-[#00A8B5]/70 hover:scale-[1.02]"
-      : "border border-[#00A8B5]/40 font-bold text-white hover:border-[#00A8B5]"
+  const ctaClasses = `flex w-full items-center justify-center rounded-sm py-3 font-mono text-[11px] uppercase tracking-[0.25em] transition-all ${
+    isCurrentPlan
+      ? "cursor-default border border-white/15 font-bold text-white/50"
+      : premium
+        ? "bg-gradient-to-r from-[#C89B3C] to-[#E9C877] font-black text-[#1A1206] shadow-[0_0_44px_-8px] shadow-[#C89B3C]/70 hover:scale-[1.02]"
+        : featured
+          ? "bg-gradient-to-r from-[#00A8B5] to-[#5EDDE8] font-black text-[#040B16] shadow-[0_0_40px_-8px] shadow-[#00A8B5]/70 hover:scale-[1.02]"
+          : "border border-[#00A8B5]/40 font-bold text-white hover:border-[#00A8B5]"
   }`;
   return (
     <div
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border p-7 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 ${
-        featured
-          ? "border-[#00A8B5]/60 bg-gradient-to-br from-[#00A8B5]/15 via-[#0B162C]/80 to-[#0B162C]/40 shadow-[0_40px_100px_-30px] shadow-[#00A8B5]/50"
-          : "border-white/10 bg-[#0B162C]/40 hover:border-[#00A8B5]/40 hover:shadow-[0_30px_80px_-30px] hover:shadow-[#00A8B5]/30"
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border p-8 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 md:p-9 ${
+        premium
+          ? "border-[#C89B3C]/55 bg-gradient-to-br from-[#C89B3C]/[0.14] via-[#131019]/85 to-[#0B162C]/50 shadow-[0_44px_110px_-30px] shadow-[#C89B3C]/45"
+          : featured
+            ? "border-[#00A8B5]/60 bg-gradient-to-br from-[#00A8B5]/15 via-[#0B162C]/80 to-[#0B162C]/40 shadow-[0_40px_100px_-30px] shadow-[#00A8B5]/50"
+            : "border-white/10 bg-[#0B162C]/40 hover:border-[#00A8B5]/40 hover:shadow-[0_30px_80px_-30px] hover:shadow-[#00A8B5]/30"
       }`}
     >
       <CornerTicks />
-      {featured && (
+      {premium && (
+        <>
+          {/* Top of the range should read that way at a glance: a gold frame,
+              a warm wash behind it, and a badge that is not competing with the
+              teal used everywhere else on the page. */}
+          <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-[#E9C877] to-transparent" />
+          <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-[#C89B3C] to-transparent" />
+          <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-[#C89B3C]/20 blur-3xl" />
+          <span className="absolute right-5 top-5 rounded-sm bg-gradient-to-r from-[#C89B3C] to-[#E9C877] px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-[0.2em] text-[#1A1206]">
+            {ribbon}
+          </span>
+        </>
+      )}
+      {featured && !premium && (
         <>
           <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-[#00A8B5] to-transparent" />
           <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-[#C89B3C] to-transparent" />
@@ -883,7 +926,7 @@ function PlanCard({
         <span>{name}</span>
         <span className="text-white/30">{index}</span>
       </div>
-      <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[#94A3B8]">{tagline}</p>
+      <p className="mt-4 text-sm leading-relaxed text-[#94A3B8]">{tagline}</p>
 
       <div className="mt-7">
         {customPricing ? (
@@ -942,12 +985,12 @@ function PlanCard({
         )}
       </div>
 
-      <div className="mt-5 rounded-lg border border-white/10 bg-[#040B16]/40 px-3 py-2 font-mono text-[11px] tracking-wider text-white/80">
+      <div className="mt-6 rounded-lg border border-white/10 bg-[#040B16]/40 px-4 py-2.5 font-mono text-[11px] tracking-wider text-white/80">
         {seats}
       </div>
 
       {features ? (
-        <div className="mt-6 flex-1 space-y-4">
+        <div className="mt-7 flex-1 space-y-5">
           {features.inherits && (
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5EDDE8]">
               Everything in {features.inherits}, plus
@@ -991,7 +1034,7 @@ function PlanCard({
         </ul>
       )}
 
-      <div className="mt-8">
+      <div className="mt-9">
         {customPricing ? (
           // No self-serve price means no self-serve checkout, credential or
           // not. Enterprise is scoped first and quoted second.
@@ -999,6 +1042,10 @@ function PlanCard({
             {cta}
             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
+        ) : isCurrentPlan ? (
+          <div className={ctaClasses} aria-disabled="true">
+            {cta}
+          </div>
         ) : buyable ? (
           <button type="button" onClick={onBuy} disabled={busy} className={ctaClasses}>
             {busy ? (
