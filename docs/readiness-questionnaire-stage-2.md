@@ -1,0 +1,208 @@
+# Stage 2 — Business Readiness Questionnaire
+
+Implementation notes for `/questionnaire`, built to section 6, Appendix B and
+sections 13, 14 and 17 of *Aurixa Systems Priority Access, Qualification &
+Onboarding Operating Model v1.0*.
+
+Stage 1 (`/contact`) is unchanged. Stage 3 scoring, the transactional email
+sequence and the CRM routing in sections 7, 10 and 11 are not part of this
+change.
+
+## Files
+
+| File | Purpose |
+| --- | --- |
+| `src/pages/Questionnaire.tsx` | Page: access states, four sections, review screen, completion screen |
+| `src/lib/readinessQuestionnaire.ts` | Question bank, option slugs, copy, conditional logic, validation, review model |
+| `src/lib/readinessQuestionnaireService.ts` | Typed client for the questionnaire service (authorise / save / complete) |
+| `src/lib/readinessQuestionnaire.test.ts` | Logic tests — `npm test` |
+| `src/components/questionnaire/QuestionFieldset.tsx` | Fieldset/legend chrome and conditional block |
+| `src/components/questionnaire/QuestionnaireProgress.tsx` | Four-section progress indicator |
+| `src/components/questionnaire/SingleSelectGroup.tsx` | Native radio group in Aurixa option cards |
+| `src/components/questionnaire/MultiSelectGroup.tsx` | Native checkbox group: exclusive options, max count |
+| `src/components/questionnaire/RankedCapabilitySelector.tsx` | BRQ-10 ranked top five, buttons only |
+| `src/components/FormControls.tsx` | `Field`, `Dropdown` and the Aurixa control classes, moved out of `Contact.tsx` so both stages share one implementation |
+| `supabase/functions/readiness-questionnaire/index.ts` | Questionnaire service (**not deployed**) |
+| `supabase/migrations/20260728120000_readiness_questionnaire.sql` | Tables, RLS (**not applied**) |
+
+## Visibility
+
+The route exists but is unlisted. It is not in the Navbar, mobile menu, Footer,
+any public page, any CTA or any sitemap (the site has no sitemap file), and the
+page appends its own `robots: noindex, nofollow` meta on mount and removes it on
+unmount so no other route's metadata changes. A browser check across `/`,
+`/platform`, `/solutions`, `/industries`, `/about`, `/resources` and `/contact`
+confirms no anchor references `/questionnaire`.
+
+A `noindex` meta added by client-side JavaScript is weaker than a response
+header. Serving `X-Robots-Tag: noindex, nofollow` for `/questionnaire` from the
+hosting layer is recommended before launch.
+
+## Question bank
+
+Identifiers are stable; labels may be reworded. Questionnaire version:
+`business-readiness-v1`.
+
+| ID | Question | Control | Required |
+| --- | --- | --- | --- |
+| BRQ-01 | Role within the organisation | Dropdown, prefilled and correctable | Yes |
+| BRQ-02 | Authority for technology purchases | Single select | Yes |
+| BRQ-03 | People requiring access | Single select | Yes |
+| BRQ-04 | Offices, entities or divisions | Single select | Yes |
+| BRQ-05 | Operating locations | Multi-select | Yes |
+| BRQ-06 | Systems currently used | Multi-select + optional product names | Yes |
+| BRQ-07 | Three biggest operational problems | Multi-select, max 3 | Yes |
+| BRQ-08 | Weekly repetitive administration | Single select | Yes |
+| BRQ-09 | Workflow causing the greatest difficulty | Textarea, 750 chars | No |
+| BRQ-10 | Most relevant Aurixa capabilities | Ranked top five | Yes |
+| BRQ-11 | Systems needing integration | Multi-select | Yes |
+| BRQ-12 | Data migration | Single select + follow-ups | Yes |
+| BRQ-13 | Implementation timing | Single select | Yes |
+| BRQ-14 | Security, hosting, procurement requirements | Multi-select | Yes |
+| BRQ-15 | Most useful next step | Single select | Yes |
+| BRQ-16 | Indicative investment range | Single select, within 90 days only | No |
+
+BRQ-01 reuses `ROLE_OPTIONS` from `src/lib/waitlist.ts` — there is no second
+role list.
+
+Conditional detail fields hang off their parent with a suffixed identifier
+(`BRQ-01-OTHER`, `BRQ-11-CUSTOM-NAME`, `BRQ-12-SOURCES`, `BRQ-14-CONTEXT`,
+`BRQ-16-SPONSOR`, …). Optional product names use `BRQ-06-PRODUCT:<system>`.
+
+## Conditional logic (section 6.6)
+
+`activeQuestionIds(answers)` is the single source of truth for what is on
+screen. It drives rendering, validation, the review screen and the `active` flag
+on every stored answer.
+
+- Any "Other" selection requires an explanation.
+- "No central system", "None initially", "Not yet known" and "None" are mutually
+  exclusive with the named options in their group.
+- Migration follow-ups appear for the five migration categories only.
+- Custom-integration follow-ups appear only for "Custom internal system".
+- The security context field appears only when a named requirement is selected.
+- More than 100 users, or multiple legal entities / national / international
+  structure, reveals the three enterprise-readiness questions.
+- Implementation within 90 days reveals BRQ-16 and the project-sponsor question;
+  "Researching only", "3-6 months" and "6-12 months" suppress both.
+- "No central system" reveals the information-management question.
+
+**Nothing is deleted silently.** A conditional answer that stops being displayed
+is retained in the draft and marked `active: false`, so changing a selection back
+restores it, and inactive answers are never submitted as live responses. The one
+case that genuinely discards answers — choosing a mutually exclusive option while
+named options are selected — shows an inline confirmation first.
+
+## Secure access and prefill
+
+1. The applicant opens `/questionnaire?t=<opaque token>`.
+2. The page exchanges the token for a session, then strips it from the visible
+   URL with `history.replaceState`.
+3. Autosave and completion authenticate with the session token only.
+
+No name, email, organisation or answer ever appears in a URL. The token is 32
+bytes of CSPRNG output, not derived from any identifier, and only its SHA-256
+hash is stored.
+
+Prefill (application id, name, work email, organisation, role, organisation type,
+annual volume) is returned by the server against the verified token — never read
+from the URL. It is displayed read-only in the application summary, with the work
+email masked. Only BRQ-01 is editable, as section 6.2 allows; other corrections
+are directed to Aurixa.
+
+Without a valid session the form does not render. Missing and invalid tokens
+share one message so the page cannot be used to test whether an application or
+email exists. Expired links, already-completed questionnaires and service
+failures each get their own state.
+
+A development-only preview (`/questionnaire?preview=1`) is guarded by
+`import.meta.env.DEV`; Vite removes the branch and its fixture from production
+builds (verified by grepping `dist/`). The fixture contains no real data.
+
+## Save and resume
+
+Answers are debounced 1.2 s and saved through the service, with one automatic
+retry after 4 s. The applicant sees "Saving…", "Saved" or "Save failed —
+retrying" in a polite live region. Drafts are held in memory while a request is
+in flight and are never written to `localStorage`, the URL or analytics.
+
+`responseVersion` is optimistic-concurrency control: the client sends the version
+it holds and the server rejects a stale write instead of overwriting a newer
+draft from another device.
+
+**Cross-device resume is implemented but not yet live** — it depends on the
+migration and edge function below being applied and deployed.
+
+## Service contract
+
+`POST {VITE_READINESS_API_URL}` (default
+`{storefront functions base}/readiness-questionnaire`):
+
+| Action | Purpose |
+| --- | --- |
+| `issue` | Admin only (`x-aurixa-admin-secret`). Stores the Stage 1 snapshot, revokes outstanding links and returns a new raw token once, for the transactional email. Never called by the browser. |
+| `authorise` | Verifies the token, issues a 2-hour session, returns prefill, draft, questionnaire version, response version and completion state. |
+| `save` | Upserts answers against a session, bumps the response version, records `readiness.started` on first response. |
+| `complete` | Revalidates every active required answer server-side, freezes the response version, records `completed_at`, revokes the link and emits `readiness.completed`. |
+
+Score, priority class and tier are Stage 3 outputs. They are not computed in the
+browser and never returned by any of these actions.
+
+## Data model
+
+`readiness_applications`, `readiness_questionnaire_tokens`, `readiness_sessions`,
+`readiness_responses`, `qualification_responses` and `readiness_events`. RLS is
+enabled with **no policies** on every table, so only the service role — the edge
+function — can read or write. Public references are the existing non-sequential
+`AX-XXXXXXXXXX` id; everything internal is a UUID.
+
+`qualification_responses` carries question id, answer, active flag, response
+version, questionnaire version and timestamps, per section 13.2.
+
+## Accessibility
+
+Keyboard-only completion, `fieldset`/`legend` for every group, persistent
+labels, required state in text as well as colour, field-level errors with an
+error summary, focus moved to the first invalid question, focus moved to the
+completion heading, `aria-current="step"` on the progress indicator, and polite
+live regions for save status, section changes and ranked-order changes. The
+ranked selector uses Add / Move up / Move down / Remove buttons — there is no
+drag-and-drop.
+
+## Verification
+
+- `npm run lint` (tsc) — clean.
+- `npm run build` — clean.
+- `npm test` — 28 logic tests covering validation, every conditional rule, the
+  max-three and ranked-five limits, mutual exclusivity, inactive-answer handling
+  and the review model.
+- Browser sweep at 1440, 1024, 768, 430, 390 and 320 px: no horizontal overflow
+  in any section, on the review screen or on the completion screen; section
+  validation, focus-to-first-error, forward/back answer retention, every
+  conditional branch, review labels (no slugs), submission and completion focus.
+- Access states driven through intercepted responses: invalid, expired,
+  already-completed and service-unavailable, each stripping the token from the
+  URL.
+- Prefill, resumed draft, autosave success, autosave failure, automatic retry and
+  recovery.
+- Contact page regression: control styling and dropdown behaviour unchanged after
+  the `FormControls` extraction.
+
+## Outstanding before launch
+
+- **Apply the migration and deploy the edge function.** Neither has been run;
+  until then `/questionnaire` shows the access-required state for every visitor.
+- **Set `READINESS_ADMIN_SECRET`** in the function's environment.
+- **Issue links from Stage 1.** The Make.com scenario (or `capture-lead`) must
+  call the `issue` action after a Priority Access Application and put the
+  returned token in the welcome email as `…/questionnaire?t=<token>`. Until that
+  exists, `VITE_READINESS_QUESTIONNAIRE_URL` should stay unset so the Stage 1
+  receipt keeps saying the link will be emailed.
+- **Keep the server-side required rules in step** with
+  `src/lib/readinessQuestionnaire.ts`; the edge function duplicates them
+  deliberately so the browser is never the only check.
+- **Link expiry, reissue and reminder suppression** (section 10) are supported by
+  the schema but have no operational process yet.
+- **`X-Robots-Tag` header** for `/questionnaire` at the hosting layer.
+- **Retention and deletion jobs** for abandoned and withdrawn questionnaires
+  (section 14.1).
