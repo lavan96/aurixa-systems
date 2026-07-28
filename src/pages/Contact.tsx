@@ -807,8 +807,8 @@ export default function Contact() {
                       <p>
                         To access or correct your information, withdraw your application or make a privacy
                         complaint, contact{" "}
-                        <a className="text-[#C89B3C] hover:underline" href="mailto:privacy@aurixasystems.com.au">
-                          privacy@aurixasystems.com.au
+                        <a className="text-[#C89B3C] hover:underline" href="mailto:admin@aurixasystems.com.au">
+                          admin@aurixasystems.com.au
                         </a>
                         .
                       </p>
