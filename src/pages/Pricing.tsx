@@ -15,6 +15,7 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
+import { featuresForTier, type TierFeatures } from "../lib/pricing/tierFeatures";
 import {
   ANNUAL_DISCOUNT,
   fetchCatalog,
@@ -411,7 +412,10 @@ export default function Pricing() {
                       ? "Recommended"
                       : "Starter";
 
-              const isEnterprise = p.seat_limit >= 999;
+              // Enterprise is quoted, not listed. Recognised by slug first so
+              // it survives someone changing the seat cap.
+              const isEnterprise = p.slug === "enterprise" || p.seat_limit >= 999;
+              const tierFeatures = featuresForTier(p.slug);
               // Everything is purchasable once we have a purchase credential —
               // including Enterprise. Without one, Enterprise still routes to
               // sales and the rest to the contact funnel.
@@ -434,11 +438,14 @@ export default function Pricing() {
                         ? `${meta.seat_min}\u2013${meta.seat_max} seats`
                         : `${p.seat_limit} seats included`
                   }
+                  features={tierFeatures}
+                  customPricing={isEnterprise}
+                  contactHref="/contact"
                   period={billing === "annual" ? "per year" : "per month"}
                   gstIncluded={gst}
                   withoutComplianceCents={planBaseCents(p, billing)}
                   highlights={highlights}
-                  cta={isEnterprise && !canBuy ? "Talk to sales" : "Get started"}
+                  cta={isEnterprise ? "Talk to sales" : "Get started"}
                   busy={busyId === p.id}
                   buyable={buyable}
                   onBuy={() => void buy("seat_plan", p.id)}
@@ -803,6 +810,9 @@ function PlanCard({
   showRange,
   ribbon,
   seats,
+  features,
+  customPricing,
+  contactHref,
   period,
   gstIncluded,
   withoutComplianceCents,
@@ -832,6 +842,12 @@ function PlanCard({
    * list titles every tier that way — so this is the stated alternative.
    */
   withoutComplianceCents?: number | null;
+  /** Module breakdown from the price list. Falls back to `highlights`. */
+  features?: TierFeatures;
+  /** Quoted rather than listed — show a call to action, not a number. */
+  customPricing?: boolean;
+  /** Where the CTA goes when there is no self-serve price. */
+  contactHref?: string;
   highlights: string[];
   cta: string;
   busy?: boolean;
@@ -870,6 +886,20 @@ function PlanCard({
       <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[#94A3B8]">{tagline}</p>
 
       <div className="mt-7">
+        {customPricing ? (
+          // Enterprise is scoped and quoted, so there is no figure to show.
+          // Printing one anyway — as this card did — commits us to a number
+          // nobody agreed to.
+          <>
+            <div className="bg-gradient-to-br from-white to-white/50 bg-clip-text text-4xl font-semibold tracking-[-0.03em] text-transparent">
+              Let&rsquo;s talk
+            </div>
+            <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-[#94A3B8]">
+              Custom pricing · scoped to your firm
+            </div>
+          </>
+        ) : (
+          <>
         <div className="flex items-baseline gap-1.5">
           <span
             className={`bg-gradient-to-br ${featured ? "from-white via-white to-[#5EDDE8]" : "from-white to-white/50"} bg-clip-text text-5xl font-semibold tracking-[-0.03em] text-transparent`}
@@ -891,9 +921,24 @@ function PlanCard({
           </div>
         )}
         {withoutComplianceCents != null && (
-          <div className="mt-2 font-mono text-[10px] tracking-wider text-[#C89B3C]">
-            {aud(withoutComplianceCents)} without AML/CTF Compliance
+          // A genuine second price, not a footnote: the sheet publishes both,
+          // and for a firm that already has its compliance covered this is the
+          // number that decides the purchase.
+          <div className="mt-4 rounded-lg border border-[#C89B3C]/35 bg-[#C89B3C]/[0.07] px-3 py-2.5">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-semibold tracking-tight text-[#E9C877]">
+                {aud(withoutComplianceCents)}
+              </span>
+              <span className="font-display text-sm italic text-[#C89B3C]/80">
+                {period ? `/ ${period.replace("per ", "")}` : "/ month"}
+              </span>
+            </div>
+            <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.22em] text-[#C89B3C]/90">
+              without AML/CTF Compliance · incl GST
+            </div>
           </div>
+        )}
+          </>
         )}
       </div>
 
@@ -901,19 +946,60 @@ function PlanCard({
         {seats}
       </div>
 
-      <ul className="mt-6 flex-1 space-y-3 text-sm">
-        {highlights.map((hl, i) => (
-          <li key={i} className="flex gap-2.5">
-            <Check
-              className={`mt-0.5 h-4 w-4 shrink-0 ${featured ? "text-[#C89B3C]" : "text-[#00A8B5]"}`}
-            />
-            <span className="text-[#94A3B8]">{hl}</span>
-          </li>
-        ))}
-      </ul>
+      {features ? (
+        <div className="mt-6 flex-1 space-y-4">
+          {features.inherits && (
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5EDDE8]">
+              Everything in {features.inherits}, plus
+            </p>
+          )}
+          {features.groups.map((g) => (
+            <div key={g.heading}>
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.25em] text-white/40">
+                {g.heading}
+              </p>
+              <ul className="space-y-1.5 text-sm">
+                {g.items.map((item) => (
+                  <li key={item.name} className="flex gap-2.5">
+                    <Check
+                      className={`mt-0.5 h-4 w-4 shrink-0 ${featured ? "text-[#C89B3C]" : "text-[#00A8B5]"}`}
+                    />
+                    <span className="min-w-0">
+                      <span className="text-[#CBD5E1]">{item.name}</span>
+                      {item.subs && (
+                        <span className="mt-0.5 block text-xs leading-relaxed text-[#94A3B8]/70">
+                          {item.subs.join(" · ")}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <ul className="mt-6 flex-1 space-y-3 text-sm">
+          {highlights.map((hl, i) => (
+            <li key={i} className="flex gap-2.5">
+              <Check
+                className={`mt-0.5 h-4 w-4 shrink-0 ${featured ? "text-[#C89B3C]" : "text-[#00A8B5]"}`}
+              />
+              <span className="text-[#94A3B8]">{hl}</span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="mt-8">
-        {buyable ? (
+        {customPricing ? (
+          // No self-serve price means no self-serve checkout, credential or
+          // not. Enterprise is scoped first and quoted second.
+          <Link to={contactHref ?? "/contact"} className={ctaClasses}>
+            {cta}
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        ) : buyable ? (
           <button type="button" onClick={onBuy} disabled={busy} className={ctaClasses}>
             {busy ? (
               <>
