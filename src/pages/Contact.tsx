@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowRight, ShieldAlert, CheckCircle2, Mail } from "lucide-react";
 import { HeroBackground } from "../components/HeroBackgrounds";
@@ -12,7 +13,9 @@ import {
   labelClass,
   pairedRowClass,
 } from "../components/FormControls";
+import { StageOneCompleteModal } from "../components/StageOneCompleteModal";
 import { captureLead } from "../lib/leads";
+import { submitPriorityAccess } from "../lib/priorityAccess";
 import { getAttribution } from "../lib/attribution";
 import {
   EMPTY_WAITLIST_FORM,
@@ -60,6 +63,8 @@ export default function Contact() {
   const [errors, setErrors] = useState<Partial<Record<WaitlistFieldError, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
+  /** Shown only once Make.com has accepted AND a Stage 2 session exists. */
+  const [showHandoff, setShowHandoff] = useState(false);
   const [receipt, setReceipt] = useState<{
     applicationId: string;
     firstName: string;
@@ -74,6 +79,7 @@ export default function Contact() {
    */
   const applicationIdRef = useRef(generateApplicationId());
   const intakeBadge = useMemo(() => resolveIntakeBadge(), []);
+  const navigate = useNavigate();
 
   useEffect(() => {
     getAttribution("AURIXA Contact Waitlist Page", "/contact");
@@ -136,7 +142,38 @@ export default function Contact() {
       getAttribution("AURIXA Contact Waitlist Page", "/contact"),
     );
 
+    const receipt = {
+      applicationId,
+      firstName: cleanTextValue(values.firstName),
+      organisationName: cleanTextValue(values.organisationName),
+      workEmail: cleanEmailValue(values.workEmail),
+    };
+
     try {
+      // Preferred path: the same-origin endpoint forwards to the same Make.com
+      // webhook with the same payload, then issues the Stage 2 session cookie.
+      const handoff = await submitPriorityAccess({
+        applicationId,
+        values,
+        attribution: getAttribution("AURIXA Contact Waitlist Page", "/contact"),
+      });
+
+      if (handoff.stageOneReceived) {
+        captureLead(payload);
+        // The modal appears only when the session exists too; otherwise the
+        // applicant sees the existing confirmation screen, unchanged.
+        if (handoff.questionnaireSessionCreated) setShowHandoff(true);
+        else setReceipt(receipt);
+        return;
+      }
+
+      if (handoff.error !== "api_unavailable") {
+        throw new Error("Priority access submission rejected");
+      }
+
+      // The endpoint is not deployed. Fall back to the current browser-to-Make
+      // submission so no application is lost. No Stage 2 session is created,
+      // so questionnaire access stays locked.
       const response = await fetch(MAKE_WAITLIST_WEBHOOK_URL, {
         method: "POST",
         headers: {
@@ -158,12 +195,7 @@ export default function Contact() {
       // Fire-and-forget: never blocks or fails the visitor's submission.
       captureLead(payload);
 
-      setReceipt({
-        applicationId,
-        firstName: cleanTextValue(values.firstName),
-        organisationName: cleanTextValue(values.organisationName),
-        workEmail: cleanEmailValue(values.workEmail),
-      });
+      setReceipt(receipt);
     } catch (error) {
       console.error(error);
       setSubmissionError(
@@ -190,6 +222,7 @@ export default function Contact() {
 
   return (
     <div className="w-full relative pt-32 pb-20 min-h-screen bg-[#040B16] overflow-hidden">
+      {showHandoff && <StageOneCompleteModal onProceed={() => navigate("/questionnaire")} />}
       <HeroBackground variant="contact" />
 
       <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 relative z-10">

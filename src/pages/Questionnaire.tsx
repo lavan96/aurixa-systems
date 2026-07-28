@@ -80,12 +80,16 @@ import {
 import {
   ReadinessAccessFailure,
   ReadinessSession,
+  allowsOpenAccess,
+  authoriseByHandoffSession,
   authoriseQuestionnaire,
+  canAutosave,
   completeQuestionnaire,
-  isAuthorisedSession,
+  endHandoffSession,
+  handoffSession,
+  hasVerifiedPrefill,
   isPreviewAvailable,
   openAccessSession,
-  requiresSecureToken,
   saveQuestionnaireDraft,
 } from "../lib/readinessQuestionnaireService";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
@@ -113,6 +117,20 @@ type Ctx = {
 
 const optionLabel = (options: { value: string; label: string }[], value: string) =>
   options.find((option) => option.value === value)?.label ?? value;
+
+/**
+ * BRQ-01 is prefilled from the Priority Access Application and stays editable
+ * (section 6.2). A saved draft always wins, and an unrecognised role is ignored
+ * rather than written into the response as an invalid value.
+ */
+function seedPrefilledAnswers(session: ReadinessSession): AnswerMap {
+  const answers: AnswerMap = { ...(session.answers ?? {}) };
+  const role = session.prefill?.role;
+  if (!answers[Q.role] && role && READINESS_ROLE_OPTIONS.some((option) => option.value === role)) {
+    answers[Q.role] = role;
+  }
+  return answers;
+}
 
 export default function Questionnaire() {
   const [phase, setPhase] = useState<Phase>("loading");
@@ -171,23 +189,45 @@ export default function Questionnaire() {
     setPhase("form");
   }, []);
 
+  /**
+   * Resolves access in priority order:
+   *   1. A secure questionnaire token, when one was supplied in the link.
+   *   2. The same-origin Stage 1 → Stage 2 handoff cookie, which is how an
+   *      applicant who just submitted Stage 1 continues in the same session.
+   *   3. The explicit open-access escape hatch.
+   * Anything else stays locked.
+   */
   const authorise = useCallback(async (token: string) => {
-    // Token gate off (the default while link issuance does not exist): show the
-    // questionnaire. A token, if supplied, is still exchanged for prefill and
-    // an existing draft.
-    if (!token && !requiresSecureToken()) {
-      startOpenAccess();
+    setPhase("loading");
+
+    if (!token) {
+      const handoff = await authoriseByHandoffSession();
+      if (handoff.authorised && handoff.prefill) {
+        const session = handoffSession(handoff.prefill);
+        setSession(session);
+        setAnswers(seedPrefilledAnswers(session));
+        setResponseVersion(session.responseVersion);
+        savedSnapshotRef.current = "";
+        setPhase("form");
+        return;
+      }
+
+      if (allowsOpenAccess()) {
+        startOpenAccess();
+        return;
+      }
+
+      setBlockedBy("missing_token");
+      setPhase("blocked");
       return;
     }
 
-    setPhase("loading");
     const result = await authoriseQuestionnaire(token);
 
     if (!result.ok || !result.session) {
       // A completed questionnaire always blocks — that is duplicate-submission
-      // protection, not access control. Everything else falls through to open
-      // access unless the gate is on.
-      if (result.reason !== "already_completed" && !requiresSecureToken()) {
+      // protection, not access control.
+      if (result.reason !== "already_completed" && allowsOpenAccess()) {
         startOpenAccess();
         return;
       }
@@ -214,7 +254,7 @@ export default function Questionnaire() {
     }
 
     setSession(authorised);
-    setAnswers(authorised.answers ?? {});
+    setAnswers(seedPrefilledAnswers(authorised));
     setResponseVersion(authorised.responseVersion);
     startedAtRef.current = authorised.startedAt;
     savedSnapshotRef.current = JSON.stringify(buildStoredAnswers(authorised.answers ?? {}));
@@ -273,7 +313,7 @@ export default function Questionnaire() {
   );
 
   useEffect(() => {
-    if (phase !== "form" || !isAuthorisedSession(session)) return;
+    if (phase !== "form" || !canAutosave(session)) return;
     if (Object.keys(answers).length === 0) return;
     if (!startedAtRef.current) startedAtRef.current = new Date().toISOString();
 
@@ -296,7 +336,7 @@ export default function Questionnaire() {
     });
   }, []);
 
-  const ctx: Ctx = { answers, errors, set, authorised: isAuthorisedSession(session) };
+  const ctx: Ctx = { answers, errors, set, authorised: hasVerifiedPrefill(session) };
 
   const focusQuestion = (questionId: string) => {
     const element = document.getElementById(questionId);
@@ -403,6 +443,8 @@ export default function Questionnaire() {
       return;
     }
 
+    if (session.access === "handoff") await endHandoffSession();
+
     setCompletion({
       applicationId: result.applicationId ?? session.applicationId,
       completedAt: result.completedAt,
@@ -457,14 +499,15 @@ export default function Questionnaire() {
   if (!session) return null;
 
   const section = SECTIONS[sectionIndex];
-  const authorised = isAuthorisedSession(session);
+  const verifiedPrefill = hasVerifiedPrefill(session);
+  const autosaves = canAutosave(session);
   const activeErrors = Object.keys(errors).filter((questionId) => errors[questionId]);
 
   return (
     <QuestionnaireShell>
-      <QuestionnaireHeader authorised={authorised} />
+      <QuestionnaireHeader authorised={autosaves} />
 
-      {authorised && <ApplicationSummary session={session} />}
+      {verifiedPrefill && <ApplicationSummary session={session} />}
 
       <div className="mt-8">
         <QuestionnaireProgress
@@ -515,7 +558,7 @@ export default function Questionnaire() {
             </div>
 
             <div className="mt-9 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <SaveStatus state={saveState} authorised={authorised} />
+              <SaveStatus state={saveState} authorised={autosaves} />
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   type="button"

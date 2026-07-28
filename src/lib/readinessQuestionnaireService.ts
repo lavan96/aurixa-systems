@@ -43,7 +43,17 @@ export type ReadinessPrefill = {
 
 export type ReadinessStatus = "not_started" | "in_progress" | "completed";
 
+/**
+ * How the current session was authorised:
+ *   `token`   — a secure questionnaire link: prefill, draft resume and autosave.
+ *   `handoff` — the same-origin Stage 1 → Stage 2 cookie: prefill, no server
+ *               draft store yet, so no autosave.
+ *   `open`    — the explicit open-access escape hatch: neither.
+ */
+export type ReadinessAccessMode = "token" | "handoff" | "open";
+
 export type ReadinessSession = {
+  access: ReadinessAccessMode;
   /** Opaque session reference. Held in memory only — never persisted client-side. */
   sessionToken: string;
   applicationId: string;
@@ -96,19 +106,78 @@ export type CompleteResult = {
 };
 
 /**
- * Whether a valid questionnaire token is required to see the form.
+ * Escape hatch that drops the access requirement entirely.
  *
- * OFF by default. Link issuance (Stage 1 → `issue` → welcome email) does not
- * exist yet, so requiring a token would lock every visitor — including Aurixa —
- * out of a page nothing can currently produce a link for.
- *
- * Set `VITE_QUESTIONNAIRE_REQUIRE_TOKEN="true"` once tokens are being issued.
- * The secure path below is unchanged and takes over the moment it is set: a
- * supplied token is still exchanged for a session, prefill and draft even while
- * this is off.
+ * OFF by default: `/questionnaire` is reachable through the Stage 1 handoff
+ * session or a secure questionnaire link, and direct visitors see the locked
+ * screen. Set `VITE_QUESTIONNAIRE_OPEN_ACCESS="true"` only to expose the page
+ * deliberately — for stakeholder review, for instance.
  */
-export const requiresSecureToken = () =>
-  (import.meta.env.VITE_QUESTIONNAIRE_REQUIRE_TOKEN as string | undefined) === "true";
+export const allowsOpenAccess = () =>
+  (import.meta.env.VITE_QUESTIONNAIRE_OPEN_ACCESS as string | undefined) === "true";
+
+// ── Same-origin Stage 1 → Stage 2 handoff ───────────────────────────────────
+
+const SESSION_ENDPOINT = "/api/priority-access/session";
+
+export type HandoffSessionResult = {
+  authorised: boolean;
+  prefill?: ReadinessPrefill;
+  applicationId?: string;
+  expiresAt?: string | null;
+};
+
+/**
+ * Verifies the HttpOnly readiness cookie set when Stage 1 was submitted. The
+ * browser cannot read or forge that cookie; this call is the only way the page
+ * learns whether the visitor is continuing an authorised journey.
+ */
+export async function authoriseByHandoffSession(): Promise<HandoffSessionResult> {
+  try {
+    const response = await fetch(SESSION_ENDPOINT, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { accept: "application/json" },
+    });
+
+    // An undeployed function is answered by the SPA rewrite with HTML.
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) return { authorised: false };
+    if (!response.ok) return { authorised: false };
+
+    const body = (await response.json()) as HandoffSessionResult;
+    return body?.authorised && body.prefill ? body : { authorised: false };
+  } catch {
+    return { authorised: false };
+  }
+}
+
+/** Invalidates the handoff session. Called once Stage 2 has been submitted. */
+export async function endHandoffSession(): Promise<void> {
+  try {
+    await fetch(SESSION_ENDPOINT, { method: "DELETE", credentials: "same-origin" });
+  } catch {
+    // The cookie expires server-side within two hours regardless.
+  }
+}
+
+/** Builds a questionnaire session from verified Stage 1 handoff details. */
+export function handoffSession(prefill: ReadinessPrefill): ReadinessSession {
+  return {
+    access: "handoff",
+    sessionToken: "",
+    applicationId: prefill.applicationId,
+    questionnaireVersion: QUESTIONNAIRE_VERSION,
+    responseVersion: 1,
+    status: "not_started",
+    startedAt: null,
+    lastSavedAt: null,
+    completedAt: null,
+    expiresAt: null,
+    prefill,
+    answers: {},
+  };
+}
 
 /**
  * Open access, used while the token gate is off. There is no session, so there
@@ -118,6 +187,7 @@ export const requiresSecureToken = () =>
  */
 export function openAccessSession(): ReadinessSession {
   return {
+    access: "open",
     sessionToken: "",
     applicationId: "",
     questionnaireVersion: QUESTIONNAIRE_VERSION,
@@ -141,9 +211,13 @@ export function openAccessSession(): ReadinessSession {
   };
 }
 
-/** True once the session is backed by a verified token (prefill, autosave, resume). */
-export const isAuthorisedSession = (session: ReadinessSession | null) =>
-  Boolean(session?.sessionToken);
+/** Verified Stage 1 details are available to display and prefill. */
+export const hasVerifiedPrefill = (session: ReadinessSession | null) =>
+  session?.access === "token" || session?.access === "handoff";
+
+/** A server-side draft store exists, so autosave and resume are real. */
+export const canAutosave = (session: ReadinessSession | null) =>
+  session?.access === "token" && Boolean(session.sessionToken);
 
 /**
  * Development-only preview. Guarded by `import.meta.env.DEV`, which Vite
@@ -154,6 +228,7 @@ export const isAuthorisedSession = (session: ReadinessSession | null) =>
 export const isPreviewAvailable = () => import.meta.env.DEV;
 
 const PREVIEW_SESSION: ReadinessSession = {
+  access: "token",
   sessionToken: "dev-preview-session",
   applicationId: "AX-DEVPREVIEW",
   questionnaireVersion: QUESTIONNAIRE_VERSION,
@@ -238,7 +313,7 @@ export async function authoriseQuestionnaire(token: string): Promise<AuthoriseRe
       applicationId: result.applicationId,
     };
   }
-  return { ok: true, session: result.session };
+  return { ok: true, session: { ...result.session, access: "token" } };
 }
 
 /**
