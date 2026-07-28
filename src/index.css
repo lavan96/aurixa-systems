@@ -326,3 +326,68 @@
     to { background-position: -200% 0; }
   }
 }
+
+/* ── Aurixa Voice (Platform › conversational infrastructure) ───────────── */
+@layer utilities {
+  /* Live waveform bars. Each bar sets its own duration/delay inline so the
+     array reads as speech rather than a synchronised equaliser. */
+  .voice-wave-bar {
+    transform-origin: center;
+    animation: voice-wave 1.4s ease-in-out infinite;
+  }
+
+  /* Expanding sonar rings behind the console's call indicator. */
+  .voice-sonar {
+    animation: voice-sonar 3.4s cubic-bezier(0.2, 0.7, 0.1, 1) infinite;
+  }
+
+  /* Slow rotation for the ambient ring lattice. */
+  .voice-orbit {
+    animation: voice-orbit 34s linear infinite;
+  }
+
+  /* Sweep that travels the console's action ledger. */
+  .voice-scan {
+    animation: voice-scan 5.5s ease-in-out infinite;
+  }
+
+  .voice-grid {
+    background-image:
+      linear-gradient(to right, rgba(0, 168, 181, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 168, 181, 0.08) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  @keyframes voice-wave {
+    0%, 100% { transform: scaleY(0.16); opacity: 0.4; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+
+  @keyframes voice-sonar {
+    0% { transform: scale(0.55); opacity: 0.5; }
+    100% { transform: scale(2.1); opacity: 0; }
+  }
+
+  @keyframes voice-orbit {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes voice-scan {
+    0%, 100% { transform: translateY(-110%); opacity: 0; }
+    12% { opacity: 1; }
+    88% { opacity: 1; }
+    100% { transform: translateY(310%); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-wave-bar,
+  .voice-sonar,
+  .voice-orbit,
+  .voice-scan {
+    animation: none;
+  }
+  .voice-wave-bar { transform: scaleY(0.62); opacity: 0.85; }
+  .voice-sonar { opacity: 0.18; }
+  .voice-scan { opacity: 0; }
+}
