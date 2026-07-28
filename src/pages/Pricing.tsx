@@ -370,7 +370,20 @@ export default function Pricing() {
   const packs = catalog?.packs ?? [];
   const setups = catalog?.setups ?? [];
   const addons = catalog?.addons ?? [];
-  const reports = catalog?.reports ?? [];
+  // The mirror serves report costs with no ORDER BY, so the table rendered in
+  // whatever order Postgres happened to return — which changes. Sorted here by
+  // category, then by cost, so the list is stable across loads and reads the
+  // way the price list is actually organised.
+  const reports = useMemo(
+    () =>
+      [...(catalog?.reports ?? [])].sort(
+        (a, b) =>
+          (a.category ?? "").localeCompare(b.category ?? "") ||
+          b.credit_cost - a.credit_cost ||
+          a.name.localeCompare(b.name),
+      ),
+    [catalog],
+  );
   // Grouped the way the price list is organised. Category order follows first
   // appearance in the catalog, which Mission Control already sorts.
   const addonsByCategory = useMemo(() => {
