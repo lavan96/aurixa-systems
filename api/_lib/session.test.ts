@@ -18,7 +18,7 @@ import {
   readCookie,
   sealSession,
   serialiseSessionCookie,
-} from "./session";
+} from "./session.js";
 
 const SECRET = "a-test-secret-that-is-at-least-32-chars-long";
 const OTHER_SECRET = "a-different-secret-also-32-chars-minimum!!";

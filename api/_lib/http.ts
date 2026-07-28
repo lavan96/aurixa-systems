@@ -1,6 +1,12 @@
 /**
  * Minimal request/response helpers for the same-origin Aurixa API.
  *
+ * NOTE: every relative import under `api/` must carry an explicit `.js`
+ * extension. `package.json` sets `"type": "module"`, so the compiled functions
+ * are ESM, and Node's ESM loader does not resolve extensionless specifiers —
+ * an extensionless import deploys cleanly and then fails at runtime with
+ * ERR_MODULE_NOT_FOUND. `npm test` guards this.
+ *
  * Typed against Node's own http types rather than a platform SDK, so the
  * handlers run unchanged under Vercel's Node runtime and under a plain Node
  * server for local verification. No new dependency is introduced.

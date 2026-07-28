@@ -16,13 +16,13 @@ import {
   sendJson,
   type ApiRequest,
   type ApiResponse,
-} from "../_lib/http";
+} from "../_lib/http.js";
 import {
   SESSION_COOKIE,
   clearSessionCookie,
   openSession,
   readCookie,
-} from "../_lib/session";
+} from "../_lib/session.js";
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   if (!isSameOrigin(req)) return sendJson(res, 403, { authorised: false, error: "forbidden" });
