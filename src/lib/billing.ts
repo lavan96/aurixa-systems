@@ -65,6 +65,8 @@ export interface CatalogPlan {
     /** Seat band from the price list, e.g. 1–4. */
     seat_min?: number | null;
     seat_max?: number | null;
+    /** Report credits included every month — see planMonthlyCredits. */
+    monthly_credits?: number | null;
     /**
      * The annual price as Mission Control minted it in Stripe. Preferred over
      * computing it here: what is displayed must be what is charged, and only
@@ -88,6 +90,23 @@ export interface CatalogPlan {
 /** The annual figure to show: the minted price if we have one, else derived. */
 export const planAnnualCents = (plan: CatalogPlan): number =>
   plan.metadata?.annual_price_cents ?? annualCents(plan.price_cents);
+
+/**
+ * Report credits the plan includes every month, or null when it includes none.
+ *
+ * Read from the catalog rather than hardcoded, because the same figure is what
+ * Mission Control actually grants into the balance. A number typed in here
+ * could advertise 35,000 while the workspace received 7,000, and nothing would
+ * catch it.
+ *
+ * Per MONTH on both billing periods. An annual plan bills twelve months at
+ * once but does not hand over a year of credits on day one — credits lapse 30
+ * days after they are issued, so eleven months of them would expire unused.
+ */
+export const planMonthlyCredits = (plan: CatalogPlan): number | null => {
+  const n = plan.metadata?.monthly_credits;
+  return typeof n === "number" && n > 0 ? n : null;
+};
 
 /**
  * The tier's price WITHOUT the AML/CTF module, or null when it does not apply.
@@ -500,5 +519,93 @@ export function formatMoney(cents: number | null | undefined, currency = "AUD"):
     }).format(cents / 100);
   } catch {
     return `${(cents / 100).toFixed(2)} ${currency}`;
+  }
+}
+
+/**
+ * A plan change the workspace has not been shown yet.
+ *
+ * Announced exactly once. Which is why it is a record on the server with an
+ * acknowledgement rather than anything derived from current state: state can
+ * only say what plan you are on, not whether you have been told you moved to
+ * it — and two changes in a month would collapse into one.
+ */
+export interface PlanChange {
+  id: string;
+  fromPlanSlug: string | null;
+  fromPlanName: string | null;
+  toPlanSlug: string;
+  toPlanName: string;
+  /** Credits added to the balance by the change. Zero if already credited. */
+  creditsGranted: number;
+  creditsExpireAt: string | null;
+  createdAt: string;
+}
+
+const credentialQuery = (credential?: Credential | null): string => {
+  if (!credential) return "";
+  return "h" in credential
+    ? `h=${encodeURIComponent(credential.h)}`
+    : `uid=${encodeURIComponent(credential.uid)}`;
+};
+
+/**
+ * The newest unseen plan change, or null.
+ *
+ * Never throws. A banner is the least important thing on this page, and a
+ * workspace must not fail to see pricing because its notice lookup did.
+ */
+export async function fetchPlanChange(credential?: Credential | null): Promise<PlanChange | null> {
+  const q = credentialQuery(credential);
+  if (!q) return null;
+  try {
+    const body = await apiGet<{
+      changes: Array<{
+        id: string;
+        from_plan_slug: string | null;
+        from_plan_name: string | null;
+        to_plan_slug: string;
+        to_plan_name: string;
+        credits_granted: number;
+        credits_expire_at: string | null;
+        created_at: string;
+      }>;
+    }>(`/storefront-plan-change?${q}`);
+    const c = body.changes?.[0];
+    if (!c) return null;
+    return {
+      id: c.id,
+      fromPlanSlug: c.from_plan_slug,
+      fromPlanName: c.from_plan_name,
+      toPlanSlug: c.to_plan_slug,
+      toPlanName: c.to_plan_name,
+      creditsGranted: c.credits_granted,
+      creditsExpireAt: c.credits_expire_at,
+      createdAt: c.created_at,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Marks a change as seen, so it never appears again.
+ *
+ * Sent when the customer dismisses it, not when the page fetches it: a notice
+ * retired on load would be lost to anyone whose page failed to render, and
+ * this is the only time they are told.
+ */
+export async function acknowledgePlanChange(
+  id: string,
+  credential?: Credential | null,
+): Promise<void> {
+  try {
+    await fetch(`${STOREFRONT_BASE}/storefront-plan-change`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...(credential ?? {}) }),
+    });
+  } catch {
+    // Worst case it shows once more. Not worth surfacing an error over.
   }
 }
