@@ -259,15 +259,19 @@ export default function Pricing() {
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const autoLaunchedRef = useRef(false);
 
+  // The catalog is fetched WITH the link's credential, because the restricted
+  // sections are gated server-side: modules, onboarding and report economics
+  // are simply absent from the response unless Mission Control allows them.
+  const accessToken = (params.get("access") ?? "").trim() || null;
   useEffect(() => {
     let cancelled = false;
-    fetchCatalog()
+    fetchCatalog({ h, uid, access: accessToken })
       .then((c) => !cancelled && setCatalog(c))
       .catch(() => !cancelled && setCatalogError("Pricing is temporarily unavailable."));
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [h, uid, accessToken]);
 
   // Identity-carrying links: a single-use `?h=` handoff (minted from a command
   // center) or a stable `?uid=` billing id (assigned by an operator in Mission
@@ -374,6 +378,8 @@ export default function Pricing() {
   // whatever order Postgres happened to return — which changes. Sorted here by
   // category, then by cost, so the list is stable across loads and reads the
   // way the price list is actually organised.
+  const catalogAccess = catalog?.access ?? null;
+  const hasRestricted = catalogAccess?.granted === true;
   const reports = useMemo(
     () =>
       [...(catalog?.reports ?? [])].sort(
@@ -734,10 +740,17 @@ export default function Pricing() {
               <span className="font-display italic text-[#5EDDE8]">report economics</span>.
             </>
           }
-          description="Mix and match what your firm actually uses. All optional, all transparent."
+          description={
+            hasRestricted
+              ? "Mix and match what your firm actually uses. All optional, all transparent."
+              : "Module pricing, onboarding packages and per-report credit costs are shared with customers, and on request."
+          }
           icon={<Puzzle className="h-4 w-4" />}
         />
 
+        {!hasRestricted && <RestrictedGate loading={isLoading} />}
+
+        {hasRestricted && (
         <StackTabs
           addons={
             <div className="space-y-10">
@@ -879,6 +892,7 @@ export default function Pricing() {
             </>
           }
         />
+        )}
       </section>
 
       {/* Trust strip */}
@@ -1223,6 +1237,86 @@ function PlanCard({
             <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What stands in for the restricted sections when a visitor may not see them.
+ *
+ * Deliberately not an error and not an empty state. The sections exist, they
+ * are simply not published to the open web — so this says what is behind the
+ * gate, names the two ways through it, and gives one obvious action. Blurred
+ * placeholder rows sit behind it so the shape of what is missing is legible
+ * without any of the figures being present in the DOM: the data never reaches
+ * the browser at all, because the server does not send it.
+ */
+function RestrictedGate({ loading }: { loading: boolean }) {
+  return (
+    <div className="relative mt-14 overflow-hidden rounded-2xl border border-white/10 bg-[#0B162C]/40 backdrop-blur-xl">
+      <CornerTicks />
+
+      {/* Suggestion of the withheld content. Purely decorative — no real
+          values are rendered, blurred or otherwise. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 select-none p-8 opacity-[0.13] blur-[6px]">
+        <div className="space-y-3">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <div className="h-3 flex-1 rounded-full bg-white/40" style={{ maxWidth: `${58 + ((i * 13) % 34)}%` }} />
+              <div className="h-3 w-14 rounded-full bg-[#00A8B5]/60" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#040B16]/30 via-[#040B16]/70 to-[#040B16]" />
+
+      <div className="relative flex flex-col items-center px-6 py-16 text-center sm:px-10 sm:py-20">
+        <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-full border border-[#C89B3C]/40 bg-[#C89B3C]/10">
+          <ShieldCheck className="h-5 w-5 text-[#C89B3C]" />
+        </span>
+
+        <h3 className="max-w-xl font-sans text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          Module pricing is shared{" "}
+          <span className="font-display italic text-[#C89B3C]">on request</span>.
+        </h3>
+
+        <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#94A3B8]">
+          Add-on module pricing, onboarding packages and per-report credit costs sit behind this.
+          They are visible to anyone reaching this page from their workspace, and to anyone we have
+          shared an access link with.
+        </p>
+
+        <div className="mt-8 grid w-full max-w-lg gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-white/10 bg-[#040B16]/50 px-4 py-3 text-left">
+            <p className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#00A8B5]">
+              Already a customer
+            </p>
+            <p className="mt-1.5 text-xs leading-relaxed text-[#94A3B8]">
+              Open pricing from inside your workspace and it unlocks automatically.
+            </p>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-[#040B16]/50 px-4 py-3 text-left">
+            <p className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#C89B3C]">
+              Evaluating us
+            </p>
+            <p className="mt-1.5 text-xs leading-relaxed text-[#94A3B8]">
+              Ask and we will send you an access link.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          to="/contact"
+          className="group mt-9 inline-flex items-center justify-center rounded-sm bg-gradient-to-r from-[#00A8B5] to-[#5EDDE8] px-8 py-3.5 font-mono text-[11px] font-black uppercase tracking-[0.25em] text-[#040B16] shadow-[0_0_40px_-8px] shadow-[#00A8B5]/70 transition-all hover:scale-[1.02]"
+        >
+          Request access
+          <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+
+        <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.25em] text-white/30">
+          {loading ? "Checking access…" : "Plans and credit packs above are public"}
+        </p>
       </div>
     </div>
   );

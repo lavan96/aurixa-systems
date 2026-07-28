@@ -171,12 +171,26 @@ export interface CatalogAddon {
   included_in_plans: string[] | null;
 }
 
+/**
+ * Why the restricted sections are or are not present.
+ *
+ * The server decides and the server enforces — this is the reason it gives,
+ * so the page can render an honest gate instead of an empty list that reads
+ * as a loading failure.
+ */
+export interface CatalogAccess {
+  granted: boolean;
+  reason: string;
+  label: string | null;
+}
+
 export interface Catalog {
   plans: CatalogPlan[];
   packs: CatalogPack[];
   setups: CatalogSetup[];
   addons: CatalogAddon[];
   reports: CatalogReport[];
+  access: CatalogAccess;
 }
 
 export interface ResolvedHandoff {
@@ -222,14 +236,31 @@ async function apiGet<T>(path: string): Promise<T> {
   return body;
 }
 
-export async function fetchCatalog(): Promise<Catalog> {
-  const body = await apiGet<Catalog>("/storefront-catalog");
+/**
+ * The catalog, scoped to what this visitor may see.
+ *
+ * The credential travels with the request because the gate is server-side:
+ * modules, onboarding and report economics are simply absent from the
+ * response unless Mission Control says otherwise. Asking without one is not
+ * an error — it returns the public price list.
+ */
+export async function fetchCatalog(
+  credential?: { h?: string | null; uid?: string | null; access?: string | null },
+): Promise<Catalog> {
+  const qs = new URLSearchParams();
+  if (credential?.h) qs.set("h", credential.h);
+  if (credential?.uid) qs.set("uid", credential.uid);
+  if (credential?.access) qs.set("access", credential.access);
+  const suffix = qs.toString() ? `?${qs}` : "";
+
+  const body = await apiGet<Catalog>(`/storefront-catalog${suffix}`);
   return {
     plans: body.plans ?? [],
     packs: body.packs ?? [],
     setups: body.setups ?? [],
     addons: body.addons ?? [],
     reports: body.reports ?? [],
+    access: body.access ?? { granted: false, reason: "no_credential", label: null },
   };
 }
 
