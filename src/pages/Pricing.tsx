@@ -66,6 +66,155 @@ const range = (min: number | null | undefined, max: number | null | undefined) =
   return `${aud(min)} – ${aud(max)}`;
 };
 
+type FaqEntry = { q: string; a: string[]; points?: string[] };
+type FaqGroup = { heading: string; items: FaqEntry[] };
+
+/**
+ * Answers are written to match what the platform actually does — the credit
+ * lifecycle, the failure handling, the tax treatment — rather than to sound
+ * reassuring. A pricing FAQ that overstates gets found out at the first
+ * invoice.
+ */
+const FAQ_GROUPS: FaqGroup[] = [
+  {
+    heading: "Credits & reports",
+    items: [
+      {
+        q: "How do credits work?",
+        a: [
+          "Credits are how AI work is metered. Every generated report, comparison or scenario costs a set number of credits, and the cost depends on the report type rather than on how long it takes or how much data it touches — so the same report always costs the same, and you can predict a month's usage from a month's workload.",
+          "Each plan includes a monthly allowance. If you need more before the next cycle, top-up packs are available at any time and land in your balance as soon as payment clears.",
+        ],
+      },
+      {
+        q: "What does a single report cost?",
+        a: [
+          "It varies by report type. The exact credit cost of every report is listed in the Report economics table further up this page, and it is the same figure the platform charges when you generate one — there is no separate internal price list.",
+          "Costs are set centrally and can change as reports get more capable. Any change applies from the moment it is published; it never re-prices something you have already generated.",
+        ],
+      },
+      {
+        q: "Do credits expire?",
+        a: [
+          "Credits stay spendable for 30 days from the day they are issued, whether they came from your plan allowance or a top-up pack.",
+          "Nothing is wiped at the end of a billing period. Unused credits roll over and run out on their own 30-day clock, and when you generate a report we always spend the soonest-to-expire credits first — so what stays in your balance is always the credit with the most time left on it.",
+        ],
+      },
+      {
+        q: "What happens if a report fails to generate?",
+        a: [
+          "It costs you nothing. Credits are held when a report starts and only actually charged once it finishes, so a run that fails part-way releases the hold rather than consuming it.",
+          "That holds for every way a generation can end badly — an error mid-way, a model timeout, closing the tab, or stopping it yourself. If a failure somehow occurs after the credits were charged, the charge is reversed automatically rather than waiting for you to notice and ask.",
+        ],
+      },
+      {
+        q: "What if I run out of credits mid-month?",
+        a: [
+          "Buy a top-up pack and keep going — packs are available in several sizes and credit your balance immediately, without changing your plan or your billing date.",
+          "Top-up credits follow the same 30-day rule as everything else, and because spend always takes the soonest-to-expire credit first, a top-up does not push your existing balance closer to lapsing.",
+        ],
+      },
+    ],
+  },
+  {
+    heading: "Plans, seats & modules",
+    items: [
+      {
+        q: "What is the difference between the plans?",
+        a: [
+          "Two things: how many seats you get, and which modules are switched on. Launch covers 1–4 seats with the core reporting and client workflow. Growth adds 5–15 seats, report and cash-flow comparisons, and the deal pipeline. Scale covers 16–30 seats and turns on the finance, marketing, agreements and administration modules.",
+          "Each plan card lists exactly what it includes, and the higher plans show only what they add on top of the one below.",
+        ],
+      },
+      {
+        q: "Can I change plans later?",
+        a: [
+          "Yes. Upgrade, downgrade or change seat counts whenever your firm changes shape, and pro-rated billing applies on the next cycle.",
+          "If you reach this page from your workspace, each plan card knows which one you are on and offers Upgrade or Downgrade accordingly rather than making you work it out.",
+        ],
+      },
+      {
+        q: "What happens if I outgrow my seat band?",
+        a: [
+          "Seat bands are inclusive ranges, not hard caps you hit without warning. When your team passes the top of your band, moving up a tier is the cleanest path — it brings the extra seats and the additional modules together.",
+          "If you are close to the edge of a band, or sit awkwardly between two, get in touch and we will size it properly rather than pushing you into a tier you do not need.",
+        ],
+      },
+      {
+        q: "Can I add individual modules to my plan?",
+        a: [
+          "Yes. Every module is listed with its own monthly price in the Modules section on this page, including the ones already bundled into higher tiers — so a firm on Launch that needs only the deal pipeline can take that one module instead of moving up a whole tier.",
+          "Modules are added to an existing subscription rather than bought as a separate checkout, so get in touch or ask through your workspace and we will attach them to your next invoice.",
+        ],
+      },
+      {
+        q: "Why are two prices shown for each plan?",
+        a: [
+          "Every plan is quoted with the AML/CTF Compliance module included, because most firms in this market need it. The second, lower figure is the same plan without that module, for firms whose compliance obligations are already covered elsewhere.",
+          "The difference is exactly the module's own price of $195 a month, on every tier — so the two figures can never drift apart, and adding compliance later costs the same as having taken it from the start.",
+        ],
+      },
+    ],
+  },
+  {
+    heading: "Billing, tax & payment",
+    items: [
+      {
+        q: "Are prices inclusive of GST?",
+        a: [
+          "Yes. Every figure on this page is the amount you actually pay, with Australian GST already contained in it — nothing is added at checkout. Each plan card also shows how much of the price is GST.",
+          "Your tax invoice breaks the same amount into its GST-exclusive value and the GST component, so it reconciles against what you were charged to the cent.",
+        ],
+      },
+      {
+        q: "Do you offer annual billing?",
+        a: [
+          "Yes — switch the toggle at the top of the page. Annual plans bill twelve months up front at a 10% discount, and the annual figure shown is the amount charged, not an equivalent monthly rate.",
+          "Multi-year terms are available for Enterprise customers.",
+        ],
+      },
+      {
+        q: "How do payments work, and can I save a card?",
+        a: [
+          "Payments run through Stripe. Card details are entered on Stripe's own hosted page and never touch our systems or our servers.",
+          "You can save a card for future purchases so top-ups and renewals do not need re-entering, and you can hold more than one — a primary plus a backup — so a single expired card does not interrupt anything.",
+        ],
+      },
+      {
+        q: "Can I put my ABN on the invoice?",
+        a: [
+          "Yes. If your workspace already has an ABN on file it is attached automatically and you will not be asked for it; otherwise Stripe collects it during checkout.",
+          "The ABN is validated before it is stored, and it appears on every tax invoice from then on along with your registered business name.",
+        ],
+      },
+    ],
+  },
+  {
+    heading: "Getting started",
+    items: [
+      {
+        q: "What does onboarding include?",
+        a: [
+          "A dedicated specialist walks your team through configuration, brand setup, workflows and training. Larger packages include migration, integrations and white-label theming.",
+        ],
+      },
+      {
+        q: "Is there a free trial?",
+        a: [
+          "Reach out through the contact page and we will set up a sandbox environment so your team can road-test the platform with sample data before committing.",
+        ],
+      },
+      {
+        q: "What if none of these plans fit?",
+        a: [
+          "That is what Enterprise is for. Franchise groups, networks and white-label partners are scoped and quoted rather than picked off a list, because seat counts, module mix, branding and support commitments differ too much between them for a fixed price to be honest.",
+          "Talk to sales and we will put a number against what you actually need.",
+        ],
+      },
+    ],
+  },
+];
+
 const MARQUEE_WORDS = [
   "Pricing",
   "Seats",
@@ -78,6 +227,11 @@ const MARQUEE_WORDS = [
   "Branding",
   "Aurixa",
 ];
+
+/** Question -> its position in the whole list, so badges read 01..N. */
+const faqNumbers = new Map(
+  FAQ_GROUPS.flatMap((g) => g.items).map((item, i) => [item.q, i + 1]),
+);
 
 export default function Pricing() {
   const [params] = useSearchParams();
@@ -737,7 +891,7 @@ export default function Pricing() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="relative z-10 mx-auto max-w-3xl px-6 pb-32">
+      <section id="faq" className="relative z-10 mx-auto max-w-4xl px-6 pb-32">
         <SectionHeader
           index="05"
           eyebrow="FAQ"
@@ -748,31 +902,22 @@ export default function Pricing() {
           }
           icon={<FileText className="h-4 w-4" />}
         />
-        <div className="mt-10">
-          <FaqItem
-            q="How do credits work?"
-            a="Every AI-generated report or scenario consumes credits based on its complexity. Each plan includes a monthly allowance, and you can top up anytime with credit packs."
-          />
-          <FaqItem
-            q="Do credits expire?"
-            a="Credits stay spendable for 30 days from the day they are issued — whether they came from your plan allowance or a top-up pack. Nothing is wiped at the end of a billing period: unused credits carry over and run out on their own 30-day clock. When you generate a report we always spend your soonest-to-expire credits first, so what stays in your balance is always the credit with the most time left on it."
-          />
-          <FaqItem
-            q="Can I change plans later?"
-            a="Absolutely. Upgrade, downgrade or change seat counts whenever your firm changes shape. Pro-rated billing applies on the next cycle."
-          />
-          <FaqItem
-            q="What does onboarding include?"
-            a="A dedicated specialist walks your team through configuration, brand setup, workflows and training. Larger packages include migration, integrations and white-label theming."
-          />
-          <FaqItem
-            q="Do you offer annual billing?"
-            a="Yes — flip the toggle at the top of the page for a 10% discount on annual prepayment. We also offer multi-year terms for Enterprise customers."
-          />
-          <FaqItem
-            q="Is there a free trial?"
-            a="Reach out through the contact page. We'll set up a sandbox environment so your team can road-test the platform with sample data."
-          />
+        <div className="mt-12 space-y-10">
+          {FAQ_GROUPS.map((group) => (
+            <div key={group.heading}>
+              <div className="mb-4 flex items-center gap-3">
+                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#00A8B5]">
+                  {group.heading}
+                </span>
+                <span className="h-px flex-1 bg-gradient-to-r from-[#00A8B5]/30 to-transparent" />
+              </div>
+              <div className="space-y-2.5">
+                {group.items.map((item, i) => (
+                  <FaqItem key={item.q} index={faqNumbers.get(item.q) ?? i + 1} {...item} />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -1158,24 +1303,95 @@ function Trust({ icon, title, body }: { icon: ReactNode; title: string; body: st
   );
 }
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({
+  index,
+  q,
+  a,
+  points,
+}: {
+  // No @types/react in this repo, so JSX doesn't strip `key` from props.
+  key?: string;
+  index: number;
+  q: string;
+  a: string[];
+  points?: string[];
+}) {
   const [open, setOpen] = useState(false);
+  const panelId = `faq-panel-${index}`;
+
   return (
-    <div className="border-b border-white/10">
+    <div
+      className={`group relative overflow-hidden rounded-xl border transition-all duration-300 ${
+        open
+          ? "border-[#00A8B5]/45 bg-gradient-to-br from-[#00A8B5]/[0.07] to-[#0B162C]/50"
+          : "border-white/10 bg-[#0B162C]/30 hover:border-[#00A8B5]/25 hover:bg-[#0B162C]/50"
+      }`}
+    >
+      {/* Accent rail — a quiet marker for which row is open, rather than
+          relying on the icon alone. */}
+      <span
+        className={`absolute inset-y-0 left-0 w-px bg-gradient-to-b from-[#00A8B5] to-[#C89B3C] transition-opacity duration-300 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
       <button
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-4 py-5 text-left font-sans text-base font-medium tracking-tight text-white transition-colors hover:text-[#00A8B5]"
+        aria-controls={panelId}
+        className="flex w-full items-start gap-4 px-5 py-4 text-left sm:px-6 sm:py-5"
       >
-        {q}
-        {open ? (
-          <Minus className="h-4 w-4 shrink-0 text-[#94A3B8]" />
-        ) : (
-          <Plus className="h-4 w-4 shrink-0 text-[#94A3B8]" />
-        )}
+        <span
+          className={`mt-0.5 font-mono text-[10px] tabular-nums transition-colors ${
+            open ? "text-[#00A8B5]" : "text-white/25"
+          }`}
+        >
+          {String(index).padStart(2, "0")}
+        </span>
+        <span
+          className={`flex-1 font-sans text-base font-medium tracking-tight transition-colors ${
+            open ? "text-white" : "text-white/90 group-hover:text-white"
+          }`}
+        >
+          {q}
+        </span>
+        <span
+          className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
+            open
+              ? "rotate-180 border-[#00A8B5]/50 bg-[#00A8B5]/15 text-[#5EDDE8]"
+              : "border-white/15 text-[#94A3B8] group-hover:border-[#00A8B5]/40 group-hover:text-white"
+          }`}
+        >
+          {open ? <Minus className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+        </span>
       </button>
-      {open && <p className="pb-5 text-sm leading-relaxed text-[#94A3B8]">{a}</p>}
+
+      {/* Animating grid rows rather than max-height: the panel opens to its
+          real content height, so long answers do not clip and short ones do
+          not leave a gap. */}
+      <div
+        id={panelId}
+        className={`grid transition-all duration-300 ease-out ${
+          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="space-y-3 px-5 pb-5 pl-[3.25rem] text-sm leading-relaxed text-[#94A3B8] sm:px-6 sm:pb-6 sm:pl-[3.75rem]">
+            {a.map((para) => (
+              <p key={para}>{para}</p>
+            ))}
+            {points && (
+              <ul className="space-y-1.5 border-l border-[#00A8B5]/20 pl-4">
+                {points.map((pt) => (
+                  <li key={pt} className="text-[#94A3B8]/90">
+                    {pt}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
