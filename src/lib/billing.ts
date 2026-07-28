@@ -184,12 +184,17 @@ export interface ResolvedHandoff {
   cloneName: string | null;
   originUsername: string | null;
   intent: string | null;
+  /** The plan this workspace is already on, so CTAs can say Upgrade/Downgrade. */
+  currentPlanSlug: string | null;
+  currentPlanName: string | null;
 }
 
 export interface ResolvedIdentity {
   uid: string;
   cloneName: string | null;
   originUsername: string | null;
+  currentPlanSlug: string | null;
+  currentPlanName: string | null;
 }
 
 /** Purchase credential: a single-use handoff, or a stable operator uid. */
@@ -235,12 +240,16 @@ export async function resolveHandoff(h: string): Promise<ResolvedHandoff | null>
       clone_name: string | null;
       origin_username: string | null;
       intent: string | null;
+      current_plan_slug?: string | null;
+      current_plan_name?: string | null;
     }>(`/storefront-handoff?h=${encodeURIComponent(h)}`);
     return {
       handoffId: body.handoff_id,
       cloneName: body.clone_name,
       originUsername: body.origin_username,
       intent: body.intent,
+      currentPlanSlug: body.current_plan_slug ?? null,
+      currentPlanName: body.current_plan_name ?? null,
     };
   } catch {
     // Expired/consumed/unknown token → degrade to the browse-only page.
@@ -254,11 +263,15 @@ export async function resolveIdentity(uid: string): Promise<ResolvedIdentity | n
       uid: string;
       clone_name: string | null;
       origin_username: string | null;
+      current_plan_slug?: string | null;
+      current_plan_name?: string | null;
     }>(`/storefront-identity?uid=${encodeURIComponent(uid)}`);
     return {
       uid: body.uid,
       cloneName: body.clone_name,
       originUsername: body.origin_username,
+      currentPlanSlug: body.current_plan_slug ?? null,
+      currentPlanName: body.current_plan_name ?? null,
     };
   } catch {
     // Unknown/invalid uid → degrade to the browse-only page.
@@ -271,6 +284,8 @@ export async function startCheckout(input: {
   mode: CheckoutMode;
   itemId: string;
   quantity?: number;
+  /** Annual is a separate Stripe price — without this every purchase bills monthly. */
+  period?: "monthly" | "annual";
 }): Promise<{ url: string }> {
   // text/plain keeps this a CORS "simple request" (no OPTIONS preflight). The
   // storefront-checkout function reads the raw body and forwards it to Mission
@@ -284,6 +299,7 @@ export async function startCheckout(input: {
       mode: input.mode,
       item_id: input.itemId,
       quantity: input.quantity ?? 1,
+      period: input.period ?? "monthly",
     }),
   });
   const body = (await res.json()) as { ok?: boolean; url?: string; error?: string };
