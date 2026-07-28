@@ -12,6 +12,9 @@ import test from "node:test";
 import {
   AnswerMap,
   MAX_PROBLEMS,
+  CAPABILITY_OPTIONS,
+  INTEGRATION_OPTIONS,
+  REGION_OPTIONS,
   NOT_YET_KNOWN,
   Q,
   QUESTIONNAIRE_VERSION,
@@ -177,9 +180,6 @@ test("selecting Other requires an explanation", () => {
   const authority = { ...validAnswers(), [Q.authority]: "other" };
   assert.ok(validateSection(0, authority)[Q.authorityOther]);
 
-  const regions = { ...validAnswers(), [Q.regions]: ["nsw", "other_international"] };
-  assert.ok(validateSection(0, regions)[Q.regionsOther]);
-
   const problems = { ...validAnswers(), [Q.problems]: ["other"] };
   assert.ok(validateSection(1, problems)[Q.problemsOther]);
 });
@@ -214,6 +214,45 @@ test("BRQ-09 is optional but capped at 750 characters", () => {
 
   answers[Q.difficultWorkflow] = "x".repeat(751);
   assert.match(validateSection(1, answers)[Q.difficultWorkflow], /under 750 characters/);
+});
+
+test("BRQ-05 offers Australian states and territories only", () => {
+  assert.deepEqual(
+    REGION_OPTIONS.map((option) => option.value),
+    ["act", "nsw", "nt", "qld", "sa", "tas", "vic", "wa"],
+  );
+  // No international option remains, so nothing can trigger a follow-up.
+  assert.ok(!("regionsOther" in Q));
+  assert.deepEqual(validateSection(0, { ...validAnswers(), [Q.regions]: ["qld"] }), {});
+});
+
+test("Aurixa Voice is named as the capability; slug unchanged", () => {
+  const voice = CAPABILITY_OPTIONS.find((option) => option.value === "voice_automation");
+  assert.equal(voice.label, "AI Voice Agents & Call Logging");
+});
+
+test("the applicant's phone system is an integration, not a capability", () => {
+  const phone = INTEGRATION_OPTIONS.find((option) => option.value === "telephony");
+  assert.equal(phone.label, "Existing Phone or VoIP System");
+  // Aurixa's own voice capability is not offered as something to integrate with.
+  assert.ok(!INTEGRATION_OPTIONS.some((option) => /voice agent/i.test(option.label)));
+});
+
+test("selecting an existing phone system asks which one", () => {
+  const answers = { ...validAnswers(), [Q.integrations]: ["telephony"] };
+  assert.ok(activeQuestionIds(answers).includes(Q.phoneSystem));
+  assert.ok(validateSection(2, answers)[Q.phoneSystem], "the follow-up is required");
+
+  answers[Q.phoneSystem] = "3CX";
+  assert.deepEqual(validateSection(2, answers), {});
+
+  // Not asked when no phone system is selected.
+  assert.ok(!activeQuestionIds(validAnswers()).includes(Q.phoneSystem));
+
+  // Retained but inactive if the applicant unselects it.
+  const unselected = { ...validAnswers(), [Q.phoneSystem]: "3CX" };
+  const stored = buildStoredAnswers(unselected).find((a) => a.questionId === Q.phoneSystem);
+  assert.equal(stored.active, false);
 });
 
 // ── Conditional logic (section 6.6) ────────────────────────────────────────
