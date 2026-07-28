@@ -11,7 +11,7 @@
  */
 
 /** Bumped whenever fields, options or required-ness change. Stored on every lead. */
-export const WAITLIST_FORM_VERSION = "stage-1-priority-access-v1";
+export const WAITLIST_FORM_VERSION = "stage-1-priority-access-v3";
 
 /** Bumped whenever the collection notice wording changes. Stored on every lead. */
 export const PRIVACY_NOTICE_VERSION = "collection-notice-2026-07-v1";
@@ -84,6 +84,7 @@ export const IMPROVEMENT_AREA_OPTIONS: Option[] = [
 
 export const MAX_IMPROVEMENT_AREAS = 3;
 export const MAX_ADDITIONAL_NOTES = 500;
+export const MAX_TECH_STACK_BOTTLENECKS = 1000;
 
 const labelFor = (options: Option[], value: string) =>
   options.find((option) => option.value === value)?.label ?? "";
@@ -108,11 +109,15 @@ export const WAITLIST_COPY = {
   marketingConsent:
     "I would like to receive optional Aurixa product, event and future-intake updates. I can unsubscribe at any time.",
   helper: {
-    workEmail: "Use the email address you use for your organisation.",
-    mobileNumber: "Optional. Include country code where outside Australia.",
+    workEmail: "Use your organisation-issued email address.",
+    mobileNumber: "Include country code where outside Australia.",
     volume: 'A best estimate is sufficient. Select "Not yet known" where appropriate.',
     improvementAreas: "Select up to three priorities.",
     additionalNotes: "Optional. Please do not include confidential client or financial information.",
+  },
+  placeholder: {
+    techStackBottlenecks:
+      "Detail the fragmentation or inefficiencies currently stalling your firm's pipeline...",
   },
 } as const;
 
@@ -218,6 +223,7 @@ export type WaitlistFormValues = {
   role: string;
   organisationType: string;
   annualVolume: string;
+  currentTechStackBottlenecks: string;
   improvementAreas: string[];
   additionalNotes: string;
   privacyAcknowledged: boolean;
@@ -233,6 +239,7 @@ export const EMPTY_WAITLIST_FORM: WaitlistFormValues = {
   role: "",
   organisationType: "",
   annualVolume: "",
+  currentTechStackBottlenecks: "",
   improvementAreas: [],
   additionalNotes: "",
   privacyAcknowledged: false,
@@ -258,22 +265,31 @@ export function validateWaitlistForm(
     errors.lastName = "Last name must be between 2 and 60 characters.";
 
   const workEmail = cleanEmailValue(values.workEmail);
-  if (!workEmail) errors.workEmail = "Enter your work email address.";
+  if (!workEmail) errors.workEmail = "Enter your corporate email address.";
   else if (!isValidEmail(workEmail)) errors.workEmail = "Enter a valid email address, for example name@firm.com.au.";
 
-  if (values.mobileNumber.trim() && !normaliseMobileNumber(values.mobileNumber)) {
+  if (!values.mobileNumber.trim()) {
+    errors.mobileNumber = "Enter your mobile number.";
+  } else if (!normaliseMobileNumber(values.mobileNumber)) {
     errors.mobileNumber =
       "Enter an Australian mobile or landline (for example 0412 345 678), or include the country code for international numbers.";
   }
 
   const organisationName = cleanTextValue(values.organisationName);
-  if (!organisationName) errors.organisationName = "Enter your organisation name.";
+  if (!organisationName) errors.organisationName = "Enter your entity name.";
   else if (organisationName.length < 2 || organisationName.length > 120)
-    errors.organisationName = "Organisation name must be between 2 and 120 characters.";
+    errors.organisationName = "Entity name must be between 2 and 120 characters.";
 
   if (!values.role) errors.role = "Select your role.";
   if (!values.organisationType) errors.organisationType = "Select your organisation type.";
   if (!values.annualVolume) errors.annualVolume = "Select an approximate annual volume.";
+
+  const techStackBottlenecks = cleanTextValue(values.currentTechStackBottlenecks);
+  if (!techStackBottlenecks)
+    errors.currentTechStackBottlenecks =
+      "Describe the current technology or workflow bottlenecks affecting your organisation.";
+  else if (techStackBottlenecks.length > MAX_TECH_STACK_BOTTLENECKS)
+    errors.currentTechStackBottlenecks = `Please keep this under ${MAX_TECH_STACK_BOTTLENECKS} characters.`;
 
   if (values.improvementAreas.length === 0)
     errors.improvementAreas = "Select at least one area you would like Aurixa to improve.";
@@ -306,8 +322,9 @@ export type WaitlistAttribution = {
  *
  * The original Make.com → Airtable field names are retained verbatim so the
  * existing scenario keeps working; the Stage 1 structured answers are added
- * alongside them, and `currentTechStackBottlenecks` is derived from the new
- * structured selections plus the optional free-text note.
+ * alongside them. `currentTechStackBottlenecks` carries the applicant's own
+ * bottleneck description; the structured selections are summarised into
+ * `message` for systems that expect a single free-text column.
  */
 export function buildWaitlistPayload(
   values: WaitlistFormValues,
@@ -320,11 +337,19 @@ export function buildWaitlistPayload(
   const mobileNumber = normaliseMobileNumber(values.mobileNumber);
   const organisationName = cleanTextValue(values.organisationName);
   const additionalNotes = cleanTextValue(values.additionalNotes).slice(0, MAX_ADDITIONAL_NOTES);
+  const currentTechStackBottlenecks = cleanTextValue(values.currentTechStackBottlenecks).slice(
+    0,
+    MAX_TECH_STACK_BOTTLENECKS,
+  );
 
   const improvementAreaLabels = values.improvementAreas.map((value) =>
     labelFor(IMPROVEMENT_AREA_OPTIONS, value),
   );
-  const bottleneckSummary = [improvementAreaLabels.join("; "), additionalNotes]
+  const bottleneckSummary = [
+    currentTechStackBottlenecks,
+    improvementAreaLabels.join("; "),
+    additionalNotes,
+  ]
     .filter(Boolean)
     .join(" — ");
 
@@ -337,7 +362,7 @@ export function buildWaitlistPayload(
     entityName: organisationName,
     entityClassification: values.organisationType,
     annualOriginationTransactionVolume: values.annualVolume,
-    currentTechStackBottlenecks: bottleneckSummary,
+    currentTechStackBottlenecks,
 
     // Stage 1 structured answers.
     applicationId,
