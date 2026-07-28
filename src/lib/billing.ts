@@ -114,7 +114,50 @@ export interface CatalogPack {
   price_cents: number;
   currency: string;
   expires_after_days: number | null;
-  metadata?: { best_for?: string | null; popular?: boolean } | null;
+  metadata?: {
+    best_for?: string | null;
+    /** The pricing sheet marks one pack the popular choice… */
+    popular?: boolean;
+    /** …and one the best value. */
+    best_value?: boolean;
+    /** Position in the ladder, 1 = smallest. */
+    stage?: number;
+  } | null;
+}
+
+/**
+ * What one credit costs in this pack, in cents.
+ *
+ * Deliberately unrounded. Displays round it to the two decimals the price
+ * list quotes, but the saving below is computed from the full figure — round
+ * first and 2,500 credits advertise 21.5% off instead of the published 21.6%.
+ */
+export function packPerCreditCents(pack: Pick<CatalogPack, "tokens" | "price_cents">): number {
+  return pack.tokens > 0 ? pack.price_cents / pack.tokens : 0;
+}
+
+/** The pack the saving is measured against: the smallest one on offer. */
+export function smallestPack<T extends Pick<CatalogPack, "tokens" | "price_cents">>(
+  packs: readonly T[],
+): T | null {
+  return packs.reduce<T | null>((min, p) => (!min || p.tokens < min.tokens ? p : min), null);
+}
+
+/**
+ * How much cheaper a credit is here than in the smallest pack, as a fraction.
+ *
+ * Measured against whatever is actually on sale rather than a hardcoded
+ * baseline, so the page can never advertise a saving against a pack the
+ * customer cannot buy.
+ */
+export function packDiscountFraction(
+  pack: Pick<CatalogPack, "tokens" | "price_cents">,
+  packs: readonly Pick<CatalogPack, "tokens" | "price_cents">[],
+): number {
+  const baseline = smallestPack(packs);
+  const baseRate = baseline ? packPerCreditCents(baseline) : 0;
+  if (!baseRate) return 0;
+  return 1 - packPerCreditCents(pack) / baseRate;
 }
 
 /**
