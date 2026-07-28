@@ -22,6 +22,11 @@ change.
 | `src/components/questionnaire/MultiSelectGroup.tsx` | Native checkbox group: exclusive options, max count |
 | `src/components/questionnaire/RankedCapabilitySelector.tsx` | BRQ-10 ranked top five, buttons only |
 | `src/components/FormControls.tsx` | `Field`, `Dropdown` and the Aurixa control classes, moved out of `Contact.tsx` so both stages share one implementation |
+| `api/priority-access/submit.ts` | Same-origin Stage 1 submission + session issuance |
+| `api/priority-access/session.ts` | Session verification and invalidation |
+| `api/_lib/session.ts` | Sealed-cookie crypto (`npm test` covers it) |
+| `src/components/StageOneCompleteModal.tsx` | The PROCEED handoff dialog |
+| `src/lib/priorityAccess.ts` | Stage 1 submission client |
 | `supabase/functions/readiness-questionnaire/index.ts` | Questionnaire service (**not deployed**) |
 | `supabase/migrations/20260728120000_readiness_questionnaire.sql` | Tables, RLS (**not applied**) |
 
@@ -121,31 +126,61 @@ named options are selected — shows an inline confirmation first.
 
 ## Access
 
-**The token gate is OFF by default.** Link issuance does not exist yet, so
-requiring a token would lock out every visitor — including Aurixa — from a page
-nothing can currently produce a link for. `/questionnaire` renders the
-questionnaire straight away.
+`/questionnaire` is reachable three ways, resolved in this order:
 
-Set `VITE_QUESTIONNAIRE_REQUIRE_TOKEN="true"` once Stage 1 is issuing links. The
-secure path below is unchanged and takes over the moment it is set.
+1. **A secure questionnaire token** in the link (`?t=…`) — prefill, draft resume
+   and autosave. Requires the Supabase service below.
+2. **The Stage 1 → Stage 2 handoff session** — the `aurixa_readiness_session`
+   cookie issued the moment a Priority Access Application is accepted. Prefill,
+   but no server-side draft store yet, so no autosave.
+3. **The open-access escape hatch** — `VITE_QUESTIONNAIRE_OPEN_ACCESS="true"`.
+   Off by default.
 
-| Situation | Gate off (now) | Gate on (later) |
-| --- | --- | --- |
-| No token | Form, no prefill, no autosave | Access-required state |
-| Valid token | Form with prefill and resumed draft | Same |
-| Invalid or expired token | Falls through to the form | Invalid / expired state |
-| Service unreachable | Falls through to the form | Temporarily-unavailable state |
-| Already completed | Already-submitted state | Already-submitted state |
+Anything else sees the locked screen. An already-completed questionnaire always
+blocks: that is duplicate-submission protection, not access control.
 
-Already-completed always blocks in both modes: that is duplicate-submission
-protection, not access control.
+### Stage 1 → Stage 2 handoff
 
-With the gate off there is no session, so the page does not pretend otherwise —
-the application summary panel is hidden, the header says "Your answers are kept
-as you move between sections", the status line says "Your answers are kept in
-this browser until you submit", and no autosave request is made. Final
-submission reports that the questionnaire is not yet connected rather than
-showing a completion screen for a submission nobody received.
+    Stage 1 submitted
+      → POST /api/priority-access/submit  (same origin)
+        → server re-validates, forwards to the existing Make.com webhook
+        → Make.com accepts
+        → server seals a session and sets the cookie
+      → PROCEED modal
+      → user clicks PROCEED
+      → /questionnaire  (GET /api/priority-access/session verifies the cookie)
+
+The modal is shown only when Make.com has accepted **and** the session exists.
+If either fails, the applicant sees the existing Stage 1 confirmation screen and
+the questionnaire stays locked — nothing is lost, nothing is unlocked.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/priority-access/submit` | Re-validates Stage 1, forwards the unchanged payload to Make.com, issues the session cookie |
+| `GET /api/priority-access/session` | Verifies the cookie, returns the verified Stage 1 details for prefill |
+| `DELETE /api/priority-access/session` | Invalidates the session once Stage 2 is submitted |
+
+The Stage 1 payload mapping is preserved *by construction*: the endpoint calls
+the same `buildWaitlistPayload` the browser used, so Make.com → Airtable field
+names, option slugs, attribution and consent values cannot drift. The existing
+`X-Application-Id` idempotency header is forwarded unchanged.
+
+### Session cookie
+
+`aurixa_readiness_session` — HttpOnly, `SameSite=Strict`, `Path=/`, `Secure`
+outside local http, and no `Max-Age`, so it is a browser-session cookie. The
+verified Stage 1 details are sealed inside it with AES-256-GCM under
+`READINESS_SESSION_SECRET`; the browser cannot read or forge it, and a two-hour
+expiry inside the envelope bounds a cookie that is restored or copied.
+
+There is no session table, so the handoff works before any database exists. The
+cost is that there is no revocation list: a cookie lifted out of a browser stays
+valid until it expires. `fingerprint()` exists so a revocation table can be added
+later — persist only the hash, never the sealed value.
+
+**`READINESS_SESSION_SECRET` must be set in the hosting environment.** Without it
+the endpoint fails closed: Stage 1 still submits, no session is issued, no modal
+appears and `/questionnaire` stays locked.
 
 ## Secure access and prefill
 
@@ -253,9 +288,8 @@ drag-and-drop.
   submissions through the existing Make.com webhook the way Stage 1 does — that
   decision has not been made.
 - **Apply the migration and deploy the edge function.** Neither has been run.
-- **Turn the token gate on** (`VITE_QUESTIONNAIRE_REQUIRE_TOKEN="true"`) once
-  links are being issued. Until then the page is open to anyone with the URL —
-  it is unlisted, but unlisted is not access control.
+- **Set `READINESS_SESSION_SECRET`** in Vercel, or the handoff cannot issue a
+  session and the questionnaire stays locked for everyone.
 - **Set `READINESS_ADMIN_SECRET`** in the function's environment.
 - **Issue links from Stage 1.** The Make.com scenario (or `capture-lead`) must
   call the `issue` action after a Priority Access Application and put the
