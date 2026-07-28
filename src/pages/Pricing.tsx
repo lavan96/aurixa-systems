@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 import {
   ANNUAL_DISCOUNT,
-  annualCents,
   fetchCatalog,
   gstComponentCents,
   packValidityDays,
   planAnnualCents,
+  planBaseCents,
   resolveHandoff,
   resolveIdentity,
   startCardSetup,
@@ -204,10 +204,6 @@ export default function Pricing() {
   const setups = catalog?.setups ?? [];
   const addons = catalog?.addons ?? [];
   const reports = catalog?.reports ?? [];
-  // The AML/CTF module is exactly what separates a tier's two headline prices
-  // in the signed-off list, so the "with compliance" figure is derived from
-  // the catalog rather than hardcoded — reprice the module and both move.
-  const amlCents = addons.find((a) => a.slug === "aml-ctf")?.price_min_cents ?? null;
   // Grouped the way the price list is organised. Category order follows first
   // appearance in the catalog, which Mission Control already sorts.
   const addonsByCategory = useMemo(() => {
@@ -440,11 +436,7 @@ export default function Pricing() {
                   }
                   period={billing === "annual" ? "per year" : "per month"}
                   gstIncluded={gst}
-                  withComplianceCents={
-                    amlCents && !isEnterprise
-                      ? display + (billing === "annual" ? annualCents(amlCents) : amlCents)
-                      : null
-                  }
+                  withoutComplianceCents={planBaseCents(p, billing)}
                   highlights={highlights}
                   cta={isEnterprise && !canBuy ? "Talk to sales" : "Get started"}
                   busy={busyId === p.id}
@@ -813,7 +805,7 @@ function PlanCard({
   seats,
   period,
   gstIncluded,
-  withComplianceCents,
+  withoutComplianceCents,
   highlights,
   cta,
   busy,
@@ -835,8 +827,11 @@ function PlanCard({
   period?: string;
   /** GST contained in `price`. Australian pricing must show tax-inclusive. */
   gstIncluded?: number;
-  /** Same plan with the AML/CTF module added, or null where it does not apply. */
-  withComplianceCents?: number | null;
+  /**
+   * Same tier WITHOUT the AML/CTF module. The headline includes it — the price
+   * list titles every tier that way — so this is the stated alternative.
+   */
+  withoutComplianceCents?: number | null;
   highlights: string[];
   cta: string;
   busy?: boolean;
@@ -895,9 +890,9 @@ function PlanCard({
             includes {aud(gstIncluded)} GST
           </div>
         )}
-        {withComplianceCents != null && (
+        {withoutComplianceCents != null && (
           <div className="mt-2 font-mono text-[10px] tracking-wider text-[#C89B3C]">
-            {aud(withComplianceCents)} with AML/CTF Compliance
+            {aud(withoutComplianceCents)} without AML/CTF Compliance
           </div>
         )}
       </div>

@@ -73,12 +73,38 @@ export interface CatalogPlan {
      */
     annual_price_cents?: number | null;
     tax_inclusive?: boolean | null;
+    /**
+     * Whether price_cents includes the AML/CTF Compliance module. The price
+     * list titles each tier with its with-AML figure, so that is the headline
+     * and this is normally true after the catalog cutover.
+     */
+    includes_aml_ctf?: boolean | null;
+    /** The same tier without AML/CTF — the price list's stated alternative. */
+    base_price_cents?: number | null;
+    base_annual_price_cents?: number | null;
   } | null;
 }
 
 /** The annual figure to show: the minted price if we have one, else derived. */
 export const planAnnualCents = (plan: CatalogPlan): number =>
   plan.metadata?.annual_price_cents ?? annualCents(plan.price_cents);
+
+/**
+ * The tier's price WITHOUT the AML/CTF module, or null when it does not apply.
+ *
+ * Returns null unless the catalog says the headline includes AML/CTF. Before
+ * the cutover a plan's price has no AML relationship at all, and inventing a
+ * "without compliance" figure by subtracting from it would be a made-up
+ * number on a pricing page.
+ */
+export const planBaseCents = (
+  plan: CatalogPlan,
+  period: "monthly" | "annual",
+): number | null => {
+  const meta = plan.metadata;
+  if (!meta?.includes_aml_ctf) return null;
+  return (period === "annual" ? meta.base_annual_price_cents : meta.base_price_cents) ?? null;
+};
 
 export interface CatalogPack {
   id: string;
