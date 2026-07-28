@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
+import { VoiceAgentSection } from "../components/VoiceAgentSection";
 
 export default function Platform() {
   return (
@@ -121,6 +122,9 @@ export default function Platform() {
             </div>
           </div>
         </div>
+
+        {/* Aurixa Voice — conversational infrastructure */}
+        <VoiceAgentSection />
 
         {/* Expansive Add-On Modules Grid */}
         <div className="mt-32 pt-32 border-t border-white/5 relative">
