@@ -24,6 +24,30 @@ const STOREFRONT_BASE = (() => {
 
 export type CheckoutMode = "topup" | "seat_plan" | "setup_package";
 
+/**
+ * Every price this site displays is TAX-INCLUSIVE — GST is contained in the
+ * figure, not added at checkout. So GST is derived by dividing by 11, never by
+ * multiplying by 1.1. Getting that backwards overstates every price by 10%.
+ *
+ * These mirror Mission Control's `aurixa-catalog.ts`, which is the source of
+ * truth. They are duplicated rather than imported because the storefront is a
+ * separate deployment that only talks to MC over HTTP.
+ */
+export const GST_DIVISOR = 11;
+export const ANNUAL_DISCOUNT = 0.1;
+
+/** The GST contained within a tax-inclusive amount. */
+export const gstComponentCents = (inclGstCents: number): number =>
+  Math.round(inclGstCents / GST_DIVISOR);
+
+/** The ex-GST (net) amount of a tax-inclusive total. */
+export const exGstCents = (inclGstCents: number): number =>
+  inclGstCents - gstComponentCents(inclGstCents);
+
+/** Annual charge for a monthly tax-inclusive price: twelve months less 10%. */
+export const annualCents = (monthlyInclGstCents: number): number =>
+  Math.round(monthlyInclGstCents * 12 * (1 - ANNUAL_DISCOUNT));
+
 export interface CatalogPlan {
   id: string;
   slug: string;
@@ -38,8 +62,49 @@ export interface CatalogPlan {
     best_for?: string | null;
     highlights?: string[];
     tier?: number;
+    /** Seat band from the price list, e.g. 1–4. */
+    seat_min?: number | null;
+    seat_max?: number | null;
+    /**
+     * The annual price as Mission Control minted it in Stripe. Preferred over
+     * computing it here: what is displayed must be what is charged, and only
+     * the Stripe price is authoritative. Falls back to the 10% calculation for
+     * a catalog that predates the cutover.
+     */
+    annual_price_cents?: number | null;
+    tax_inclusive?: boolean | null;
+    /**
+     * Whether price_cents includes the AML/CTF Compliance module. The price
+     * list titles each tier with its with-AML figure, so that is the headline
+     * and this is normally true after the catalog cutover.
+     */
+    includes_aml_ctf?: boolean | null;
+    /** The same tier without AML/CTF — the price list's stated alternative. */
+    base_price_cents?: number | null;
+    base_annual_price_cents?: number | null;
   } | null;
 }
+
+/** The annual figure to show: the minted price if we have one, else derived. */
+export const planAnnualCents = (plan: CatalogPlan): number =>
+  plan.metadata?.annual_price_cents ?? annualCents(plan.price_cents);
+
+/**
+ * The tier's price WITHOUT the AML/CTF module, or null when it does not apply.
+ *
+ * Returns null unless the catalog says the headline includes AML/CTF. Before
+ * the cutover a plan's price has no AML relationship at all, and inventing a
+ * "without compliance" figure by subtracting from it would be a made-up
+ * number on a pricing page.
+ */
+export const planBaseCents = (
+  plan: CatalogPlan,
+  period: "monthly" | "annual",
+): number | null => {
+  const meta = plan.metadata;
+  if (!meta?.includes_aml_ctf) return null;
+  return (period === "annual" ? meta.base_annual_price_cents : meta.base_price_cents) ?? null;
+};
 
 export interface CatalogPack {
   id: string;
