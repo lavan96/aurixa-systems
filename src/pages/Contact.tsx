@@ -1,124 +1,187 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, ShieldAlert } from "lucide-react";
+import { ArrowRight, ShieldAlert, CheckCircle2, Mail } from "lucide-react";
 import { HeroBackground } from "../components/HeroBackgrounds";
 import { captureLead } from "../lib/leads";
+import { getAttribution } from "../lib/attribution";
+import {
+  EMPTY_WAITLIST_FORM,
+  IMPROVEMENT_AREA_OPTIONS,
+  MAX_ADDITIONAL_NOTES,
+  MAX_IMPROVEMENT_AREAS,
+  ORGANISATION_TYPE_OPTIONS,
+  PRIVACY_POLICY_URL,
+  READINESS_QUESTIONNAIRE_URL,
+  ROLE_OPTIONS,
+  VOLUME_OPTIONS,
+  WAITLIST_COPY,
+  WaitlistFieldError,
+  WaitlistFormValues,
+  buildWaitlistPayload,
+  cleanEmailValue,
+  cleanTextValue,
+  generateApplicationId,
+  maskEmail,
+  normaliseMobileNumber,
+  resolveIntakeBadge,
+  validateWaitlistForm,
+} from "../lib/waitlist";
 
 const MAKE_WAITLIST_WEBHOOK_URL = "https://hook.eu2.make.com/589rb23xwbgovfj3iuemtcuxm75cccut";
 
-const WAITLIST_FIELD_NAMES = [
-  "directiveFirstName",
-  "directiveLastName",
-  "corporateEmail",
+const FIELD_ORDER: WaitlistFieldError[] = [
+  "firstName",
+  "lastName",
+  "workEmail",
   "mobileNumber",
-  "entityName",
-  "entityClassification",
-  "annualOriginationTransactionVolume",
-  "currentTechStackBottlenecks",
-] as const;
+  "organisationName",
+  "role",
+  "organisationType",
+  "annualVolume",
+  "improvementAreas",
+  "additionalNotes",
+  "privacyAcknowledged",
+];
 
-const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const inputBaseClass =
+  "w-full bg-[#040B16] border px-4 py-3 text-white text-sm font-light transition-all focus:outline-none focus:ring-1 placeholder:text-gray-500";
 
-const cleanTextValue = (value: string) =>
-  value
-    .replace(/[\u0000-\u001F\u007F]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+/** Invalid state is carried by border colour AND the text error beneath it. */
+const controlClass = (hasError: boolean) =>
+  `${inputBaseClass} ${
+    hasError
+      ? "border-red-400/70 focus:border-red-400 focus:ring-red-400"
+      : "border-white/15 focus:border-[#00A8B5] focus:ring-[#00A8B5]"
+  }`;
 
-const cleanEmailValue = (value: string) => cleanTextValue(value).toLowerCase();
+const labelClass = "block text-[11px] uppercase tracking-widest text-[#B6C0D4] font-bold";
 
-const formatAustralianMobileNumber = (value: string) => {
-  const compactValue = value.replace(/[\s().-]/g, "");
+const helperClass = "text-[12px] text-[#9CA3B8] font-light leading-snug";
 
-  if (/^04\d{8}$/.test(compactValue)) {
-    return `+61${compactValue.slice(1)}`;
-  }
-
-  if (/^614\d{8}$/.test(compactValue)) {
-    return `+${compactValue}`;
-  }
-
-  if (/^\+614\d{8}$/.test(compactValue)) {
-    return compactValue;
-  }
-
-  return "";
+type FieldProps = {
+  id: string;
+  label: string;
+  required?: boolean;
+  helper?: string;
+  error?: string;
+  children: ReactNode;
 };
 
-const cleanWaitlistValue = (fieldName: (typeof WAITLIST_FIELD_NAMES)[number], value: string) => {
-  if (fieldName === "corporateEmail") {
-    return cleanEmailValue(value);
-  }
-
-  if (fieldName === "mobileNumber") {
-    return formatAustralianMobileNumber(value);
-  }
-
-  return cleanTextValue(value);
-};
-
-const cleanFieldOnBlur = (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  const field = event.currentTarget;
-  const fieldName = field.name as (typeof WAITLIST_FIELD_NAMES)[number];
-
-  if (!WAITLIST_FIELD_NAMES.includes(fieldName)) {
-    return;
-  }
-
-  field.value = cleanWaitlistValue(fieldName, field.value);
-};
+function Field({ id, label, required, helper, error, children }: FieldProps) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className={labelClass}>
+        {label}
+        {required && (
+          <span className="text-[#C89B3C] ml-1" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      {children}
+      {helper && (
+        <p id={`${id}-helper`} className={helperClass}>
+          {helper}
+        </p>
+      )}
+      {error && (
+        <p id={`${id}-error`} className="text-[13px] text-red-300 font-light" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function Contact() {
-  const [submissionStatus, setSubmissionStatus] = useState<"idle" | "success" | "error">("idle");
-  const [submissionMessage, setSubmissionMessage] = useState("");
+  const [values, setValues] = useState<WaitlistFormValues>(EMPTY_WAITLIST_FORM);
+  const [errors, setErrors] = useState<Partial<Record<WaitlistFieldError, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
+  const [receipt, setReceipt] = useState<{
+    applicationId: string;
+    firstName: string;
+    organisationName: string;
+    workEmail: string;
+  } | null>(null);
+
+  /**
+   * Stable for the lifetime of an application attempt so retries after a
+   * network failure — and an email correction from the confirmation screen —
+   * reference the same application rather than creating duplicates.
+   */
+  const applicationIdRef = useRef(generateApplicationId());
+  const intakeBadge = useMemo(() => resolveIntakeBadge(), []);
+
+  useEffect(() => {
+    getAttribution("AURIXA Contact Waitlist Page", "/contact");
+  }, []);
+
+  const setValue = <K extends keyof WaitlistFormValues>(key: K, value: WaitlistFormValues[K]) => {
+    setValues((current) => ({ ...current, [key]: value }));
+    setErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const toggleImprovementArea = (value: string) => {
+    setValues((current) => {
+      const selected = current.improvementAreas.includes(value)
+        ? current.improvementAreas.filter((item) => item !== value)
+        : current.improvementAreas.length >= MAX_IMPROVEMENT_AREAS
+          ? current.improvementAreas
+          : [...current.improvementAreas, value];
+      return { ...current, improvementAreas: selected };
+    });
+    setErrors((current) => {
+      if (!current.improvementAreas) return current;
+      const next = { ...current };
+      delete next.improvementAreas;
+      return next;
+    });
+  };
+
+  const focusFirstError = (fieldErrors: Partial<Record<WaitlistFieldError, string>>) => {
+    const firstField = FIELD_ORDER.find((field) => fieldErrors[field]);
+    if (!firstField) return;
+    const element = document.getElementById(firstField);
+    element?.focus();
+    element?.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
 
   const handleWaitlistSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmissionStatus("idle");
-    setSubmissionMessage("");
+    if (isSubmitting) return;
 
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const values = Object.fromEntries(
-      WAITLIST_FIELD_NAMES.map((fieldName) => [
-        fieldName,
-        cleanWaitlistValue(fieldName, String(formData.get(fieldName) ?? "")),
-      ]),
-    ) as Record<(typeof WAITLIST_FIELD_NAMES)[number], string>;
+    setSubmissionError("");
 
-    if (WAITLIST_FIELD_NAMES.some((fieldName) => fieldName !== "mobileNumber" && values[fieldName] === "")) {
-      setSubmissionStatus("error");
-      setSubmissionMessage("Please complete all required fields.");
-      return;
-    }
-
-    if (!values.mobileNumber) {
-      setSubmissionStatus("error");
-      setSubmissionMessage("Please enter a valid Australian mobile number starting with 04 or +614.");
-      return;
-    }
-
-    if (!isValidEmail(values.corporateEmail)) {
-      setSubmissionStatus("error");
-      setSubmissionMessage("Please enter a valid corporate email address.");
+    const fieldErrors = validateWaitlistForm(values);
+    setErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length > 0) {
+      focusFirstError(fieldErrors);
       return;
     }
 
     setIsSubmitting(true);
 
-    try {
-      const payload = {
-        ...values,
-        source: "AURIXA Contact Waitlist Page",
-        page: "/contact",
-        submittedAt: new Date().toISOString(),
-      };
+    const applicationId = applicationIdRef.current;
+    const payload = buildWaitlistPayload(
+      values,
+      applicationId,
+      getAttribution("AURIXA Contact Waitlist Page", "/contact"),
+    );
 
+    try {
       const response = await fetch(MAKE_WAITLIST_WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // Idempotency key — repeated deliveries of the same application must
+          // collapse to a single record downstream.
+          "X-Application-Id": applicationId,
         },
         body: JSON.stringify(payload),
       });
@@ -133,27 +196,48 @@ export default function Contact() {
       // Fire-and-forget: never blocks or fails the visitor's submission.
       captureLead(payload);
 
-      form.reset();
-      setSubmissionStatus("success");
-      setSubmissionMessage("Waitlist application submitted successfully.");
+      setReceipt({
+        applicationId,
+        firstName: cleanTextValue(values.firstName),
+        organisationName: cleanTextValue(values.organisationName),
+        workEmail: cleanEmailValue(values.workEmail),
+      });
     } catch (error) {
       console.error(error);
-      setSubmissionStatus("error");
-      setSubmissionMessage("Submission failed. Please try again.");
+      setSubmissionError(
+        "We could not submit your application just now. Please try again — your answers have been kept.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  /**
+   * Section 5.6 — the confirmation screen offers a correction path for the work
+   * email. Answers are retained and the same application reference is reused,
+   * so the corrected submission updates rather than duplicates the application.
+   */
+  const handleCorrectEmail = () => {
+    setReceipt(null);
+    window.requestAnimationFrame(() => {
+      const element = document.getElementById("workEmail");
+      element?.focus();
+      element?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  };
+
+  const describedBy = (id: string, helper: boolean, error: boolean) =>
+    [helper ? `${id}-helper` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined;
+
   return (
     <div className="w-full relative pt-32 pb-20 min-h-screen bg-[#040B16] overflow-hidden">
       <HeroBackground variant="contact" />
-      
+
       <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 relative z-10">
-        
+
         {/* Left Side */}
         <div className="pt-10 flex flex-col justify-between">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -165,13 +249,13 @@ export default function Contact() {
               <span className="block text-white mb-2">The</span>
               <span className="italic text-chrome-prismatic drop-shadow-2xl">Waitlist.</span>
             </h1>
-            
+
             <div className="space-y-6 text-gray-400 text-lg font-light leading-relaxed mb-12">
               <p>
                 We strictly cap our active partner ecosystem to ensure our infrastructure provides an unassailable, asymmetrical advantage in the market. This restricted action protects infrastructure fidelity for active partners while preserving a controlled path for firms seeking enterprise operational intelligence.
               </p>
               <p>
-                Application review cycle is now open. Firms will be selected via strict merit-based hierarchy regarding transaction volume, market stance, and alignment with Aurixa's strategic objectives. Submit credentials that demonstrate operational maturity, systemic capability, and the current bottlenecks preventing your firm from scaling through unified infrastructure.
+                Application review cycle is now open. Firms will be selected via strict merit-based hierarchy regarding transaction volume, market stance, and alignment with Aurixa's strategic objectives. The application takes 60-90 seconds; we then send a short Business Readiness Questionnaire so our team can identify the most suitable platform configuration for your firm.
               </p>
             </div>
           </motion.div>
@@ -187,7 +271,7 @@ export default function Contact() {
               <h3 className="font-display font-semibold text-xl tracking-wide uppercase">Operational Freeze</h3>
             </div>
             <p className="text-gray-400 font-light text-sm leading-relaxed mb-4">
-              "To maintain extreme architectural fidelity for our Tier-1 partners, we limit new integrations. We do not accept capital for queue priority. Allocation is earned by proving your firm has the systemic capability to dominate your sector once armed with our software. Submit your credentials meticulously. Q4 review is calibrated around transaction volume, market stance, and alignment with Aurixa Systems' strategic objectives."
+              "To maintain extreme architectural fidelity for our Tier-1 partners, we limit new integrations. We do not accept capital for queue priority. Allocation is earned by proving your firm has the systemic capability to dominate your sector once armed with our software. Submit your credentials meticulously. Each review cycle is calibrated around transaction volume, market stance, and alignment with Aurixa Systems' strategic objectives."
             </p>
             <div className="text-[10px] uppercase tracking-widest text-[#94A3B8] font-mono">
               — Founding Partner, Aurixa Systems
@@ -196,7 +280,7 @@ export default function Contact() {
         </div>
 
         {/* Right Side / Form */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
@@ -204,109 +288,483 @@ export default function Contact() {
         >
           <div className="absolute inset-0 bg-chrome-prismatic opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
           <div className="bg-[#0B162C]/95 backdrop-blur-2xl p-8 md:p-12 relative z-10 border border-t-white/10 border-l-white/10">
-            <div className="mb-10 pb-6 border-b border-white/10 flex items-end justify-between">
-              <div>
-                <h3 className="text-2xl font-display font-light text-white mb-2">Waitlist Credentials</h3>
-                <p className="text-[#9CA3B8] text-sm font-light">All fields are mandatory.</p>
-              </div>
-              <div className="px-3 py-1 bg-[#C89B3C]/10 border border-[#C89B3C]/30 text-[#C89B3C] text-[10px] uppercase tracking-widest font-mono rounded-sm text-right leading-tight">
-                Q4 Review Cycle
-              </div>
-            </div>
-
-            <form className="space-y-6" onSubmit={handleWaitlistSubmit} noValidate>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Directive First Name</label>
-                  <input type="text" name="directiveFirstName" required onBlur={cleanFieldOnBlur} autoComplete="given-name" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
+            {receipt ? (
+              <ApplicationReceipt receipt={receipt} onCorrectEmail={handleCorrectEmail} />
+            ) : (
+              <>
+                <div className="mb-8 pb-6 border-b border-white/10 flex flex-wrap items-start justify-between gap-4">
+                  <div className="max-w-sm">
+                    <h2 className="text-2xl font-display font-light text-white mb-3">{WAITLIST_COPY.heading}</h2>
+                    <p className="text-[#B6C0D4] text-sm font-light leading-relaxed">{WAITLIST_COPY.supporting}</p>
+                    <p className="text-[#9CA3B8] text-[12px] font-light mt-3">
+                      {WAITLIST_COPY.timeEstimate} {WAITLIST_COPY.requiredNote}
+                    </p>
+                  </div>
+                  <div className="px-3 py-1 bg-[#C89B3C]/10 border border-[#C89B3C]/30 text-[#C89B3C] text-[10px] uppercase tracking-widest font-mono rounded-sm text-right leading-tight">
+                    {intakeBadge}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Directive Last Name</label>
-                  <input type="text" name="directiveLastName" required onBlur={cleanFieldOnBlur} autoComplete="family-name" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Corporate Email</label>
-                <input type="email" name="corporateEmail" required onBlur={cleanFieldOnBlur} autoComplete="email" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
-              </div>
+                <form className="space-y-6" onSubmit={handleWaitlistSubmit} noValidate>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Field id="firstName" label="First Name" required error={errors.firstName}>
+                      <input
+                        id="firstName"
+                        name="firstName"
+                        type="text"
+                        autoComplete="given-name"
+                        maxLength={60}
+                        value={values.firstName}
+                        onChange={(event) => setValue("firstName", event.target.value)}
+                        aria-required="true"
+                        aria-invalid={Boolean(errors.firstName)}
+                        aria-describedby={describedBy("firstName", false, Boolean(errors.firstName))}
+                        className={controlClass(Boolean(errors.firstName))}
+                      />
+                    </Field>
+                    <Field id="lastName" label="Last Name" required error={errors.lastName}>
+                      <input
+                        id="lastName"
+                        name="lastName"
+                        type="text"
+                        autoComplete="family-name"
+                        maxLength={60}
+                        value={values.lastName}
+                        onChange={(event) => setValue("lastName", event.target.value)}
+                        aria-required="true"
+                        aria-invalid={Boolean(errors.lastName)}
+                        aria-describedby={describedBy("lastName", false, Boolean(errors.lastName))}
+                        className={controlClass(Boolean(errors.lastName))}
+                      />
+                    </Field>
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Mobile Number</label>
-                <input type="tel" name="mobileNumber" required onBlur={cleanFieldOnBlur} autoComplete="tel" inputMode="tel" placeholder="04XX XXX XXX" pattern="(?:\+?61|0)4[0-9 ]{8,12}" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
-                <p className="text-[10px] uppercase tracking-widest text-gray-600 font-mono ml-1">Australian mobile only. Stored as +614XXXXXXXX.</p>
-              </div>
+                  <Field
+                    id="workEmail"
+                    label="Work Email"
+                    required
+                    helper={WAITLIST_COPY.helper.workEmail}
+                    error={errors.workEmail}
+                  >
+                    <input
+                      id="workEmail"
+                      name="workEmail"
+                      type="email"
+                      autoComplete="email"
+                      maxLength={320}
+                      value={values.workEmail}
+                      onChange={(event) => setValue("workEmail", event.target.value)}
+                      onBlur={(event) => setValue("workEmail", cleanEmailValue(event.target.value))}
+                      aria-required="true"
+                      aria-invalid={Boolean(errors.workEmail)}
+                      aria-describedby={describedBy("workEmail", true, Boolean(errors.workEmail))}
+                      className={controlClass(Boolean(errors.workEmail))}
+                    />
+                  </Field>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Entity Name</label>
-                  <input type="text" name="entityName" required onBlur={cleanFieldOnBlur} autoComplete="organization" className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Entity Classification</label>
-                  <select name="entityClassification" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm appearance-none">
-                    <option value="" className="bg-[#040B16]">Select Segment...</option>
-                    <option value="buyers_agent" className="bg-[#040B16]">Buyers Agency</option>
-                    <option value="property_advisory" className="bg-[#040B16]">Property Advisory Firm</option>
-                    <option value="real_estate_agency" className="bg-[#040B16]">Real Estate Agency</option>
-                    <option value="mortgage_finance" className="bg-[#040B16]">Mortgage & Finance Business</option>
-                    <option value="wealth_advisor" className="bg-[#040B16]">Wealth Management Firm</option>
-                    <option value="financial_planner" className="bg-[#040B16]">Financial Planning Office</option>
-                    <option value="investment_group" className="bg-[#040B16]">Investment Group</option>
-                    <option value="developer" className="bg-[#040B16]">Developer</option>
-                    <option value="enterprise" className="bg-[#040B16]">Enterprise Aggregate</option>
-                    <option value="enterprise_property_network" className="bg-[#040B16]">Enterprise Property Network</option>
-                  </select>
-                </div>
-              </div>
+                  <Field
+                    id="mobileNumber"
+                    label="Mobile Number (optional)"
+                    helper={WAITLIST_COPY.helper.mobileNumber}
+                    error={errors.mobileNumber}
+                  >
+                    <input
+                      id="mobileNumber"
+                      name="mobileNumber"
+                      type="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      placeholder="0412 345 678"
+                      value={values.mobileNumber}
+                      onChange={(event) => setValue("mobileNumber", event.target.value)}
+                      onBlur={(event) => {
+                        const normalised = normaliseMobileNumber(event.target.value);
+                        if (normalised) setValue("mobileNumber", normalised);
+                      }}
+                      aria-invalid={Boolean(errors.mobileNumber)}
+                      aria-describedby={describedBy("mobileNumber", true, Boolean(errors.mobileNumber))}
+                      className={controlClass(Boolean(errors.mobileNumber))}
+                    />
+                  </Field>
 
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Annual Origination / Transaction Volume</label>
-                <select name="annualOriginationTransactionVolume" required className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm appearance-none">
-                  <option value="" className="bg-[#040B16]">Select Volume Bracket...</option>
-                  <option value="tier_1" className="bg-[#040B16]">Under $50M</option>
-                  <option value="tier_2" className="bg-[#040B16]">$50M - $150M</option>
-                  <option value="tier_3" className="bg-[#040B16]">$150M - $500M</option>
-                  <option value="tier_4" className="bg-[#040B16]">$500M+</option>
-                </select>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Field
+                      id="organisationName"
+                      label="Organisation Name"
+                      required
+                      error={errors.organisationName}
+                    >
+                      <input
+                        id="organisationName"
+                        name="organisationName"
+                        type="text"
+                        autoComplete="organization"
+                        maxLength={120}
+                        value={values.organisationName}
+                        onChange={(event) => setValue("organisationName", event.target.value)}
+                        aria-required="true"
+                        aria-invalid={Boolean(errors.organisationName)}
+                        aria-describedby={describedBy("organisationName", false, Boolean(errors.organisationName))}
+                        className={controlClass(Boolean(errors.organisationName))}
+                      />
+                    </Field>
+                    <Field id="role" label="Your Role" required error={errors.role}>
+                      <select
+                        id="role"
+                        name="role"
+                        value={values.role}
+                        onChange={(event) => setValue("role", event.target.value)}
+                        aria-required="true"
+                        aria-invalid={Boolean(errors.role)}
+                        aria-describedby={describedBy("role", false, Boolean(errors.role))}
+                        className={`${controlClass(Boolean(errors.role))} appearance-none`}
+                      >
+                        <option value="" className="bg-[#040B16]">Select your role...</option>
+                        {ROLE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value} className="bg-[#040B16]">
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Current Tech Stack Bottlenecks</label>
-                <textarea name="currentTechStackBottlenecks" required rows={3} onBlur={cleanFieldOnBlur} className="w-full bg-[#040B16] border border-white/5 px-4 py-3 text-white focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20 transition-all font-light text-sm" placeholder="Detail the fragmentation or inefficiencies currently stalling your firm's pipeline..."></textarea>
-              </div>
+                  <Field
+                    id="organisationType"
+                    label="Organisation Type"
+                    required
+                    error={errors.organisationType}
+                  >
+                    <select
+                      id="organisationType"
+                      name="organisationType"
+                      value={values.organisationType}
+                      onChange={(event) => setValue("organisationType", event.target.value)}
+                      aria-required="true"
+                      aria-invalid={Boolean(errors.organisationType)}
+                      aria-describedby={describedBy("organisationType", false, Boolean(errors.organisationType))}
+                      className={`${controlClass(Boolean(errors.organisationType))} appearance-none`}
+                    >
+                      <option value="" className="bg-[#040B16]">Select organisation type...</option>
+                      {ORGANISATION_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="bg-[#040B16]">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
 
-              {submissionMessage && (
-                <p
-                  className={`text-sm font-light ${
-                    submissionStatus === "success" ? "text-[#C89B3C]" : "text-red-300"
-                  }`}
-                  role="status"
-                  aria-live="polite"
-                >
-                  {submissionMessage}
-                </p>
-              )}
+                  <Field
+                    id="annualVolume"
+                    label="Approximate Annual Client or Transaction Volume"
+                    required
+                    helper={WAITLIST_COPY.helper.volume}
+                    error={errors.annualVolume}
+                  >
+                    <select
+                      id="annualVolume"
+                      name="annualVolume"
+                      value={values.annualVolume}
+                      onChange={(event) => setValue("annualVolume", event.target.value)}
+                      aria-required="true"
+                      aria-invalid={Boolean(errors.annualVolume)}
+                      aria-describedby={describedBy("annualVolume", true, Boolean(errors.annualVolume))}
+                      className={`${controlClass(Boolean(errors.annualVolume))} appearance-none`}
+                    >
+                      <option value="" className="bg-[#040B16]">Select volume bracket...</option>
+                      {VOLUME_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="bg-[#040B16]">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
 
-              <button type="submit" disabled={isSubmitting} className="w-full mt-8 group relative flex items-center justify-center px-8 py-5 text-[12px] font-black tracking-[0.25em] uppercase text-white btn-chrome-prismatic outline-none transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 shadow-[0_0_20px_rgba(200,155,60,0.2)] hover:shadow-[0_0_40px_rgba(0,168,181,0.4)] border-none rounded-sm overflow-hidden">
-                <span className="relative z-10 text-white transition-colors duration-300 drop-shadow-md">{isSubmitting ? "Transmitting Credentials..." : "Submit Waitlist Application"}</span>
-                <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 relative z-10 transition-all duration-300 drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[0%] transition-transform duration-500 ease-out z-0"></div>
-              </button>
-              
-              <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-                <p className="text-left text-[10px] text-gray-500 uppercase tracking-widest font-mono flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
-                  Queue Active
-                </p>
-                <p className="text-right text-[10px] text-[#C89B3C] uppercase tracking-widest font-mono">
-                  Review Cycle Pending
-                </p>
-              </div>
-            </form>
+                  <fieldset
+                    className="space-y-3"
+                    aria-required="true"
+                    aria-invalid={Boolean(errors.improvementAreas)}
+                    aria-describedby={describedBy("improvementAreas", true, Boolean(errors.improvementAreas))}
+                  >
+                    <legend className={labelClass}>
+                      What would you most like Aurixa to improve?
+                      <span className="text-[#C89B3C] ml-1" aria-hidden="true">*</span>
+                    </legend>
+                    <p id="improvementAreas-helper" className={helperClass}>
+                      {WAITLIST_COPY.helper.improvementAreas} ({values.improvementAreas.length}/
+                      {MAX_IMPROVEMENT_AREAS} selected)
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      {IMPROVEMENT_AREA_OPTIONS.map((option, index) => {
+                        const checked = values.improvementAreas.includes(option.value);
+                        const atLimit =
+                          !checked && values.improvementAreas.length >= MAX_IMPROVEMENT_AREAS;
+                        return (
+                          <label
+                            key={option.value}
+                            htmlFor={index === 0 ? "improvementAreas" : `improvementAreas-${option.value}`}
+                            className={`flex items-start gap-3 px-3 py-2.5 border text-[13px] font-light leading-snug cursor-pointer transition-all ${
+                              checked
+                                ? "border-[#00A8B5]/60 bg-[#00A8B5]/10 text-white"
+                                : atLimit
+                                  ? "border-white/10 text-[#6B7689] cursor-not-allowed"
+                                  : "border-white/15 text-[#B6C0D4] hover:border-white/30"
+                            }`}
+                          >
+                            <input
+                              id={index === 0 ? "improvementAreas" : `improvementAreas-${option.value}`}
+                              type="checkbox"
+                              name="improvementAreas"
+                              value={option.value}
+                              checked={checked}
+                              disabled={atLimit}
+                              onChange={() => toggleImprovementArea(option.value)}
+                              className="mt-0.5 h-4 w-4 shrink-0 accent-[#00A8B5]"
+                            />
+                            <span>{option.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {errors.improvementAreas && (
+                      <p id="improvementAreas-error" className="text-[13px] text-red-300 font-light" role="alert">
+                        {errors.improvementAreas}
+                      </p>
+                    )}
+                  </fieldset>
+
+                  <Field
+                    id="additionalNotes"
+                    label="Anything Else We Should Know? (optional)"
+                    helper={WAITLIST_COPY.helper.additionalNotes}
+                    error={errors.additionalNotes}
+                  >
+                    <textarea
+                      id="additionalNotes"
+                      name="additionalNotes"
+                      rows={3}
+                      maxLength={MAX_ADDITIONAL_NOTES}
+                      value={values.additionalNotes}
+                      onChange={(event) => setValue("additionalNotes", event.target.value)}
+                      aria-invalid={Boolean(errors.additionalNotes)}
+                      aria-describedby={describedBy("additionalNotes", true, Boolean(errors.additionalNotes))}
+                      className={controlClass(Boolean(errors.additionalNotes))}
+                    />
+                    <p className="text-[11px] text-[#9CA3B8] font-mono text-right">
+                      {values.additionalNotes.length}/{MAX_ADDITIONAL_NOTES}
+                    </p>
+                  </Field>
+
+                  <div className="space-y-4 pt-2 border-t border-white/10">
+                    <details className="pt-4 group/notice">
+                      <summary className="cursor-pointer text-[11px] uppercase tracking-widest text-[#B6C0D4] font-bold list-none flex items-center gap-2">
+                        <span className="text-[#C89B3C]">+</span> Collection notice
+                      </summary>
+                      <div className="mt-3 space-y-2 text-[12px] text-[#9CA3B8] font-light leading-relaxed">
+                        <p>
+                          Aurixa Systems Pty Ltd collects the information in this form to assess your
+                          priority-access application, to send you the Business Readiness Questionnaire and to
+                          contact you about the outcome. Providing the information is voluntary, but we cannot
+                          assess an application without it.
+                        </p>
+                        <p>
+                          We may disclose the information to our service providers for hosting, email delivery,
+                          customer relationship management and scheduling. We handle it in accordance with the
+                          Australian Privacy Principles.
+                        </p>
+                        <p>
+                          To access or correct your information, withdraw your application or make a privacy
+                          complaint, contact{" "}
+                          <a className="text-[#C89B3C] hover:underline" href="mailto:privacy@aurixasystems.com.au">
+                            privacy@aurixasystems.com.au
+                          </a>
+                          .
+                        </p>
+                        <p>{WAITLIST_COPY.confidentiality}</p>
+                      </div>
+                    </details>
+
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="privacyAcknowledged"
+                        className="flex items-start gap-3 text-[13px] text-[#B6C0D4] font-light leading-snug cursor-pointer"
+                      >
+                        <input
+                          id="privacyAcknowledged"
+                          name="privacyAcknowledged"
+                          type="checkbox"
+                          checked={values.privacyAcknowledged}
+                          onChange={(event) => setValue("privacyAcknowledged", event.target.checked)}
+                          aria-required="true"
+                          aria-invalid={Boolean(errors.privacyAcknowledged)}
+                          aria-describedby={describedBy("privacyAcknowledged", false, Boolean(errors.privacyAcknowledged))}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-[#00A8B5]"
+                        />
+                        <span>
+                          {WAITLIST_COPY.privacyAcknowledgement}
+                          <span className="text-[#C89B3C] ml-1" aria-hidden="true">*</span>
+                          {PRIVACY_POLICY_URL && (
+                            <>
+                              {" "}
+                              <a
+                                href={PRIVACY_POLICY_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[#C89B3C] hover:underline"
+                              >
+                                Read the Privacy Policy
+                              </a>
+                            </>
+                          )}
+                        </span>
+                      </label>
+                      {errors.privacyAcknowledged && (
+                        <p id="privacyAcknowledged-error" className="text-[13px] text-red-300 font-light" role="alert">
+                          {errors.privacyAcknowledged}
+                        </p>
+                      )}
+                    </div>
+
+                    <label
+                      htmlFor="marketingConsent"
+                      className="flex items-start gap-3 text-[13px] text-[#B6C0D4] font-light leading-snug cursor-pointer"
+                    >
+                      <input
+                        id="marketingConsent"
+                        name="marketingConsent"
+                        type="checkbox"
+                        checked={values.marketingConsent}
+                        onChange={(event) => setValue("marketingConsent", event.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-[#00A8B5]"
+                      />
+                      <span>{WAITLIST_COPY.marketingConsent}</span>
+                    </label>
+                  </div>
+
+                  <p className="text-[12px] text-[#9CA3B8] font-light leading-relaxed border-l-2 border-[#00A8B5]/40 pl-4">
+                    {WAITLIST_COPY.preSubmit}
+                  </p>
+
+                  {submissionError && (
+                    <p className="text-[13px] text-red-300 font-light" role="alert">
+                      {submissionError}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full mt-8 group relative flex items-center justify-center px-8 py-5 text-[12px] font-black tracking-[0.25em] uppercase text-white btn-chrome-prismatic outline-none transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 shadow-[0_0_20px_rgba(200,155,60,0.2)] hover:shadow-[0_0_40px_rgba(0,168,181,0.4)] border-none rounded-sm overflow-hidden"
+                  >
+                    <span className="relative z-10 text-white transition-colors duration-300 drop-shadow-md">
+                      {isSubmitting ? WAITLIST_COPY.submittingButton : WAITLIST_COPY.submitButton}
+                    </span>
+                    <ArrowRight className="w-5 h-5 ml-4 group-hover:translate-x-1 relative z-10 transition-all duration-300 drop-shadow-md" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
+                    <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[0%] transition-transform duration-500 ease-out z-0"></div>
+                  </button>
+
+                  <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+                    <p className="text-left text-[10px] text-[#9CA3B8] uppercase tracking-widest font-mono flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
+                      {WAITLIST_COPY.queueStatus}
+                    </p>
+                    <p className="text-right text-[10px] text-[#C89B3C] uppercase tracking-widest font-mono">
+                      {WAITLIST_COPY.reviewStatus}
+                    </p>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </motion.div>
       </div>
+    </div>
+  );
+}
+
+/** Section 5.6 / Appendix A.3 — confirmation screen. */
+function ApplicationReceipt({
+  receipt,
+  onCorrectEmail,
+}: {
+  receipt: { applicationId: string; firstName: string; organisationName: string; workEmail: string };
+  onCorrectEmail: () => void;
+}) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
+  return (
+    <div role="status" aria-live="polite" className="space-y-6">
+      <div className="flex items-center gap-3">
+        <CheckCircle2 className="w-6 h-6" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }} />
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-2xl font-display font-light text-white outline-none"
+        >
+          Your Aurixa application has been received
+        </h2>
+      </div>
+
+      <p className="text-[#B6C0D4] text-sm font-light leading-relaxed">
+        Thank you, {receipt.firstName}. Your priority access application for{" "}
+        <span className="text-white">{receipt.organisationName}</span> has been successfully received.
+      </p>
+
+      <dl className="border border-white/10 divide-y divide-white/10 text-sm">
+        <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <dt className="text-[10px] uppercase tracking-widest text-[#9CA3B8] font-bold">Application reference</dt>
+          <dd className="text-[#C89B3C] font-mono">{receipt.applicationId}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <dt className="text-[10px] uppercase tracking-widest text-[#9CA3B8] font-bold">Sent to</dt>
+          <dd className="text-white font-light break-all">{maskEmail(receipt.workEmail)}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <dt className="text-[10px] uppercase tracking-widest text-[#9CA3B8] font-bold">Review timeframe</dt>
+          <dd className="text-white font-light">Within two business days of questionnaire completion</dd>
+        </div>
+      </dl>
+
+      <p className="text-[#B6C0D4] text-sm font-light leading-relaxed">
+        The next step is to complete our Business Readiness Questionnaire. It takes approximately 6-8 minutes
+        and allows our team to understand your workflows, technology environment and preferred Aurixa modules.
+      </p>
+
+      {READINESS_QUESTIONNAIRE_URL ? (
+        <a
+          href={READINESS_QUESTIONNAIRE_URL}
+          className="w-full group relative flex items-center justify-center px-8 py-5 text-[12px] font-black tracking-[0.25em] uppercase text-white btn-chrome-prismatic transition-all hover:scale-[1.02] rounded-sm overflow-hidden"
+        >
+          <span className="relative z-10 drop-shadow-md">Complete Business Readiness Questionnaire</span>
+          <ArrowRight className="w-5 h-5 ml-4 relative z-10 group-hover:translate-x-1 transition-all" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }} />
+        </a>
+      ) : (
+        <div className="flex items-start gap-3 border border-[#00A8B5]/30 bg-[#00A8B5]/5 px-4 py-4">
+          <Mail className="w-5 h-5 mt-0.5 shrink-0" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }} />
+          <p className="text-[#B6C0D4] text-[13px] font-light leading-relaxed">
+            We will email your secure questionnaire link to the address above shortly. Quote your application
+            reference in any correspondence.
+          </p>
+        </div>
+      )}
+
+      <p className="text-[#9CA3B8] text-[13px] font-light leading-relaxed">
+        Once the questionnaire is completed, our team will assess your application and advise whether the
+        appropriate next step is a platform discovery session, guided demonstration or enterprise requirements
+        consultation.
+      </p>
+
+      <button
+        type="button"
+        onClick={onCorrectEmail}
+        className="text-[12px] uppercase tracking-widest text-[#C89B3C] font-bold hover:underline"
+      >
+        Not the right email address? Correct it
+      </button>
     </div>
   );
 }
