@@ -1305,7 +1305,7 @@ function SectionCapabilities({ ctx, session }: { ctx: Ctx; session: ReadinessSes
         number="10"
         question="Which Aurixa capabilities are most relevant to your organisation?"
         required
-        helper="Select and rank your top five capabilities. Add a capability, then use the move controls to order it."
+        helper="Select and rank your top five capabilities. Add a capability, then use the move controls to rank it."
         error={errors[Q.capabilities]}
       >
         <RankedCapabilitySelector
