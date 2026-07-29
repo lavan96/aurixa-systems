@@ -18,3 +18,16 @@ verify_jwt = false
 # is guarded by the READINESS_ADMIN_SECRET header check inside the function.
 [functions.readiness-questionnaire]
 verify_jwt = false
+
+# The feedback form and the plan-change notice are reached from a marketing
+# page with no login, so authorisation is possession of the `?h=` handoff or
+# `?uid=` in the URL — never a Supabase JWT. The browser sends no Authorization
+# header at all (see `apiGet` in src/lib/billing.ts), so leaving these to the
+# `verify_jwt = true` default 401s every request before the function is reached.
+# That is exactly what happened: both were absent here AND undeployed, and the
+# feedback page could never load its form.
+[functions.storefront-feedback]
+verify_jwt = false
+
+[functions.storefront-plan-change]
+verify_jwt = false
