@@ -21,6 +21,7 @@ import {
   controlClass,
   describedBy,
   errorClass,
+  helperClass,
   labelClass,
 } from "../components/FormControls";
 import {
@@ -1417,11 +1418,24 @@ function SectionCapabilities({ ctx, session }: { ctx: Ctx; session: ReadinessSes
               label="Source systems"
               required
               limit={LIMITS.migrationSources}
+              placeholder="e.g. Salesforce, HubSpot, Xero, SharePoint or spreadsheets"
               helper="Separate multiple systems with a comma."
             />
 
-            <CountQuestion ctx={ctx} id={Q.migrationRecords} label="Approximate number of records" />
-            <CountQuestion ctx={ctx} id={Q.migrationDocuments} label="Approximate number of documents" />
+            <CountQuestion
+              ctx={ctx}
+              id={Q.migrationRecords}
+              label="Approximate number of records"
+              placeholder="e.g. 5000"
+              helper="Estimate the number of individual records, such as clients, contacts, properties or transactions."
+            />
+            <CountQuestion
+              ctx={ctx}
+              id={Q.migrationDocuments}
+              label="Approximate number of documents"
+              placeholder="e.g. 10000"
+              helper="Estimate the number of files, such as reports, contracts, forms or templates."
+            />
 
             <TextAreaQuestion
               ctx={ctx}
@@ -1429,6 +1443,7 @@ function SectionCapabilities({ ctx, session }: { ctx: Ctx; session: ReadinessSes
               label="Known data-quality concerns"
               limit={LIMITS.migrationQuality}
               rows={3}
+              placeholder="e.g. duplicate records, missing fields, outdated information or inconsistent formats"
               helper="Optional. For example duplicates, incomplete records or inconsistent formats."
             />
 
@@ -1625,6 +1640,7 @@ function TextQuestion({
   required,
   limit,
   helper,
+  placeholder,
   /** Set for a full-sentence prompt so it matches the other questions. */
   question,
 }: {
@@ -1634,6 +1650,7 @@ function TextQuestion({
   required?: boolean;
   limit: number;
   helper?: string;
+  placeholder?: string;
   question?: boolean;
 }) {
   const value = asText(ctx.answers[id]);
@@ -1651,6 +1668,7 @@ function TextQuestion({
         name={id}
         type="text"
         maxLength={limit}
+        placeholder={placeholder}
         value={value}
         onChange={(event) => ctx.set(id, event.target.value)}
         aria-required={required ? "true" : undefined}
@@ -1670,6 +1688,7 @@ function TextAreaQuestion({
   limit,
   rows,
   helper,
+  placeholder,
 }: {
   ctx: Ctx;
   id: string;
@@ -1678,6 +1697,7 @@ function TextAreaQuestion({
   limit: number;
   rows: number;
   helper?: string;
+  placeholder?: string;
 }) {
   const value = asText(ctx.answers[id]);
   return (
@@ -1687,6 +1707,7 @@ function TextAreaQuestion({
         name={id}
         rows={rows}
         maxLength={limit}
+        placeholder={placeholder}
         value={value}
         onChange={(event) => ctx.set(id, event.target.value)}
         aria-required={required ? "true" : undefined}
@@ -1709,7 +1730,19 @@ function TextAreaQuestion({
  * Numeric answer with an explicit "Not yet known" alternative, so the applicant
  * is never forced to invent a figure (section 6.1).
  */
-function CountQuestion({ ctx, id, label }: { ctx: Ctx; id: string; label: string }) {
+function CountQuestion({
+  ctx,
+  id,
+  label,
+  placeholder,
+  helper,
+}: {
+  ctx: Ctx;
+  id: string;
+  label: string;
+  placeholder?: string;
+  helper?: string;
+}) {
   const raw = ctx.answers[id];
   const unknown = raw === NOT_YET_KNOWN;
   const numeric = typeof raw === "number" ? String(raw) : unknown ? "" : asText(raw);
@@ -1730,6 +1763,7 @@ function CountQuestion({ ctx, id, label }: { ctx: Ctx; id: string; label: string
           inputMode="numeric"
           min={0}
           step={1}
+          placeholder={placeholder}
           disabled={unknown}
           value={numeric}
           onChange={(event) => {
@@ -1738,7 +1772,7 @@ function CountQuestion({ ctx, id, label }: { ctx: Ctx; id: string; label: string
           }}
           aria-required="true"
           aria-invalid={Boolean(ctx.errors[id])}
-          aria-describedby={describedBy(id, false, Boolean(ctx.errors[id]))}
+          aria-describedby={describedBy(id, Boolean(helper), Boolean(ctx.errors[id]))}
           className={`${controlClass(Boolean(ctx.errors[id]))} sm:max-w-[240px] disabled:cursor-not-allowed disabled:opacity-50`}
         />
         <label
@@ -1755,6 +1789,11 @@ function CountQuestion({ ctx, id, label }: { ctx: Ctx; id: string; label: string
           Not yet known
         </label>
       </div>
+      {helper && (
+        <p id={`${id}-helper`} className={helperClass}>
+          {helper}
+        </p>
+      )}
       {ctx.errors[id] && (
         <p id={`${id}-error`} className={errorClass} role="alert">
           {ctx.errors[id]}
