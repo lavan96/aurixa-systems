@@ -16,6 +16,7 @@ import CardSaved from "./pages/CardSaved";
 // Stage 2 readiness questionnaire. Deliberately unlisted: reachable only via the
 // secure link issued with a Priority Access Application, never from navigation.
 import Questionnaire from "./pages/Questionnaire";
+import Feedback from "./pages/Feedback";
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -49,6 +50,7 @@ function AppShell() {
             <Route path="/resources" element={<Resources />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/questionnaire" element={<Questionnaire />} />
+            <Route path="/feedback" element={<Feedback />} />
           </Routes>
         </main>
         {!isPricingPage && <Footer />}
