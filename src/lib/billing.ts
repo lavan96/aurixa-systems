@@ -609,3 +609,134 @@ export async function acknowledgePlanChange(
     // Worst case it shows once more. Not worth surfacing an error over.
   }
 }
+
+// ── Product feedback ────────────────────────────────────────────────────────
+// The form is served per workspace: the rating scales are built from the
+// modules that workspace's plan actually includes, so nobody is asked to score
+// something they have never opened.
+
+export interface FeedbackQuestion {
+  key: string;
+  label: string;
+  hint: string;
+  group: string;
+}
+
+export interface FeedbackForm {
+  planSlug: string | null;
+  planName: string | null;
+  questions: FeedbackQuestion[];
+  groups: string[];
+}
+
+export interface FeedbackContext {
+  /** False when the link carried no workspace — readable, not submittable. */
+  identified: boolean;
+  workspaceName: string | null;
+  respondent: string | null;
+  form: FeedbackForm;
+  /** Null when unidentified. `due` false means they have already answered. */
+  prompt: {
+    due: boolean;
+    campaignKey: string;
+    reason: "onboarding" | "quarterly";
+    rewardAvailable: boolean;
+    rewardTokens: number;
+  } | null;
+  rewardTokens: number;
+}
+
+export interface FeedbackAnswers {
+  overallRating: number | null;
+  recommendScore: number | null;
+  moduleRatings: Record<string, number>;
+  mostValuable: string;
+  biggestFrustration: string;
+  featureRequest: string;
+  additionalComments: string;
+}
+
+export interface FeedbackReceipt {
+  submissionId: string;
+  campaignKey: string;
+  creditsGranted: number;
+  /** True when a colleague already earned this campaign's credits. */
+  alreadyGranted: boolean;
+  creditsExpireAt: string | null;
+}
+
+/** The questions this workspace should be asked, and whether it is due. */
+export async function fetchFeedbackContext(
+  credential?: Credential | null,
+): Promise<FeedbackContext> {
+  const q = credentialQuery(credential);
+  const body = await apiGet<{
+    identified?: boolean;
+    workspace_name?: string | null;
+    respondent?: string | null;
+    form: FeedbackForm;
+    prompt?: {
+      due: boolean;
+      campaignKey: string;
+      reason: "onboarding" | "quarterly";
+      rewardAvailable: boolean;
+      rewardTokens: number;
+    } | null;
+    reward_tokens?: number;
+  }>(`/storefront-feedback${q ? `?${q}` : ""}`);
+
+  return {
+    identified: body.identified === true,
+    workspaceName: body.workspace_name ?? null,
+    respondent: body.respondent ?? null,
+    form: body.form,
+    prompt: body.prompt ?? null,
+    rewardTokens: body.reward_tokens ?? 100,
+  };
+}
+
+/**
+ * Sends the answers.
+ *
+ * Throws on failure rather than swallowing it — unlike a banner, this is the
+ * one action on the page, and someone who has just written three paragraphs
+ * must be told if it did not land.
+ */
+export async function submitFeedback(
+  answers: FeedbackAnswers,
+  credential?: Credential | null,
+): Promise<FeedbackReceipt> {
+  const res = await fetch(`${STOREFRONT_BASE}/storefront-feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...(credential ?? {}),
+      overall_rating: answers.overallRating,
+      recommend_score: answers.recommendScore,
+      module_ratings: answers.moduleRatings,
+      most_valuable: answers.mostValuable,
+      biggest_frustration: answers.biggestFrustration,
+      feature_request: answers.featureRequest,
+      additional_comments: answers.additionalComments,
+    }),
+  });
+  const body = (await res.json().catch(() => ({}))) as {
+    ok?: boolean;
+    error?: string;
+    submission_id?: string;
+    campaign_key?: string;
+    credits_granted?: number;
+    already_granted?: boolean;
+    credits_expire_at?: string | null;
+  };
+  if (!res.ok || body.ok === false) {
+    throw new Error(body.error ?? `feedback_${res.status}`);
+  }
+  return {
+    submissionId: body.submission_id ?? "",
+    campaignKey: body.campaign_key ?? "",
+    creditsGranted: body.credits_granted ?? 0,
+    alreadyGranted: body.already_granted === true,
+    creditsExpireAt: body.credits_expire_at ?? null,
+  };
+}
