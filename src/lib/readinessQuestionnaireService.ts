@@ -22,6 +22,7 @@
 
 import { AnswerMap, QUESTIONNAIRE_VERSION, StoredAnswer } from "./readinessQuestionnaire";
 import { STOREFRONT_BASE } from "./leads";
+import { clearReadinessHandoff } from "./readinessHandoff";
 
 const READINESS_API_URL = (() => {
   const explicit = import.meta.env.VITE_READINESS_API_URL as string | undefined;
@@ -46,7 +47,7 @@ export type ReadinessStatus = "not_started" | "in_progress" | "completed";
 /**
  * How the current session was authorised:
  *   `token`   — a secure questionnaire link: prefill, draft resume and autosave.
- *   `handoff` — the same-origin Stage 1 → Stage 2 cookie: prefill, no server
+ *   `handoff` — the same-tab Stage 1 → Stage 2 handoff: prefill, no server
  *               draft store yet, so no autosave.
  *   `open`    — the explicit open-access escape hatch: neither.
  */
@@ -116,49 +117,11 @@ export type CompleteResult = {
 export const allowsOpenAccess = () =>
   (import.meta.env.VITE_QUESTIONNAIRE_OPEN_ACCESS as string | undefined) === "true";
 
-// ── Same-origin Stage 1 → Stage 2 handoff ───────────────────────────────────
+// ── Same-tab Stage 1 → Stage 2 handoff ──────────────────────────────────────
 
-const SESSION_ENDPOINT = "/api/priority-access/session";
-
-export type HandoffSessionResult = {
-  authorised: boolean;
-  prefill?: ReadinessPrefill;
-  applicationId?: string;
-  expiresAt?: string | null;
-};
-
-/**
- * Verifies the HttpOnly readiness cookie set when Stage 1 was submitted. The
- * browser cannot read or forge that cookie; this call is the only way the page
- * learns whether the visitor is continuing an authorised journey.
- */
-export async function authoriseByHandoffSession(): Promise<HandoffSessionResult> {
-  try {
-    const response = await fetch(SESSION_ENDPOINT, {
-      method: "GET",
-      credentials: "same-origin",
-      headers: { accept: "application/json" },
-    });
-
-    // An undeployed function is answered by the SPA rewrite with HTML.
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.includes("application/json")) return { authorised: false };
-    if (!response.ok) return { authorised: false };
-
-    const body = (await response.json()) as HandoffSessionResult;
-    return body?.authorised && body.prefill ? body : { authorised: false };
-  } catch {
-    return { authorised: false };
-  }
-}
-
-/** Invalidates the handoff session. Called once Stage 2 has been submitted. */
-export async function endHandoffSession(): Promise<void> {
-  try {
-    await fetch(SESSION_ENDPOINT, { method: "DELETE", credentials: "same-origin" });
-  } catch {
-    // The cookie expires server-side within two hours regardless.
-  }
+/** Invalidates the handoff after Stage 2 has been submitted successfully. */
+export function endHandoffSession(): void {
+  clearReadinessHandoff();
 }
 
 /** Builds a questionnaire session from verified Stage 1 handoff details. */

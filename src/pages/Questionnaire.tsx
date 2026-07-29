@@ -81,7 +81,6 @@ import {
   ReadinessAccessFailure,
   ReadinessSession,
   allowsOpenAccess,
-  authoriseByHandoffSession,
   authoriseQuestionnaire,
   canAutosave,
   completeQuestionnaire,
@@ -92,6 +91,7 @@ import {
   openAccessSession,
   saveQuestionnaireDraft,
 } from "../lib/readinessQuestionnaireService";
+import { readReadinessHandoff } from "../lib/readinessHandoff";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
 
 const PAGE_TITLE = "Business Readiness Questionnaire | Aurixa Systems";
@@ -192,7 +192,7 @@ export default function Questionnaire() {
   /**
    * Resolves access in priority order:
    *   1. A secure questionnaire token, when one was supplied in the link.
-   *   2. The same-origin Stage 1 → Stage 2 handoff cookie, which is how an
+   *   2. The same-tab Stage 1 → Stage 2 handoff, which is how an
    *      applicant who just submitted Stage 1 continues in the same session.
    *   3. The explicit open-access escape hatch.
    * Anything else stays locked.
@@ -201,9 +201,9 @@ export default function Questionnaire() {
     setPhase("loading");
 
     if (!token) {
-      const handoff = await authoriseByHandoffSession();
-      if (handoff.authorised && handoff.prefill) {
-        const session = handoffSession(handoff.prefill);
+      const prefill = readReadinessHandoff();
+      if (prefill) {
+        const session = handoffSession(prefill);
         setSession(session);
         setAnswers(seedPrefilledAnswers(session));
         setResponseVersion(session.responseVersion);
@@ -443,7 +443,7 @@ export default function Questionnaire() {
       return;
     }
 
-    if (session.access === "handoff") await endHandoffSession();
+    if (session.access === "handoff") endHandoffSession();
 
     setCompletion({
       applicationId: result.applicationId ?? session.applicationId,
