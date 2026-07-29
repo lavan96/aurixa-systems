@@ -4,7 +4,7 @@ Implementation notes for `/questionnaire`, built to section 6, Appendix B and
 sections 13, 14 and 17 of *Aurixa Systems Priority Access, Qualification &
 Onboarding Operating Model v1.0*.
 
-Stage 1 (`/contact`) is unchanged. Stage 3 scoring, the transactional email
+Stage 1 (`/contact`) retains its existing form and direct Make.com payload. Stage 3 scoring, the transactional email
 sequence and the CRM routing in sections 7, 10 and 11 are not part of this
 change.
 
@@ -22,11 +22,8 @@ change.
 | `src/components/questionnaire/MultiSelectGroup.tsx` | Native checkbox group: exclusive options, max count |
 | `src/components/questionnaire/RankedCapabilitySelector.tsx` | BRQ-10 ranked top five, buttons only |
 | `src/components/FormControls.tsx` | `Field`, `Dropdown` and the Aurixa control classes, moved out of `Contact.tsx` so both stages share one implementation |
-| `api/priority-access/submit.ts` | Same-origin Stage 1 submission + session issuance |
-| `api/priority-access/session.ts` | Session verification and invalidation |
-| `api/_lib/session.ts` | Sealed-cookie crypto (`npm test` covers it) |
-| `src/components/StageOneCompleteModal.tsx` | The PROCEED handoff dialog |
-| `src/lib/priorityAccess.ts` | Stage 1 submission client |
+| `src/components/StageOneCompleteModal.tsx` | The unchanged PROCEED handoff dialog |
+| `src/lib/readinessHandoff.ts` | Two-hour same-tab `sessionStorage` journey gate |
 | `supabase/functions/readiness-questionnaire/index.ts` | Questionnaire service (**not deployed**) |
 | `supabase/migrations/20260728120000_readiness_questionnaire.sql` | Tables, RLS (**not applied**) |
 
@@ -129,58 +126,39 @@ named options are selected — shows an inline confirmation first.
 `/questionnaire` is reachable three ways, resolved in this order:
 
 1. **A secure questionnaire token** in the link (`?t=…`) — prefill, draft resume
-   and autosave. Requires the Supabase service below.
-2. **The Stage 1 → Stage 2 handoff session** — the `aurixa_readiness_session`
-   cookie issued the moment a Priority Access Application is accepted. Prefill,
-   but no server-side draft store yet, so no autosave.
+   and autosave through the existing Stage 2 service.
+2. **The Stage 1 → Stage 2 same-tab handoff** — after the existing direct
+   Make.com submission succeeds, `/contact` writes `aurixa_readiness_access` to
+   `sessionStorage` with the cleaned Stage 1 prefill and a two-hour expiry.
 3. **The open-access escape hatch** — `VITE_QUESTIONNAIRE_OPEN_ACCESS="true"`.
    Off by default.
 
-Anything else sees the locked screen. An already-completed questionnaire always
-blocks: that is duplicate-submission protection, not access control.
+Anything else sees the existing locked screen. A direct visit, another browser,
+an incognito session, or a separate unrelated tab has no handoff record and
+therefore remains locked. Refreshing the authorised questionnaire tab remains
+open until the record expires; closing the browser tab/session removes access.
+Malformed and expired records are removed and fail closed.
 
 ### Stage 1 → Stage 2 handoff
 
-    Stage 1 submitted
-      → POST /api/priority-access/submit  (same origin)
-        → server re-validates, forwards to the existing Make.com webhook
-        → Make.com accepts
-        → server seals a session and sets the cookie
-      → PROCEED modal
+    Stage 1 submitted directly to the existing Make.com webhook
+      → Make.com accepts the unchanged payload and X-Application-Id header
+      → current tab writes a two-hour sessionStorage record
+      → unchanged PROCEED modal appears
       → user clicks PROCEED
-      → /questionnaire  (GET /api/priority-access/session verifies the cookie)
+      → same tab navigates to /questionnaire with no query string
 
-The modal is shown only when Make.com has accepted **and** the session exists.
-If either fails, the applicant sees the existing Stage 1 confirmation screen and
-the questionnaire stays locked — nothing is lost, nothing is unlocked.
+If Make.com rejects the submission, no record or modal is created. If browser
+storage is unexpectedly unavailable after Make.com accepts, the application
+still stands and the existing receipt screen is shown instead of offering a
+questionnaire that cannot unlock. The record is cleared after successful Stage
+2 completion, not during refreshes or movement between questionnaire sections.
 
-| Endpoint | Purpose |
-| --- | --- |
-| `POST /api/priority-access/submit` | Re-validates Stage 1, forwards the unchanged payload to Make.com, issues the session cookie |
-| `GET /api/priority-access/session` | Verifies the cookie, returns the verified Stage 1 details for prefill |
-| `DELETE /api/priority-access/session` | Invalidates the session once Stage 2 is submitted |
-
-The Stage 1 payload mapping is preserved *by construction*: the endpoint calls
-the same `buildWaitlistPayload` the browser used, so Make.com → Airtable field
-names, option slugs, attribution and consent values cannot drift. The existing
-`X-Application-Id` idempotency header is forwarded unchanged.
-
-### Session cookie
-
-`aurixa_readiness_session` — HttpOnly, `SameSite=Strict`, `Path=/`, `Secure`
-outside local http, and no `Max-Age`, so it is a browser-session cookie. The
-verified Stage 1 details are sealed inside it with AES-256-GCM under
-`READINESS_SESSION_SECRET`; the browser cannot read or forge it, and a two-hour
-expiry inside the envelope bounds a cookie that is restored or copied.
-
-There is no session table, so the handoff works before any database exists. The
-cost is that there is no revocation list: a cookie lifted out of a browser stays
-valid until it expires. `fingerprint()` exists so a revocation table can be added
-later — persist only the hash, never the sealed value.
-
-**`READINESS_SESSION_SECRET` must be set in the hosting environment.** Without it
-the endpoint fails closed: Stage 1 still submits, no session is issued, no modal
-appears and `/questionnaire` stays locked.
+This handoff is intentionally a client-side journey gate, **not server-side
+authentication**. It uses no cookies, encryption, serverless handoff endpoints,
+PowerShell/OpenSSL setup, or Vercel secret. `READINESS_SESSION_SECRET` is no
+longer required. Secure token-based questionnaire access remains separately
+available and unchanged.
 
 ## Secure access and prefill
 
@@ -288,8 +266,6 @@ drag-and-drop.
   submissions through the existing Make.com webhook the way Stage 1 does — that
   decision has not been made.
 - **Apply the migration and deploy the edge function.** Neither has been run.
-- **Set `READINESS_SESSION_SECRET`** in Vercel, or the handoff cannot issue a
-  session and the questionnaire stays locked for everyone.
 - **Set `READINESS_ADMIN_SECRET`** in the function's environment.
 - **Issue links from Stage 1.** The Make.com scenario (or `capture-lead`) must
   call the `issue` action after a Priority Access Application and put the

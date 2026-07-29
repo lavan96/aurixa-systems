@@ -15,7 +15,7 @@ import {
 } from "../components/FormControls";
 import { StageOneCompleteModal } from "../components/StageOneCompleteModal";
 import { captureLead } from "../lib/leads";
-import { submitPriorityAccess } from "../lib/priorityAccess";
+import { grantReadinessHandoff } from "../lib/readinessHandoff";
 import { getAttribution } from "../lib/attribution";
 import {
   EMPTY_WAITLIST_FORM,
@@ -150,30 +150,6 @@ export default function Contact() {
     };
 
     try {
-      // Preferred path: the same-origin endpoint forwards to the same Make.com
-      // webhook with the same payload, then issues the Stage 2 session cookie.
-      const handoff = await submitPriorityAccess({
-        applicationId,
-        values,
-        attribution: getAttribution("AURIXA Contact Waitlist Page", "/contact"),
-      });
-
-      if (handoff.stageOneReceived) {
-        captureLead(payload);
-        // The modal appears only when the session exists too; otherwise the
-        // applicant sees the existing confirmation screen, unchanged.
-        if (handoff.questionnaireSessionCreated) setShowHandoff(true);
-        else setReceipt(receipt);
-        return;
-      }
-
-      if (handoff.error !== "api_unavailable") {
-        throw new Error("Priority access submission rejected");
-      }
-
-      // The endpoint is not deployed. Fall back to the current browser-to-Make
-      // submission so no application is lost. No Stage 2 session is created,
-      // so questionnaire access stays locked.
       const response = await fetch(MAKE_WAITLIST_WEBHOOK_URL, {
         method: "POST",
         headers: {
@@ -195,7 +171,18 @@ export default function Contact() {
       // Fire-and-forget: never blocks or fails the visitor's submission.
       captureLead(payload);
 
-      setReceipt(receipt);
+      const handoffCreated = grantReadinessHandoff({
+        applicationId,
+        firstName: cleanTextValue(values.firstName),
+        lastName: cleanTextValue(values.lastName),
+        workEmail: cleanEmailValue(values.workEmail),
+        organisationName: cleanTextValue(values.organisationName),
+        role: values.role,
+        organisationType: values.organisationType,
+        annualVolume: values.annualVolume,
+      });
+      if (handoffCreated) setShowHandoff(true);
+      else setReceipt(receipt);
     } catch (error) {
       console.error(error);
       setSubmissionError(
