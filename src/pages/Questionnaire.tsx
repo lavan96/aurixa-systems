@@ -93,6 +93,7 @@ import {
   saveQuestionnaireDraft,
 } from "../lib/readinessQuestionnaireService";
 import { readReadinessHandoff } from "../lib/readinessHandoff";
+import { submitHandoffQuestionnaire } from "../lib/readinessSubmission";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
 
 const PAGE_TITLE = "Business Readiness Questionnaire | Aurixa Systems";
@@ -420,13 +421,20 @@ export default function Questionnaire() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     const payload = buildCompletionPayload(session.applicationId, answers, responseVersion);
-    const result = await completeQuestionnaire({
-      sessionToken: session.sessionToken,
-      applicationId: payload.applicationId,
-      responseVersion: payload.responseVersion,
-      answers: payload.answers,
-      activeConditionalQuestionIds: payload.activeConditionalQuestionIds,
-    });
+    const result = session.access === "handoff"
+      ? await submitHandoffQuestionnaire({
+          applicationId: payload.applicationId,
+          answers,
+          responseVersion: payload.responseVersion,
+          prefill: session.prefill,
+        })
+      : await completeQuestionnaire({
+          sessionToken: session.sessionToken,
+          applicationId: payload.applicationId,
+          responseVersion: payload.responseVersion,
+          answers: payload.answers,
+          activeConditionalQuestionIds: payload.activeConditionalQuestionIds,
+        });
 
     setIsSubmitting(false);
 
