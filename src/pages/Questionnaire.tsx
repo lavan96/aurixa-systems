@@ -93,6 +93,10 @@ import {
   saveQuestionnaireDraft,
 } from "../lib/readinessQuestionnaireService";
 import { readReadinessHandoff } from "../lib/readinessHandoff";
+import {
+  clearQuestionnaireLinkAccess,
+  resolveQuestionnaireLink,
+} from "../lib/questionnaireLinkAccess";
 import { submitHandoffQuestionnaire } from "../lib/readinessSubmission";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
 
@@ -156,6 +160,7 @@ export default function Questionnaire() {
   const savedSnapshotRef = useRef("");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startedAtRef = useRef<string | null>(null);
+  const linkAccessRef = useRef(false);
 
   // ── Page metadata. Scoped to this page only; restored on unmount so no other
   // route's title, description or robots behaviour changes. ─────────────────
@@ -265,6 +270,25 @@ export default function Questionnaire() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
+    const linkAccess = resolveQuestionnaireLink(url);
+
+    if (linkAccess === "link" || linkAccess === "session") {
+      linkAccessRef.current = true;
+      if (linkAccess === "link") {
+        url.searchParams.delete("token");
+        url.searchParams.delete("expires");
+        window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+      }
+      startOpenAccess();
+      return;
+    }
+
+    if (linkAccess === "rejected") {
+      setBlockedBy("invalid_token");
+      setPhase("blocked");
+      return;
+    }
+
     let token = url.searchParams.get("t") ?? url.searchParams.get("token") ?? "";
 
     // Development-only preview. `import.meta.env.DEV` is statically false in a
@@ -281,7 +305,7 @@ export default function Questionnaire() {
 
     tokenRef.current = token;
     void authorise(token);
-  }, [authorise]);
+  }, [authorise, startOpenAccess]);
 
   // ── Autosave ───────────────────────────────────────────────────────────────
   const runSave = useCallback(
@@ -453,6 +477,7 @@ export default function Questionnaire() {
     }
 
     if (session.access === "handoff") endHandoffSession();
+    if (linkAccessRef.current) clearQuestionnaireLinkAccess();
 
     setCompletion({
       applicationId: result.applicationId ?? session.applicationId,
