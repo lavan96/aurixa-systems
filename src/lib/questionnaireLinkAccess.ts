@@ -1,8 +1,6 @@
 export const QUESTIONNAIRE_LINK_STORAGE_KEY = "aurixa_questionnaire_link_access";
-export const QUESTIONNAIRE_LINK_TOKEN = "V2RFaGprbUhqSTB2T2M3Qw";
-export const QUESTIONNAIRE_LINK_EXPIRES = "2026-07-30T15:48:54.156Z";
 
-const FIXED_EXPIRY_MS = Date.parse(QUESTIONNAIRE_LINK_EXPIRES);
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{16,256}$/;
 
 type LinkAccessRecord = {
   version: 1;
@@ -21,26 +19,32 @@ export function clearQuestionnaireLinkAccess(): void {
   }
 }
 
-/** Reads the fixed-link session, validating every field and its fixed lifetime. */
+/** Reads a dynamic-link session and fails closed if any field is invalid. */
 export function hasQuestionnaireLinkSession(now = Date.now()): boolean {
   try {
     const stored = window.sessionStorage.getItem(QUESTIONNAIRE_LINK_STORAGE_KEY);
     if (stored === null) return false;
-    const value = JSON.parse(stored) as Partial<LinkAccessRecord>;
-    const createdAt = Date.parse(value.createdAt ?? "");
+    const value: unknown = JSON.parse(stored);
+
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      clearQuestionnaireLinkAccess();
+      return false;
+    }
+
+    const record = value as Partial<LinkAccessRecord>;
+    const createdAt = typeof record.createdAt === "string" ? Date.parse(record.createdAt) : Number.NaN;
+    const expiresAt = typeof record.expiresAt === "string" ? Date.parse(record.expiresAt) : Number.NaN;
     const valid =
-      value !== null &&
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      Object.keys(value).length === 4 &&
-      value.version === 1 &&
-      value.authorised === true &&
-      typeof value.createdAt === "string" &&
+      Object.keys(record).length === 4 &&
+      record.version === 1 &&
+      record.authorised === true &&
+      typeof record.createdAt === "string" &&
       Number.isFinite(createdAt) &&
+      typeof record.expiresAt === "string" &&
+      Number.isFinite(expiresAt) &&
       createdAt <= now &&
-      createdAt < FIXED_EXPIRY_MS &&
-      value.expiresAt === QUESTIONNAIRE_LINK_EXPIRES &&
-      now < FIXED_EXPIRY_MS;
+      createdAt < expiresAt &&
+      now < expiresAt;
 
     if (!valid) clearQuestionnaireLinkAccess();
     return valid;
@@ -51,28 +55,30 @@ export function hasQuestionnaireLinkSession(now = Date.now()): boolean {
 }
 
 /**
- * Handles only the one locally authorised link. Legacy links without an
- * `expires` parameter remain available to the existing server authorisation.
+ * Accepts a locally authorised dynamic link only when `token` and `expires`
+ * are supplied together. Token-only links are left to backend authorisation.
  */
 export function resolveQuestionnaireLink(url: URL, now = Date.now()): QuestionnaireLinkAccess {
   const tokens = url.searchParams.getAll("token");
   const expiries = url.searchParams.getAll("expires");
-  const isFixedLinkAttempt = expiries.length > 0 || tokens.includes(QUESTIONNAIRE_LINK_TOKEN);
+  const isDynamicLinkAttempt = expiries.length > 0;
 
-  if (isFixedLinkAttempt) {
+  if (isDynamicLinkAttempt) {
+    const expiresAt = expiries.length === 1 ? Date.parse(expiries[0]) : Number.NaN;
     const valid =
       tokens.length === 1 &&
       expiries.length === 1 &&
-      tokens[0] === QUESTIONNAIRE_LINK_TOKEN &&
-      expiries[0] === QUESTIONNAIRE_LINK_EXPIRES &&
-      now < FIXED_EXPIRY_MS;
+      TOKEN_PATTERN.test(tokens[0]) &&
+      Number.isFinite(expiresAt) &&
+      expiresAt > now;
+
     if (!valid) return "rejected";
 
     const record: LinkAccessRecord = {
       version: 1,
       authorised: true,
       createdAt: new Date(now).toISOString(),
-      expiresAt: QUESTIONNAIRE_LINK_EXPIRES,
+      expiresAt: expiries[0],
     };
     try {
       window.sessionStorage.setItem(QUESTIONNAIRE_LINK_STORAGE_KEY, JSON.stringify(record));
