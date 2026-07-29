@@ -635,9 +635,16 @@ export interface FeedbackContext {
   workspaceName: string | null;
   respondent: string | null;
   form: FeedbackForm;
-  /** Null when unidentified. `due` false means they have already answered. */
+  /** Null when the link carried no workspace, so nothing can be looked up. */
   prompt: {
     due: boolean;
+    /**
+     * Whether THIS PERSON has answered. What the form gates on — `due` is
+     * workspace-level, and using it here locked colleagues out of a form
+     * built to hear from all of them.
+     */
+    youAnswered: boolean;
+    workspaceAnswered: boolean;
     campaignKey: string;
     reason: "onboarding" | "quarterly";
     rewardAvailable: boolean;
@@ -677,6 +684,8 @@ export async function fetchFeedbackContext(
     form: FeedbackForm;
     prompt?: {
       due: boolean;
+      youAnswered: boolean;
+      workspaceAnswered: boolean;
       campaignKey: string;
       reason: "onboarding" | "quarterly";
       rewardAvailable: boolean;

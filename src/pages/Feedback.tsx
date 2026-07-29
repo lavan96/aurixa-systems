@@ -120,7 +120,10 @@ export default function Feedback() {
     credentialKey,
   ]);
 
-  const answered = context?.prompt && !context.prompt.due;
+  // Gated on the PERSON, never the workspace. `due` goes false the moment any
+  // colleague answers, and using it here turned the form into a locked door for
+  // everyone else — in a workspace where many people are meant to respond.
+  const answered = context?.prompt?.youAnswered === true;
   const rewardTokens = context?.rewardTokens ?? 100;
   const rewardAvailable = context?.prompt?.rewardAvailable !== false;
 
@@ -191,8 +194,8 @@ export default function Feedback() {
               <Check className="h-5 w-5 text-[#5EDDE8]" /> You&rsquo;ve already answered this one
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-[#94A3B8]">
-              Thank you — your workspace has completed this round of feedback. We&rsquo;ll ask
-              again next quarter, and there will be another {rewardTokens} credits in it.
+              Thank you — you&rsquo;ve already had your say this round. We&rsquo;ll ask again
+              next quarter, and there will be another {rewardTokens} credits in it.
             </p>
           </Panel>
         ) : (
