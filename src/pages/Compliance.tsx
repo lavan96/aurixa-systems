@@ -71,12 +71,23 @@ function SecurityArchitectureVisual() {
 
 function DueDiligenceFlow() {
   return <motion.div {...reveal} className="diligence-flow">
-    <Corners /><div className="diligence-path" aria-hidden="true"><span className="compliance-traveller" /></div>
-    {diligenceStages.map(([number, title, subtitle, description], index) => <article key={number} className={`diligence-stage diligence-stage--${index + 1}`}>
-      <div className="diligence-checkpoint" aria-hidden="true"><span>{number}</span></div>
-      <small>{subtitle}</small><h3>{title}</h3><p>{description}</p>
-      <div className="diligence-ledger" aria-hidden="true"><i /><i /><i /></div>
-    </article>)}
+    <Corners />
+    <div className="diligence-grid" aria-hidden="true" />
+    <div className="diligence-rail" aria-hidden="true">
+      <span className="diligence-rail__line" />
+      <span className="diligence-signal"><i /></span>
+    </div>
+    <div className="diligence-stages">
+      {diligenceStages.map(([number, title, subtitle, description], index) => <article key={number} className={`diligence-stage diligence-stage--${index + 1}`}>
+        <div className="diligence-checkpoint" aria-hidden="true"><span>{number}</span><i /></div>
+        <div className="diligence-stage__content">
+          <small>{subtitle}</small><h3>{title}</h3><p>{description}</p>
+          <div className="diligence-detail" aria-hidden="true">
+            <span /><span /><span /><i />
+          </div>
+        </div>
+      </article>)}
+    </div>
   </motion.div>;
 }
 
