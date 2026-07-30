@@ -35,8 +35,8 @@ function Eyebrow({ children }: { children: string }) {
   return <div className="compliance-eyebrow"><span />{children}</div>;
 }
 
-function SectionHeader({ eyebrow, title, description, align = "left" }: { eyebrow: string; title: string; description: string; align?: "left" | "right" }) {
-  return <motion.header {...reveal} className={`compliance-section-header compliance-section-header--${align}`}>
+function SectionHeader({ eyebrow, title, description, align = "left", className = "" }: { eyebrow: string; title: string; description: string; align?: "left" | "right"; className?: string }) {
+  return <motion.header {...reveal} className={`compliance-section-header compliance-section-header--${align} ${className}`.trim()}>
     <Eyebrow>{eyebrow}</Eyebrow><h2>{title}</h2><p>{description}</p>
   </motion.header>;
 }
@@ -157,7 +157,7 @@ export default function Compliance() {
       <DueDiligenceFlow />
     </div></section>
     <section className="compliance-section compliance-section--governance"><SectionTransition number="04" /><div className="compliance-container">
-      <SectionHeader eyebrow="Information Governance" title="Clear Policies. Defined Responsibilities." description="Privacy practices and platform terms provide a clear framework for how information is handled and how the Aurixa environment may be accessed and used." align="right" />
+      <SectionHeader className="information-governance-header" eyebrow="Information Governance" title="Clear Policies. Defined Responsibilities." description="Privacy practices and platform terms provide a clear framework for how information is handled and how the Aurixa environment may be accessed and used." />
       <InformationGovernanceVisual />
     </div></section>
     <section className="compliance-section compliance-section--responsibility"><SectionTransition number="05" /><div className="compliance-container">

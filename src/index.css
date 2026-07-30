@@ -58,6 +58,9 @@
   .compliance-section-header h2 { margin-top:1.35rem; font-size:clamp(2.35rem,4.5vw,4.2rem); font-weight:300; line-height:1.1; letter-spacing:-.035em; }
   .compliance-section-header p { max-width:44rem; margin-top:1.5rem; color:#9ca7b8; font-size:clamp(.95rem,1.3vw,1.08rem); font-weight:300; line-height:1.85; }
   .compliance-section-header--right .compliance-eyebrow { justify-content:flex-end; }
+  .information-governance-header { width:min(100%,760px); margin-inline:auto; text-align:center; }
+  .information-governance-header .compliance-eyebrow { justify-content:center; }
+  .information-governance-header p { margin-inline:auto; }
 
   .compliance-corners::before,.compliance-corners::after { content:""; position:absolute; z-index:4; width:1rem; height:1rem; pointer-events:none; }
   .compliance-corners::before { top:.65rem; left:.65rem; border-top:1px solid #5edde8; border-left:1px solid #5edde8; }
