@@ -12,14 +12,12 @@ export const LEGAL_ENTITY = {
   overseasProcessingLocations: [] as string[],
 } as const;
 
-// Publication dates and document versions require legal approval. These neutral
-// working-draft values avoid presenting unapproved dates or versions as final.
+// Only confirmed public metadata belongs here. Publication dates and version
+// numbers remain in the legal review checklist until approved.
 export const LEGAL_DOCUMENT_META = {
-  effectiveDate: "Effective on publication",
-  lastUpdated: "Pre-publication legal review",
-  version: "Working draft",
-  owner: LEGAL_ENTITY.name,
-  status: "Legal review",
+  entity: LEGAL_ENTITY.name,
+  documentType: "Platform governance",
+  governingLocation: LEGAL_ENTITY.location,
 } as const;
 
 export type LegalSectionDefinition = {
