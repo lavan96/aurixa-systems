@@ -18,6 +18,9 @@ import { HeroBackground } from "../components/HeroBackgrounds";
 import { VoiceAgentSection } from "../components/VoiceAgentSection";
 import { AnimatedGearSystem } from "../components/AnimatedGearSystem";
 
+// Temporarily hidden from the public Platform page. Set to true to restore.
+const SHOW_CORELOGIC_DATA_INTEGRATION = false;
+
 export default function Platform() {
   return (
     <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-screen overflow-hidden">
@@ -286,7 +289,8 @@ export default function Platform() {
             </div>
 
             {/* Add on 5: CoreLogic Integration (Full Width Banner) */}
-            <div className="md:col-span-12 lg:col-span-12 glass-panel p-10 md:p-12 group overflow-hidden border border-[#C89B3C]/30 hover:border-[#C89B3C]/80 transition-all duration-500 bg-[#0B162C]/90 relative flex flex-col md:flex-row items-center border-l-[6px] min-h-[350px]">
+            {SHOW_CORELOGIC_DATA_INTEGRATION && (
+              <div className="md:col-span-12 lg:col-span-12 glass-panel p-10 md:p-12 group overflow-hidden border border-[#C89B3C]/30 hover:border-[#C89B3C]/80 transition-all duration-500 bg-[#0B162C]/90 relative flex flex-col md:flex-row items-center border-l-[6px] min-h-[350px]">
                <div className="absolute inset-0 bg-gradient-to-r from-[#00A8B5]/10 to-transparent pointer-events-none" />
                <div className="absolute right-0 top-0 w-3/4 h-full opacity-10 pointer-events-none grid-hex" />
                
@@ -334,7 +338,8 @@ export default function Platform() {
                       </div>
                   </div>
                </div>
-            </div>
+              </div>
+            )}
 
           </div>
         </div>
