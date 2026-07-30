@@ -25,6 +25,150 @@
   --font-display: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
+/* Compliance security architecture. The connector owns a dedicated grid
+   track so its visual system can never intersect the layer copy. */
+@layer utilities {
+  .security-architecture {
+    isolation: isolate;
+    box-shadow: inset 0 1px 0 rgba(94, 221, 232, 0.04), 0 22px 70px rgba(0, 0, 0, 0.16);
+  }
+  .security-architecture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 34% 50%, rgba(0, 168, 181, 0.07), transparent 28%),
+      radial-gradient(circle at 100% 100%, rgba(200, 155, 60, 0.045), transparent 32%);
+  }
+  .security-architecture__grid {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.2;
+    background-image:
+      linear-gradient(rgba(94, 221, 232, 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(94, 221, 232, 0.07) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(90deg, transparent, black 30%, black 85%, transparent);
+  }
+  .security-layer {
+    position: relative;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    padding: 2rem 1.25rem 2rem 0;
+    transition: background-color 450ms ease;
+  }
+  .security-layer:nth-of-type(even) { background: rgba(255, 255, 255, 0.012); }
+  .security-layer:hover { background-color: rgba(0, 168, 181, 0.035); }
+  .security-layer:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 1rem;
+    bottom: 0;
+    left: 42px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0, 168, 181, 0.2), rgba(255, 255, 255, 0.09) 24%, rgba(255, 255, 255, 0.06));
+  }
+  .security-layer__meta,
+  .security-layer__content { grid-column: 2; min-width: 0; }
+  .security-layer__meta { align-self: center; }
+  .security-layer__number { display: inline-block; font-size: 0.875rem; line-height: 1; }
+  .security-layer__label { margin-top: 0.65rem; line-height: 1.6; }
+  .security-layer__content { margin-top: 1.3rem; align-self: center; }
+  .security-layer__connector {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 42px;
+  }
+  .security-layer__spine {
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, rgba(0, 168, 181, 0.32), rgba(94, 221, 232, 0.75), rgba(200, 155, 60, 0.42));
+  }
+  .security-layer:first-of-type .security-layer__spine { top: 50%; }
+  .security-layer:last-child .security-layer__spine { bottom: 50%; }
+  .security-layer__node {
+    position: absolute;
+    left: 16px;
+    top: calc(50% - 4px);
+    width: 9px;
+    height: 9px;
+    border: 1px solid #5edde8;
+    border-radius: 50%;
+    background: #071322;
+    box-shadow: 0 0 0 4px rgba(0, 168, 181, 0.07), 0 0 11px rgba(0, 168, 181, 0.6);
+    animation: security-node-pulse 8s ease-in-out infinite;
+  }
+  .security-layer__node--2 { border-color: #d7b35f; animation-delay: 2.65s; }
+  .security-layer__node--3 { animation-delay: 5.3s; }
+  .security-layer__branch { display: none; }
+  .security-layer__signal {
+    position: absolute;
+    z-index: 2;
+    left: 18px;
+    top: 50%;
+    width: 5px;
+    height: 18px;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, transparent, #d7b35f, #5edde8, transparent);
+    filter: drop-shadow(0 0 5px rgba(94, 221, 232, 0.9));
+    animation: security-signal-travel 8s ease-in-out infinite;
+  }
+  @keyframes security-signal-travel {
+    0% { transform: translateY(-9px); opacity: 0; }
+    8% { opacity: 0.8; }
+    92% { opacity: 0.8; }
+    100% { transform: translateY(calc(300% + 390px)); opacity: 0; }
+  }
+  @keyframes security-node-pulse {
+    0%, 18%, 100% { box-shadow: 0 0 0 4px rgba(0, 168, 181, 0.05), 0 0 8px rgba(0, 168, 181, 0.35); }
+    9% { box-shadow: 0 0 0 7px rgba(0, 168, 181, 0.08), 0 0 16px rgba(215, 179, 95, 0.65); }
+  }
+  @media (min-width: 768px) {
+    .security-layer {
+      grid-template-columns: minmax(0, 26fr) minmax(58px, 8fr) minmax(0, 66fr);
+      min-height: 188px;
+      padding: 2.25rem 2.5rem;
+    }
+    .security-layer__meta { grid-column: 1; padding-right: 0.75rem; }
+    .security-layer__number { font-size: 1rem; }
+    .security-layer__label { max-width: 12rem; margin-top: 0.85rem; }
+    .security-layer__connector { position: relative; inset: auto; grid-column: 2; grid-row: 1; width: auto; min-height: 116px; }
+    .security-layer__spine { left: 50%; }
+    .security-layer:first-of-type .security-layer__spine { top: -2.25rem; }
+    .security-layer:last-child .security-layer__spine { bottom: -2.25rem; }
+    .security-layer__node { left: calc(50% - 4px); }
+    .security-layer__branch {
+      display: block;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: calc(50% - 12px);
+      height: 1px;
+      background: linear-gradient(90deg, rgba(94, 221, 232, 0.65), rgba(94, 221, 232, 0.12));
+    }
+    .security-layer__signal { left: calc(50% - 2px); }
+    .security-layer__content { grid-column: 3; margin-top: 0; padding-left: 1.5rem; }
+    .security-layer:not(:last-child)::after { left: 2.5rem; right: 2.5rem; }
+  }
+  @media (min-width: 1024px) {
+    .security-layer { min-height: 198px; padding: 2.5rem 3.5rem; }
+    .security-layer__meta { padding-left: 0.5rem; }
+    .security-layer__content { padding-left: 2rem; }
+    .security-layer:not(:last-child)::after { left: 3.5rem; right: 3.5rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .security-layer__signal { display: none; }
+    .security-layer__node { animation: none; }
+    .security-layer { transition: none; }
+  }
+}
+
 @layer base {
   body {
     background-color: var(--color-base-950);

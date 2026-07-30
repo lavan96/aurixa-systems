@@ -304,34 +304,34 @@ export default function Compliance() {
               title="Protection Across Every Layer."
               description="Aurixa combines independently assessed infrastructure, encrypted data handling and application-level controls to support secure and accountable platform delivery."
             />
-            <div className="relative mt-16 overflow-hidden border border-white/10 bg-[#071322]/70">
+            <div className="security-architecture relative mt-16 overflow-hidden border border-white/10 bg-[#071322]/70">
               <CornerTicks />
-              <div
-                aria-hidden="true"
-                className="absolute bottom-10 left-7 top-10 w-px bg-gradient-to-b from-[#00A8B5] via-[#00A8B5]/50 to-[#C89B3C] lg:left-1/2 lg:top-0"
-              />
+              <div className="security-architecture__grid" aria-hidden="true" />
               {protectionLayers.map((layer, index) => (
                 <motion.article
                   {...reveal}
                   key={layer.number}
-                  className="relative grid gap-5 border-b border-white/10 py-9 pl-14 pr-6 last:border-b-0 sm:pl-16 md:p-10 md:pl-20 lg:grid-cols-[minmax(220px,.75fr)_minmax(0,1.25fr)] lg:gap-16 lg:px-14"
+                  className="security-layer"
                 >
-                  <span
-                    className={`absolute left-[1.55rem] top-11 h-2.5 w-2.5 rounded-full border bg-[#071322] lg:left-1/2 lg:-translate-x-1/2 ${index === 1 ? "border-[#D7B35F] shadow-[0_0_12px_#C89B3C]" : "border-[#5EDDE8] shadow-[0_0_10px_#00A8B5]"}`}
-                  />
-                  <div>
-                    <span className="font-mono text-xs tracking-[0.3em] text-[#D7B35F]">
+                  <div className="security-layer__meta">
+                    <span className="security-layer__number font-mono tracking-[0.3em] text-[#D7B35F]">
                       {layer.number}
                     </span>
-                    <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.26em] text-[#5EDDE8]">
+                    <p className="security-layer__label font-mono text-[10px] font-bold uppercase tracking-[0.26em] text-[#5EDDE8]">
                       {layer.label}
                     </p>
                   </div>
-                  <div>
-                    <h3 className="font-display text-2xl font-light text-white md:text-3xl">
+                  <div className="security-layer__connector" aria-hidden="true">
+                    <span className="security-layer__spine" />
+                    <span className={`security-layer__node security-layer__node--${index + 1}`} />
+                    <span className="security-layer__branch" />
+                    {index === 0 && <span className="security-layer__signal" />}
+                  </div>
+                  <div className="security-layer__content">
+                    <h3 className="font-display text-2xl font-light leading-tight text-white md:text-[1.75rem] lg:text-3xl">
                       {layer.title}
                     </h3>
-                    <p className="mt-4 max-w-2xl text-sm font-light leading-relaxed text-[#9CA3AF] md:text-base">
+                    <p className="mt-4 max-w-[43rem] text-sm font-light leading-relaxed text-[#9CA3AF] md:text-base">
                       {layer.description}
                     </p>
                   </div>
