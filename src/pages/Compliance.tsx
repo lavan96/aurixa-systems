@@ -12,9 +12,9 @@ const frameworkLayers = [
 ] as const;
 
 const protectionLayers = [
-  ["01", "Infrastructure assurance", "Established Infrastructure Controls", "Aurixa operates within enterprise-grade infrastructure supported by independently assessed SOC 2 Type II controls and ISO 27001:2022 certification."],
-  ["02", "Data protection", "Protected at Rest and in Transit", "Customer data is protected using AES-256 encryption while stored and TLS encryption while being transmitted between authorised systems and users."],
-  ["03", "Application governance", "Controlled Within Aurixa", "Aurixa maintains responsibility for application configuration, access governance, user permissions and internal operational safeguards within the platform environment."],
+  ["01", "Infrastructure Assurance", "Established Infrastructure Controls", "Aurixa operates within enterprise-grade infrastructure supported by independently assessed SOC 2 Type II controls and ISO 27001:2022 certification."],
+  ["02", "Data Protection", "Protected at Rest and in Transit", "Customer data is protected using AES-256 encryption while stored and TLS encryption while being transmitted between authorised systems and users."],
+  ["03", "Application Governance", "Controlled Within Aurixa", "Aurixa maintains responsibility for application configuration, access governance, user permissions and internal operational safeguards within the platform environment."],
 ] as const;
 
 const diligenceStages = [
@@ -61,7 +61,7 @@ function ComplianceFrameworkVisual() {
 function SecurityArchitectureVisual() {
   return <motion.div {...reveal} className="protection-visual">
     <Corners /><div className="protection-field" aria-hidden="true"><span>CONTROLLED PATHWAY</span><i /></div>
-    {protectionLayers.map(([number, label, title, description], index) => <article key={number} className={`protection-plane protection-plane--${index + 1}`}>
+    {protectionLayers.map(([number, label, title, description]) => <article key={number} className="protection-plane">
       <div className="protection-plane__index"><span>{number}</span><i aria-hidden="true" /></div>
       <div><small>{label}</small><h3>{title}</h3><p>{description}</p></div>
       <div className="protection-plane__nodes" aria-hidden="true"><i /><i /><i /></div>
