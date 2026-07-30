@@ -28,7 +28,7 @@ function ApplicationStageProgress() {
                 {current ? <span /> : <Check aria-hidden="true" />}
               </div>
               <div>
-                <p>STAGE {stage.number}</p>
+                <p className="review-progress__stage-number">STAGE {stage.number}</p>
                 <strong>{stage.name}</strong>
                 <span>{stage.state}</span>
               </div>
