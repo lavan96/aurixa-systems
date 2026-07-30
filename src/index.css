@@ -662,3 +662,41 @@
   .voice-sonar { opacity: 0.18; }
   .voice-scan { opacity: 0; }
 }
+
+/* Privacy Policy hero: controlled personal-information lifecycle. */
+@layer components {
+  .privacy-lifecycle svg { display: block; overflow: visible; }
+  .privacy-boundary { stroke: url(#privacy-boundary); stroke-width: 1; stroke-opacity: .42; stroke-dasharray: 10 8; animation: privacy-boundary-drift 26s linear infinite; }
+  .privacy-stroke { fill: none; stroke-width: 1.2; stroke-linecap: square; stroke-linejoin: miter; }
+  .privacy-stroke--teal { stroke: #5edde8; }
+  .privacy-stroke--gold { stroke: #d7b35f; }
+  .privacy-stage__surface { fill: #081426; stroke: rgba(156,163,175,.3); }
+  .privacy-stage__icon { opacity: .9; }
+  .privacy-stage__title,.privacy-record__title { fill: #f3f4f6; font: 700 12px ui-monospace,monospace; letter-spacing: 1.8px; }
+  .privacy-stage__subtitle { fill: #aab3c3; font: 500 9px Inter,system-ui,sans-serif; }
+  .privacy-connectors { stroke-width: 1.2; stroke-dasharray: 5 6; opacity: .68; animation: privacy-path-flow 9s linear infinite; }
+  .privacy-record { fill: none; stroke: #8490a3; stroke-width: 1; stroke-opacity: .44; }
+  .privacy-record__outer { fill: #071322; stroke: url(#privacy-boundary); stroke-width: 1.5; stroke-opacity: 1; }
+  .privacy-record__inner { fill: #081426; stroke: #5edde8; stroke-opacity: .22; }
+  .privacy-record__title { stroke: none; font-size: 11px; letter-spacing: 1.5px; }
+  .privacy-record__subtitle { fill: #9ca3af; stroke: none; font: 600 6.8px ui-monospace,monospace; letter-spacing: .55px; }
+  .privacy-record__status { fill: #5edde8; stroke: #071322; stroke-width: 2; stroke-opacity: 1; animation: privacy-status 5.5s ease-in-out infinite; }
+  .privacy-indicators circle { fill: #071322; stroke: #d7b35f; stroke-width: 1; animation: privacy-status 7s ease-in-out infinite; }
+  .privacy-indicators > g:nth-child(even) circle { stroke: #5edde8; animation-delay: 2.5s; }
+  .privacy-indicators text { fill: #aab3c3; font: 650 8px ui-monospace,monospace; letter-spacing: 1px; }
+  .privacy-stage--use .privacy-stage__surface { animation: privacy-use 7s ease-in-out infinite 1.7s; }
+  .privacy-stage--protect .privacy-stage__surface { animation: privacy-protect 7s ease-in-out infinite 3.4s; }
+  @keyframes privacy-boundary-drift { to { stroke-dashoffset: -72; } }
+  @keyframes privacy-path-flow { to { stroke-dashoffset: -44; } }
+  @keyframes privacy-status { 0%,100% { opacity: .55; } 50% { opacity: 1; filter: drop-shadow(0 0 4px rgba(94,221,232,.65)); } }
+  @keyframes privacy-use { 0%,100% { stroke: rgba(156,163,175,.3); } 45%,58% { stroke: rgba(215,179,95,.75); } }
+  @keyframes privacy-protect { 0%,100% { stroke: rgba(156,163,175,.3); } 45%,58% { stroke: rgba(94,221,232,.68); } }
+  @media(max-width:639px) {
+    .privacy-lifecycle { margin-top: .5rem; }
+    .privacy-lifecycle figcaption { padding-block: .8rem; font-size: .52rem; letter-spacing: .18em; }
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  .privacy-boundary,.privacy-connectors,.privacy-record__status,.privacy-indicators circle,.privacy-stage__surface { animation: none; }
+  .privacy-signals { display: none; }
+}
