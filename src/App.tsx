@@ -16,6 +16,8 @@ import CardSaved from "./pages/CardSaved";
 // Stage 2 readiness questionnaire. Deliberately unlisted: reachable only via the
 // secure link issued with a Priority Access Application, never from navigation.
 import Questionnaire from "./pages/Questionnaire";
+// Stage 3 strategic review scheduling. Deliberately unlisted from public navigation.
+import ScheduleStrategicReview from "./pages/ScheduleStrategicReview";
 import Feedback from "./pages/Feedback";
 import Compliance from "./pages/Compliance";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -56,6 +58,7 @@ function AppShell() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             <Route path="/questionnaire" element={<Questionnaire />} />
+            <Route path="/schedule-strategic-review" element={<ScheduleStrategicReview />} />
             <Route path="/feedback" element={<Feedback />} />
           </Routes>
         </main>
