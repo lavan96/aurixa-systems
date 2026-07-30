@@ -187,7 +187,7 @@ export default function Solutions() {
             <div className="text-[#9CA3B8] mb-12 max-w-3xl mx-auto text-lg leading-relaxed font-light space-y-6">
               <p>Access to Aurixa’s deployment cycle is limited to preserve delivery quality, architectural focus, and partner success.</p>
               <p>Businesses accepted into the next integration cycle will gain early access to unified operational intelligence built for property, finance, and wealth creation.</p>
-              <p>Delayed action may mean delayed access — and in a market where operational intelligence, speed, and client engagement are becoming competitive advantages, waiting could come at a cost.</p>
+              <p>Delayed action may mean delayed access, and in a market where operational intelligence, speed, and client engagement are becoming competitive advantages, waiting could come at a cost.</p>
             </div>
             <Link to="/contact" className="group relative inline-flex items-center justify-center px-12 py-5 text-[12px] uppercase tracking-[0.25em] font-bold text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_30px_rgba(200,155,60,0.3)]">
               <span className="drop-shadow-md">SECURE PRIORITY REVIEW</span>
