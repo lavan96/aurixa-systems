@@ -136,11 +136,11 @@ export default function Compliance() {
   return <MotionConfig reducedMotion="user"><main className="compliance-page">
     <section aria-labelledby="compliance-heading" className="compliance-hero">
       <HeroBackground variant="platform" /><div className="compliance-hero__wash" aria-hidden="true" />
-      <div className="compliance-container compliance-hero__grid"><motion.div {...reveal}>
+      <div className="compliance-container compliance-hero__grid"><motion.div {...reveal} className="compliance-hero__copy">
         <Eyebrow>Compliance &amp; Governance</Eyebrow>
         <h1 id="compliance-heading"><span className="text-liquid-chrome">Compliance, Structured</span><em className="text-chrome-prismatic">Into Every Layer.</em></h1>
         <p>Aurixa brings security, due diligence and governance workflows into one connected operational environment, helping organisations maintain stronger oversight across client onboarding, information handling and platform use.</p>
-      </motion.div><AnimatedGovernanceSystem /></div>
+      </motion.div><div className="compliance-hero__visual"><AnimatedGovernanceSystem /></div></div>
     </section>
 
     <div className="compliance-story-rail" aria-hidden="true" />
