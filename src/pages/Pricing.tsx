@@ -246,6 +246,27 @@ const MARQUEE_WORDS = [
   "Aurixa",
 ];
 
+const SECURITY_CARDS = [
+  {
+    label: "Backend infrastructure",
+    title: "Secure Backend Infrastructure",
+    description:
+      "Aurixa’s backend infrastructure is powered by Supabase, which is SOC 2 Type 2 compliant and ISO 27001 certified. Customer data is encrypted at rest using AES-256 and protected in transit using TLS.",
+  },
+  {
+    label: "Web infrastructure",
+    title: "Protected Web Infrastructure",
+    description:
+      "Aurixa’s web application is delivered and protected through Cloudflare infrastructure, which maintains SOC 2 Type II and ISO 27001:2022 certifications.",
+  },
+  {
+    label: "Aurixa controls",
+    title: "Shared Security Responsibility",
+    description:
+      "Aurixa maintains responsibility for its application configuration, user permissions, access controls and internal operational security practices.",
+  },
+] as const;
+
 /** Question -> its position in the whole list, so badges read 01..N. */
 const faqNumbers = new Map(
   FAQ_GROUPS.flatMap((g) => g.items).map((item, i) => [item.q, i + 1]),
@@ -713,6 +734,56 @@ export default function Pricing() {
         <p className="mt-8 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-[#94A3B8]">
           All prices in AUD · incl. GST · Annual saves{" "}
           {Math.round(ANNUAL_DISCOUNT * 100)}%
+        </p>
+      </section>
+
+      {/* Security & infrastructure */}
+      <section
+        aria-labelledby="security-infrastructure-heading"
+        className="relative z-10 mx-auto max-w-7xl px-6 pb-24"
+      >
+        <SectionHeader
+          eyebrow="Security & Infrastructure"
+          title={
+            <span id="security-infrastructure-heading" className="font-display">
+              Built on Trusted Infrastructure.
+            </span>
+          }
+          description="Aurixa Systems is built using established infrastructure providers with independently assessed security and compliance programs."
+        />
+
+        <div className="mt-14 grid gap-8 lg:grid-cols-3">
+          {SECURITY_CARDS.map((card, index) => (
+            <article
+              key={card.label}
+              className={`group relative overflow-hidden rounded-2xl border bg-[#0B162C]/40 p-8 shadow-[0_30px_80px_-30px] backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 md:p-9 ${
+                index === 1
+                  ? "border-[#C89B3C]/40 shadow-[#C89B3C]/20 hover:border-[#C89B3C]/60"
+                  : "border-[#00A8B5]/35 shadow-[#00A8B5]/20 hover:border-[#00A8B5]/55"
+              }`}
+            >
+              <CornerTicks />
+              <p
+                className={`font-mono text-[10px] uppercase tracking-[0.3em] ${
+                  index === 1 ? "text-[#C89B3C]" : "text-[#5EDDE8]"
+                }`}
+              >
+                {card.label}
+              </p>
+              <h3 className="mt-6 font-display text-2xl font-semibold leading-tight text-white">
+                {card.title}
+              </h3>
+              <p className="mt-5 text-sm leading-relaxed text-[#94A3B8]">
+                {card.description}
+              </p>
+            </article>
+          ))}
+        </div>
+
+        <p className="mx-auto mt-8 max-w-4xl text-center text-xs leading-relaxed text-[#94A3B8]/75">
+          Security certifications and compliance reports referenced above apply to the respective
+          infrastructure providers. They do not represent independent SOC 2 or ISO 27001
+          certification of Aurixa Systems.
         </p>
       </section>
 
