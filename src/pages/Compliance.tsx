@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PRIVACY_POLICY_URL } from "../lib/waitlist";
 import { AnimatedGovernanceSystem } from "../components/AnimatedGovernanceSystem";
+import { HeroBackground } from "../components/HeroBackgrounds";
 
 const overviewCards = [
   {
@@ -164,21 +165,11 @@ export default function Compliance() {
       <div className="w-full overflow-hidden bg-[#040B16]">
         <section
           aria-labelledby="compliance-heading"
-          className="relative border-b border-white/5 pb-20 pt-32"
+          className="relative border-b border-white/5 pt-32"
         >
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 opacity-40"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(0,168,181,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(0,168,181,.08) 1px,transparent 1px)",
-              backgroundSize: "64px 64px",
-              maskImage:
-                "radial-gradient(circle at 70% 45%, black, transparent 62%)",
-            }}
-          />
+          <HeroBackground variant="platform" />
           <div className="relative z-10 mx-auto w-full max-w-7xl px-6">
-            <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)]">
+            <div className="mb-24 grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)]">
               <div>
                 <div className="mb-8 flex items-center gap-3">
                   <span className="h-px w-12 bg-[#C89B3C]" />
@@ -190,12 +181,12 @@ export default function Compliance() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   id="compliance-heading"
-                  className="mb-8 text-4xl font-display font-light leading-[1.05] tracking-tight text-white sm:text-5xl md:text-7xl lg:text-[5rem]"
+                  className="mb-8 font-display text-[2rem] font-light leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-[2.65rem] xl:text-[3.75rem]"
                 >
-                  <span className="block drop-shadow-md">
+                  <span className="block text-liquid-chrome drop-shadow-md lg:whitespace-nowrap">
                     Compliance, Structured
                   </span>
-                  <span className="block italic text-[#C89B3C] drop-shadow-[0_0_18px_rgba(200,155,60,0.18)]">
+                  <span className="block text-chrome-prismatic italic drop-shadow-2xl lg:whitespace-nowrap">
                     Into Every Layer.
                   </span>
                 </motion.h1>
@@ -203,7 +194,7 @@ export default function Compliance() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="max-w-3xl text-lg font-light leading-relaxed text-[#9CA3AF] md:text-xl"
+                  className="max-w-3xl text-xl font-light leading-relaxed text-[#9CA3AF]"
                 >
                   Aurixa brings security, due diligence and governance workflows
                   into one connected operational environment, helping
