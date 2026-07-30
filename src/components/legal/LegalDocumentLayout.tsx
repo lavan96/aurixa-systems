@@ -5,6 +5,7 @@ import { HeroBackground } from "../HeroBackgrounds";
 import type { LegalDocumentKind, LegalSectionDefinition } from "../../lib/legal";
 import { LegalDocumentMeta } from "./LegalDocumentMeta";
 import { LegalHeroVisual } from "./LegalHeroVisual";
+import { PrivacyLifecycleVisual } from "./PrivacyLifecycleVisual";
 import { LegalTableOfContents } from "./LegalTableOfContents";
 import { LegalSection } from "./LegalSection";
 
@@ -20,7 +21,7 @@ export function LegalDocumentLayout(props: Props) {
       <HeroBackground variant="platform" />
       <div className="legal-container legal-hero__grid">
         <div className="relative z-10"><div className="legal-eyebrow"><span/>{props.eyebrow}</div><h1>{props.title}</h1><p>{props.introduction}</p></div>
-        <LegalHeroVisual kind={props.kind} caption={props.caption}/>
+        {props.kind === "privacy" ? <PrivacyLifecycleVisual/> : <LegalHeroVisual kind={props.kind} caption={props.caption}/>}
       </div>
     </header>
     <main className="legal-main">
