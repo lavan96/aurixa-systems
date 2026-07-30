@@ -2,13 +2,15 @@ import { motion } from "motion/react";
 import { ArrowRight, Briefcase, Landmark, UserCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
+import { IndustriesHeroVisual } from "../components/AnimatedHeroVisuals";
 
 export default function Industries() {
   return (
     <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-screen overflow-hidden">
       <HeroBackground variant="industries" />
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
-        <div className="max-w-4xl mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(420px,.9fr)] gap-8 items-center mb-24">
+          <div>
           <div className="flex items-center gap-3 mb-8">
             <span className="w-12 h-px bg-white/50" />
             <span className="text-[11px] font-bold tracking-widest uppercase text-white/50">Market Operations</span>
@@ -28,6 +30,8 @@ export default function Industries() {
           >
             Aurixa is not designed for hobbyists. It is designed for specific market operators who manage serious capital and demand instantaneous, unassailable reporting capabilities. Aurixa Systems is designed exclusively for property businesses that demand scalable operational infrastructure. Transform your firm's workflows, client experience, and systemic efficiency.
           </motion.p>
+          </div>
+          <IndustriesHeroVisual />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
