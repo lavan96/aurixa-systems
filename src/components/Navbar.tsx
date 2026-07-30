@@ -15,11 +15,14 @@ export function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#040B16]/90 backdrop-blur-xl border-b border-[#00A8B5]/20">
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-[100px] flex items-center justify-between gap-3">
-        <div className="py-1 min-w-0 flex-1 md:flex-none">
-          <BrandLogo compact className="max-w-[calc(100vw-6rem)] md:max-w-none" />
+        <div className="min-w-0 flex-1 py-1 lg:flex-none">
+          <BrandLogo
+            compact
+            className="max-w-[calc(100vw-6rem)] lg:!w-[220px] lg:max-w-none xl:!w-[260px]"
+          />
         </div>
         
-        <nav className="hidden lg:flex items-center gap-7">
+        <nav className="hidden items-center gap-4 lg:flex xl:gap-6">
           {[
             { label: "Home", href: "/" },
             { label: "Platform", href: "/platform" },
