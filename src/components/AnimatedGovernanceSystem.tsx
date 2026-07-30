@@ -1,72 +1,91 @@
 import { motion } from "motion/react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-type ControlModuleProps = {
+type ComplianceModuleProps = {
   x: number;
   y: number;
-  radius: number;
-  reverse?: boolean;
-  speed: "slow" | "medium" | "fast";
-  kind: "verification" | "records" | "access" | "review";
+  title: string;
+  subtitle: string;
+  delay: string;
+  symbol: ReactNode;
 };
 
-function ControlModule({ x, y, radius, reverse = false, speed, kind }: ControlModuleProps) {
-  const labels = {
-    verification: "VERIFY",
-    records: "RECORD",
-    access: "ACCESS",
-    review: "REVIEW",
-  } as const;
-
+function ComplianceModule({ x, y, title, subtitle, delay, symbol }: ComplianceModuleProps) {
   return (
-    <g filter="url(#governance-shadow)">
-      <circle cx={x} cy={y} r={radius} fill="url(#governance-face)" stroke="url(#governance-stroke)" strokeWidth="1.25" />
-      <circle cx={x} cy={y} r={radius * 0.76} fill="#06101e" stroke="rgba(200,155,60,.32)" />
-      <g
-        className={`platform-gear platform-gear--${speed}${reverse ? " platform-gear--reverse" : ""}`}
-        style={{ transformOrigin: `${x}px ${y}px` }}
-      >
-        <circle cx={x} cy={y} r={radius * 0.88} fill="none" stroke="#00a8b5" strokeOpacity=".38" strokeWidth="3" strokeDasharray={`${radius * 0.62} ${radius * 0.24}`} />
-        <circle cx={x} cy={y} r={radius * 0.57} fill="none" stroke="#c89b3c" strokeOpacity=".4" strokeDasharray="3 9" />
-        {[0, 90, 180, 270].map((angle) => (
-          <rect
-            key={angle}
-            x={x - 3}
-            y={y - radius * 0.9}
-            width="6"
-            height="12"
-            rx="1"
-            fill="#081827"
-            stroke="#d7b35f"
-            strokeWidth=".7"
-            transform={`rotate(${angle} ${x} ${y})`}
-          />
-        ))}
-      </g>
-      {kind === "records" || kind === "review" ? (
-        <g fill="none" strokeLinecap="round">
-          <rect x={x - radius * 0.3} y={y - radius * 0.29} width={radius * 0.6} height={radius * 0.58} rx="3" fill="#0b1a2a" stroke="#60758a" />
-          {[-0.13, 0, 0.13].map((offset, index) => (
-            <path key={offset} d={`M${x - radius * 0.18} ${y + radius * offset}H${x + radius * (index === 2 ? 0.08 : 0.18)}`} stroke={index === 0 ? "#d7b35f" : "#00a8b5"} strokeOpacity=".7" />
-          ))}
-        </g>
-      ) : (
-        <g fill="none">
-          <path d={`M${x} ${y - radius * 0.28}L${x + radius * 0.27} ${y - radius * 0.12}V${y + radius * 0.2}L${x} ${y + radius * 0.32}L${x - radius * 0.27} ${y + radius * 0.2}V${y - radius * 0.12}Z`} fill="#0b1a2a" stroke="#00a8b5" strokeOpacity=".7" />
-          <path d={`M${x - radius * 0.12} ${y}L${x - radius * 0.025} ${y + radius * 0.09}L${x + radius * 0.15} ${y - radius * 0.12}`} stroke="#d7b35f" strokeWidth="2" />
-        </g>
-      )}
-      <text x={x} y={y + radius * 0.56} textAnchor="middle" fill="#8190a1" fontSize={Math.max(5, radius * 0.1)} letterSpacing="1.4">{labels[kind]}</text>
+    <g
+      className="compliance-module"
+      style={{ transformOrigin: `${x}px ${y}px`, animationDelay: delay }}
+    >
+      <rect
+        x={x - 78}
+        y={y - 48}
+        width="156"
+        height="96"
+        rx="9"
+        fill="url(#compliance-panel)"
+        stroke="url(#compliance-stroke)"
+        strokeWidth="1.2"
+        filter="url(#compliance-shadow)"
+      />
+      <path
+        d={`M${x - 66} ${y - 35}H${x - 50}M${x + 50} ${y - 35}H${x + 66}M${x - 66} ${y + 35}H${x - 50}M${x + 50} ${y + 35}H${x + 66}`}
+        stroke="#00a8b5"
+        strokeOpacity=".42"
+      />
+      <g transform={`translate(${x - 51} ${y - 7})`}>{symbol}</g>
+      <circle cx={x + 62} cy={y - 33} r="4.5" fill="#071522" stroke="#00a8b5" />
+      <circle cx={x + 62} cy={y - 33} r="1.8" fill="#f5d17a" className="platform-gear-node" />
+      <text x={x - 28} y={y - 8} fill="#e3e8ee" fontSize="11.5" fontWeight="600" letterSpacing="1.15">
+        {title}
+      </text>
+      <text x={x - 28} y={y + 12} fill="#9aa8b8" fontSize="8.6" letterSpacing=".35">
+        {subtitle}
+      </text>
+      <path d={`M${x - 28} ${y + 25}H${x + 51}`} stroke="#60758a" strokeOpacity=".28" />
+      <path d={`M${x - 28} ${y + 25}H${x + 16}`} stroke="#c89b3c" strokeOpacity=".55" />
     </g>
   );
 }
 
-const signals = [
-  { path: "M315 285 L469 190", delay: "-1s", duration: "7s" },
-  { path: "M315 285 L470 390", delay: "-4s", duration: "8s" },
-  { path: "M315 285 L175 410", delay: "-2s", duration: "7.5s" },
-  { path: "M315 285 L160 190", delay: "-5s", duration: "8.5s" },
+const signalPaths = [
+  { path: "M166 163 C205 190 238 218 273 253", delay: "-1s", duration: "8s" },
+  { path: "M464 163 C423 190 392 218 357 253", delay: "-5s", duration: "8s" },
+  { path: "M166 407 C207 381 239 351 273 317", delay: "-3s", duration: "8s" },
+  { path: "M464 407 C424 380 391 351 357 317", delay: "-7s", duration: "8s" },
 ] as const;
+
+const SecuritySymbol = (
+  <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="-13" y="-15" width="26" height="30" rx="3" fill="#09182a" stroke="#00a8b5" strokeOpacity=".75" />
+    <path d="M-7-7H7M-7 0H3M-7 7H7" stroke="#8190a1" />
+    <circle cx="8" cy="0" r="3" fill="#d7b35f" stroke="none" />
+  </g>
+);
+
+const DueDiligenceSymbol = (
+  <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <circle cy="-7" r="5" stroke="#d7b35f" />
+    <path d="M-10 10C-9 2 9 2 10 10M14-10H23M14-2H23M14 6H23" stroke="#00a8b5" />
+    <path d="M16-12L18-10 22-14" stroke="#d7b35f" />
+  </g>
+);
+
+const PrivacySymbol = (
+  <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="-14" y="-13" width="28" height="26" rx="3" fill="#09182a" stroke="#00a8b5" strokeOpacity=".75" />
+    <path d="M-8-6H8M-8 0H5M-8 6H2" stroke="#8190a1" />
+    <circle cx="10" cy="9" r="5" fill="#071522" stroke="#d7b35f" />
+    <path d="M8 9L10 11 13 7" stroke="#d7b35f" />
+  </g>
+);
+
+const GovernanceSymbol = (
+  <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M-12-15H8L14-9V15H-12Z" fill="#09182a" stroke="#d7b35f" strokeOpacity=".8" />
+    <path d="M8-15V-9H14M-6-5H8M-6 1H8M-6 7H3" stroke="#8190a1" />
+    <circle cx="9" cy="9" r="3" fill="#00a8b5" stroke="none" />
+  </g>
+);
 
 export function AnimatedGovernanceSystem() {
   return (
@@ -75,87 +94,96 @@ export function AnimatedGovernanceSystem() {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 1, delay: 0.15 }}
       className="relative flex min-h-[360px] items-center justify-center sm:min-h-[460px] lg:min-h-[540px]"
-      aria-label="Animated connected governance control system"
+      aria-label="Animated connected compliance operating system"
       role="img"
     >
       <style>{`
-        @keyframes governance-signal-travel { to { offset-distance: 100%; } }
-        @keyframes governance-path-flow { to { stroke-dashoffset: -56; } }
-        .governance-signal { offset-distance: 0%; animation: governance-signal-travel var(--signal-duration) linear infinite; }
-        .governance-path-flow { animation: governance-path-flow 11s linear infinite; }
+        @keyframes compliance-signal-travel { to { offset-distance: 100%; } }
+        @keyframes compliance-path-flow { to { stroke-dashoffset: -56; } }
+        @keyframes compliance-module-status {
+          0%, 18%, 100% { filter: none; }
+          7% { filter: drop-shadow(0 0 8px rgba(0,168,181,.38)); }
+        }
+        @keyframes compliance-core-activity {
+          0%, 100% { opacity: .45; transform: scale(.94); }
+          50% { opacity: .9; transform: scale(1.04); }
+        }
+        .compliance-signal { offset-distance: 0%; animation: compliance-signal-travel var(--signal-duration) linear infinite; }
+        .compliance-path-flow { animation: compliance-path-flow 11s linear infinite; }
+        .compliance-module { transform-box: fill-box; animation: compliance-module-status 8s ease-in-out infinite; }
+        .compliance-core-activity { transform-box: fill-box; transform-origin: center; animation: compliance-core-activity 4s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .governance-signal, .governance-path-flow { animation-play-state: paused; }
+          .compliance-signal, .compliance-path-flow, .compliance-module, .compliance-core-activity { animation-play-state: paused; }
         }
       `}</style>
       <div className="absolute inset-[12%] rounded-full bg-[#00A8B5]/[0.06] blur-3xl" />
       <svg viewBox="0 0 620 590" className="relative w-full max-w-[620px] overflow-visible" aria-hidden="true">
         <defs>
-          <linearGradient id="governance-stroke" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id="compliance-stroke" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#f3d583" /><stop offset=".48" stopColor="#8c6a28" /><stop offset="1" stopColor="#00a8b5" />
           </linearGradient>
-          <radialGradient id="governance-face" cx="35%" cy="25%">
-            <stop offset="0" stopColor="#27374b" /><stop offset=".48" stopColor="#101c2c" /><stop offset="1" stopColor="#050c16" />
+          <radialGradient id="compliance-panel" cx="35%" cy="25%">
+            <stop offset="0" stopColor="#223247" /><stop offset=".5" stopColor="#101c2c" /><stop offset="1" stopColor="#050c16" />
           </radialGradient>
-          <radialGradient id="governance-core-glow">
-            <stop offset="0" stopColor="#f5d17a" stopOpacity=".8" /><stop offset=".32" stopColor="#00a8b5" stopOpacity=".25" /><stop offset="1" stopColor="#00a8b5" stopOpacity="0" />
+          <radialGradient id="compliance-core-glow">
+            <stop offset="0" stopColor="#f5d17a" stopOpacity=".65" /><stop offset=".35" stopColor="#00a8b5" stopOpacity=".22" /><stop offset="1" stopColor="#00a8b5" stopOpacity="0" />
           </radialGradient>
-          <filter id="governance-shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id="compliance-shadow" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow dx="0" dy="8" stdDeviation="12" floodColor="#000" floodOpacity=".75" />
           </filter>
-          <filter id="governance-signal-glow" x="-300%" y="-300%" width="600%" height="600%">
+          <filter id="compliance-signal-glow" x="-300%" y="-300%" width="600%" height="600%">
             <feGaussianBlur stdDeviation="2.5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
         </defs>
 
-        <g opacity=".45" fill="none">
-          <circle cx="315" cy="285" r="246" stroke="#00a8b5" strokeOpacity=".18" />
-          <circle className="platform-gear platform-gear--slow" style={{ transformOrigin: "315px 285px" }} cx="315" cy="285" r="226" stroke="#c89b3c" strokeOpacity=".16" strokeDasharray="2 14" />
-          <circle className="platform-gear platform-gear--medium platform-gear--reverse" style={{ transformOrigin: "315px 285px" }} cx="315" cy="285" r="196" stroke="url(#governance-stroke)" strokeOpacity=".22" strokeDasharray="76 18 5 31" />
-          <path d="M72 285H558M315 42V530" stroke="#8aa1b8" strokeOpacity=".1" />
-          <path d="M151 123L479 451M479 123L151 451" stroke="#8aa1b8" strokeOpacity=".07" />
+        <g fill="none">
+          <rect x="58" y="48" width="514" height="474" rx="94" stroke="#00a8b5" strokeOpacity=".16" />
+          <rect x="78" y="68" width="474" height="434" rx="78" stroke="#c89b3c" strokeOpacity=".12" strokeDasharray="2 14" />
+          <path d="M315 49V521M59 285H571" stroke="#8aa1b8" strokeOpacity=".07" />
+          <path d="M88 84H132M498 84H542M88 486H132M498 486H542" stroke="#00a8b5" strokeOpacity=".28" />
         </g>
 
-        <g className="governance-path-flow" fill="none" stroke="url(#governance-stroke)" strokeWidth="1.2" strokeDasharray="5 9" opacity=".58">
-          {signals.map(({ path }) => <path key={path} d={path} />)}
+        <g className="compliance-path-flow" fill="none" stroke="url(#compliance-stroke)" strokeWidth="1.25" strokeDasharray="5 9" opacity=".65">
+          {signalPaths.map(({ path }) => <path key={path} d={path} />)}
         </g>
 
-        <circle cx="315" cy="285" r="165" fill="url(#governance-core-glow)" opacity=".35" className="platform-gear-pulse" />
-        <g filter="url(#governance-shadow)">
-          <circle cx="315" cy="285" r="112" fill="url(#governance-face)" stroke="url(#governance-stroke)" strokeWidth="1.5" />
-          <circle cx="315" cy="285" r="91" fill="#06101e" stroke="#c89b3c" strokeOpacity=".35" />
+        <circle cx="315" cy="285" r="126" fill="url(#compliance-core-glow)" className="platform-gear-pulse" />
+        <g filter="url(#compliance-shadow)">
+          <rect x="238" y="229" width="154" height="112" rx="16" fill="url(#compliance-panel)" stroke="url(#compliance-stroke)" strokeWidth="1.5" />
+          <rect x="249" y="240" width="132" height="90" rx="10" fill="#06101e" stroke="#00a8b5" strokeOpacity=".3" />
           <g className="platform-gear platform-gear--slow" style={{ transformOrigin: "315px 285px" }} fill="none">
-            <circle cx="315" cy="285" r="98" stroke="#00a8b5" strokeOpacity=".42" strokeWidth="4" strokeDasharray="78 18" />
-            <circle cx="315" cy="285" r="73" stroke="#c89b3c" strokeOpacity=".45" strokeDasharray="3 12" />
+            <circle cx="315" cy="285" r="47" stroke="#00a8b5" strokeOpacity=".32" strokeDasharray="30 12 4 14" />
+            <circle cx="315" cy="285" r="37" stroke="#c89b3c" strokeOpacity=".3" strokeDasharray="2 9" />
           </g>
-          <rect x="273" y="243" width="84" height="84" rx="9" fill="#09182a" stroke="url(#governance-stroke)" />
-          <rect x="285" y="255" width="60" height="60" rx="4" fill="#071321" stroke="#00a8b5" strokeOpacity=".5" />
-          <path d="M297 276H333M297 286H325M297 296H335" stroke="#8190a1" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="337" cy="263" r="4" fill="#d7b35f" className="platform-gear-node" />
-          <text x="315" y="345" textAnchor="middle" fill="#8190a1" fontSize="7" letterSpacing="1.7">GOVERNANCE CORE</text>
+          <circle cx="315" cy="272" r="17" fill="#09182a" stroke="#c89b3c" strokeOpacity=".75" />
+          <path d="M306 272H324M315 263V281" stroke="#00a8b5" strokeWidth="1.5" />
+          <circle cx="315" cy="272" r="5" fill="#d7b35f" className="compliance-core-activity" />
+          <text x="315" y="307" textAnchor="middle" fill="#e3e8ee" fontSize="10.5" fontWeight="600" letterSpacing=".9">COMPLIANCE OPERATING LAYER</text>
+          <text x="315" y="321" textAnchor="middle" fill="#8190a1" fontSize="7.5" letterSpacing="1">CONNECTED OVERSIGHT</text>
         </g>
 
-        <ControlModule x={469} y={190} radius={67} speed="medium" reverse kind="verification" />
-        <ControlModule x={470} y={390} radius={58} speed="fast" kind="records" />
-        <ControlModule x={175} y={410} radius={73} speed="medium" reverse kind="review" />
-        <ControlModule x={160} y={190} radius={58} speed="fast" reverse kind="access" />
+        <ComplianceModule x={166} y={147} title="SECURITY" subtitle="Infrastructure & Access" delay="0s" symbol={SecuritySymbol} />
+        <ComplianceModule x={464} y={147} title="AML/CTF & CDD" subtitle="Due Diligence Workflows" delay="2s" symbol={DueDiligenceSymbol} />
+        <ComplianceModule x={166} y={423} title="PRIVACY" subtitle="Information Management" delay="4s" symbol={PrivacySymbol} />
+        <ComplianceModule x={464} y={423} title="GOVERNANCE" subtitle="Terms & Responsibility" delay="6s" symbol={GovernanceSymbol} />
 
-        {signals.map(({ path, delay, duration }, index) => (
+        {signalPaths.map(({ path, delay, duration }, index) => (
           <circle
             key={path}
             r="3.5"
             fill={index % 2 ? "#f5d17a" : "#5edde8"}
-            filter="url(#governance-signal-glow)"
-            className="governance-signal"
+            filter="url(#compliance-signal-glow)"
+            className="compliance-signal"
             style={{ offsetPath: `path('${path}')`, animationDelay: delay, "--signal-duration": duration } as CSSProperties}
           />
         ))}
 
-        {[[315, 77], [527, 285], [315, 507], [92, 285], [463, 118], [497, 444], [130, 456]].map(([cx, cy], index) => (
-          <g key={`${cx}-${cy}`} className="platform-gear-node" style={{ animationDelay: `${index * 0.22}s` }}>
+        {[[315, 58], [557, 285], [315, 512], [73, 285]].map(([cx, cy], index) => (
+          <g key={`${cx}-${cy}`} className="platform-gear-node" style={{ animationDelay: `${index * 0.55}s` }}>
             <circle cx={cx} cy={cy} r="6" fill="#071522" stroke="#00a8b5" /><circle cx={cx} cy={cy} r="2" fill="#f5d17a" />
           </g>
         ))}
-        <text x="315" y="558" textAnchor="middle" fill="#8190a1" fontSize="10" letterSpacing="4">CONNECTED GOVERNANCE CONTROLS</text>
+        <text x="315" y="558" textAnchor="middle" fill="#8190a1" fontSize="10" letterSpacing="4">CONNECTED COMPLIANCE OPERATIONS</text>
       </svg>
     </motion.div>
   );
