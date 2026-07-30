@@ -251,19 +251,19 @@ const SECURITY_CARDS = [
     label: "Backend infrastructure",
     title: "Secure Backend Infrastructure",
     description:
-      "Aurixa’s backend infrastructure is powered by Supabase, which is SOC 2 Type 2 compliant and ISO 27001 certified. Customer data is encrypted at rest using AES-256 and protected in transit using TLS.",
+      "Aurixa’s backend operates within enterprise-grade infrastructure supported by independently assessed SOC 2 Type 2 controls and ISO 27001 certification. Customer data is protected using AES-256 encryption at rest and TLS encryption while in transit.",
   },
   {
     label: "Web infrastructure",
     title: "Protected Web Infrastructure",
     description:
-      "Aurixa’s web application is delivered and protected through Cloudflare infrastructure, which maintains SOC 2 Type II and ISO 27001:2022 certifications.",
+      "Aurixa’s web environment is delivered through secure, globally distributed infrastructure designed to strengthen protected access, service resilience and application delivery. The underlying infrastructure maintains independently assessed SOC 2 Type II controls and ISO 27001:2022 certification.",
   },
   {
     label: "Aurixa controls",
     title: "Shared Security Responsibility",
     description:
-      "Aurixa maintains responsibility for its application configuration, user permissions, access controls and internal operational security practices.",
+      "Aurixa maintains responsibility for application configuration, access governance, user permissions and internal operational safeguards. These controls are managed within the Aurixa environment to support secure, accountable and consistent platform delivery.",
   },
 ] as const;
 
@@ -780,11 +780,6 @@ export default function Pricing() {
           ))}
         </div>
 
-        <p className="mx-auto mt-8 max-w-4xl text-center text-xs leading-relaxed text-[#94A3B8]/75">
-          Security certifications and compliance reports referenced above apply to the respective
-          infrastructure providers. They do not represent independent SOC 2 or ISO 27001
-          certification of Aurixa Systems.
-        </p>
       </section>
 
       {/* Credit packs */}
