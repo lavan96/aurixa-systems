@@ -35,6 +35,9 @@ export function SolutionsHeroVisual() {
             <stop stopColor="#00a8b5" /><stop offset=".55" stopColor="#f5d17a" /><stop offset="1" stopColor="#c89b3c" />
           </linearGradient>
           <radialGradient id="solution-core"><stop stopColor="#f5d17a" stopOpacity=".55" /><stop offset=".25" stopColor="#00a8b5" stopOpacity=".16" /><stop offset="1" stopColor="#00a8b5" stopOpacity="0" /></radialGradient>
+          <linearGradient id="solution-sweep" x1="0" y1="1" x2="0" y2="0">
+            <stop stopColor="#00a8b5" stopOpacity="0" /><stop offset=".52" stopColor="#00a8b5" stopOpacity=".08" /><stop offset="1" stopColor="#00a8b5" stopOpacity=".32" />
+          </linearGradient>
           <filter id="solution-glow"><feGaussianBlur stdDeviation="5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
         <circle cx="300" cy="270" r="235" fill="url(#solution-core)" className="hero-visual-breathe" />
@@ -44,9 +47,11 @@ export function SolutionsHeroVisual() {
           <circle r="126" stroke="#00a8b5" strokeOpacity=".32" strokeDasharray="34 13" className="hero-visual-spin-reverse" />
           {spokes.map((rotation) => <path key={rotation} d="M0-126V-210" stroke="#7894a8" strokeOpacity=".12" transform={`rotate(${rotation})`} />)}
         </g>
-        <g className="solution-scan" transform="translate(300 270)">
-          <path d="M0 0L-72-196A209 209 0 0 1 72-196Z" fill="url(#solution-line)" opacity=".1" />
-          <line y2="-210" stroke="#00a8b5" strokeWidth="1.5" filter="url(#solution-glow)" />
+        <g className="solution-scan">
+          <path d="M300 270L228 74A209 209 0 0 1 372 74Z" fill="url(#solution-sweep)" />
+          <path d="M300 270L238 71" stroke="#00a8b5" strokeOpacity=".1" />
+          <path d="M300 270L249 67" stroke="#00a8b5" strokeOpacity=".16" />
+          <line x1="300" y1="270" x2="300" y2="60" stroke="#00a8b5" strokeWidth="1.5" filter="url(#solution-glow)" />
         </g>
         <g filter="url(#solution-glow)">
           <circle cx="300" cy="270" r="70" fill="#07111f" stroke="url(#solution-line)" strokeWidth="1.5" />

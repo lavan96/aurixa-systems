@@ -73,7 +73,11 @@
   .hero-visual-spin-reverse { transform-box: fill-box; transform-origin: center; animation: hero-visual-spin 20s linear infinite reverse; }
   .hero-visual-breathe { transform-box: fill-box; transform-origin: center; animation: hero-visual-breathe 5s ease-in-out infinite; }
   .hero-visual-node, .industry-orbit-node, .about-person-node { animation: hero-visual-node 2.8s ease-in-out infinite; }
-  .solution-scan { animation: hero-visual-spin 7s linear infinite; }
+  .solution-scan {
+    transform-box: view-box;
+    transform-origin: 300px 270px;
+    animation: hero-visual-spin 7s linear infinite;
+  }
   .solution-growth-line { stroke-dasharray: 900; animation: solution-line-draw 4s ease-in-out infinite; }
   .industry-capital-ring { animation: hero-visual-spin 9s linear infinite; }
   .about-data-link { stroke-dasharray: 7 7; animation: data-link 2.2s linear infinite; }
