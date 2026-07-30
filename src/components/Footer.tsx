@@ -41,6 +41,7 @@ export function Footer() {
             <ul className="flex flex-col items-center md:items-start gap-4 text-sm text-gray-400">
               <li><Link to="/about" className="hover:text-white transition-colors">About Aurixa</Link></li>
               <li><Link to="/resources" className="hover:text-white transition-colors">Intelligence Hub</Link></li>
+              <li><Link to="/compliance" className="hover:text-white transition-colors">Compliance</Link></li>
               <li><Link to="/contact" className="hover:text-white transition-colors">Join Waitlist</Link></li>
               <li><a href="#" className="hover:text-white transition-colors">Legal & Privacy</a></li>
             </ul>

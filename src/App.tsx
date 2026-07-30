@@ -17,6 +17,7 @@ import CardSaved from "./pages/CardSaved";
 // secure link issued with a Priority Access Application, never from navigation.
 import Questionnaire from "./pages/Questionnaire";
 import Feedback from "./pages/Feedback";
+import Compliance from "./pages/Compliance";
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -49,6 +50,7 @@ function AppShell() {
             <Route path="/about" element={<About />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/compliance" element={<Compliance />} />
             <Route path="/questionnaire" element={<Questionnaire />} />
             <Route path="/feedback" element={<Feedback />} />
           </Routes>
