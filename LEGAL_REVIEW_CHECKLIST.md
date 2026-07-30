@@ -44,3 +44,10 @@ This file is an internal publication gate. Draft wording does not mean that any 
 - [ ] Approve dispute-resolution and mediation process.
 - [ ] Approve document precedence, assignment, notices, force majeure and entire-agreement language.
 - [ ] Confirm required methods and addresses for formal notices.
+
+## Terms publication metadata and risk allocation
+
+- Confirm the effective date, last-updated date and public document version before publishing those values.
+- Confirm document precedence across the Terms, order forms, subscription details and enterprise agreements.
+- Confirm any negotiated liability cap, excluded-loss language and service-specific indemnities. None are stated publicly by default.
+- Confirm cancellation, renewal, refund, payment-default and post-termination export or retention periods in the applicable commercial documents before publication.
