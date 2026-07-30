@@ -15,15 +15,19 @@ export function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#040B16]/90 backdrop-blur-xl border-b border-[#00A8B5]/20">
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-[100px] flex items-center justify-between gap-3">
-        <div className="py-1 min-w-0 flex-1 md:flex-none">
-          <BrandLogo compact className="max-w-[calc(100vw-6rem)] md:max-w-none" />
+        <div className="min-w-0 flex-1 py-1 lg:flex-none">
+          <BrandLogo
+            compact
+            className="max-w-[calc(100vw-6rem)] lg:!w-[220px] lg:max-w-none xl:!w-[260px]"
+          />
         </div>
         
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden items-center gap-4 lg:flex xl:gap-6">
           {[
             { label: "Home", href: "/" },
             { label: "Platform", href: "/platform" },
             { label: "Solutions", href: "/solutions" },
+            { label: "Compliance", href: "/compliance" },
             { label: "Industries", href: "/industries" },
             { label: "About", href: "/about" },
             { label: "Resources", href: "/resources" }
@@ -39,7 +43,7 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden lg:flex items-center gap-6">
           <Link 
             to="/contact" 
             className="group relative isolate inline-flex items-center justify-center overflow-hidden px-6 py-2.5 text-[13px] font-black tracking-widest uppercase text-white btn-chrome-prismatic rounded-sm transition-all hover:scale-105 shadow-[0_0_20px_rgba(0,168,181,0.3)] hover:shadow-[0_0_30px_rgba(200,155,60,0.6)]"
@@ -53,7 +57,7 @@ export function Navbar() {
           type="button"
           aria-label={isOpen ? "Close mobile menu" : "Open mobile menu"}
           aria-expanded={isOpen}
-          className="md:hidden relative z-50 ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-slate-100 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00A8B5]"
+          className="lg:hidden relative z-50 ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-slate-100 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00A8B5]"
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <X className="h-7 w-7" strokeWidth={2.25} /> : <Menu className="h-7 w-7" strokeWidth={2.25} />}
@@ -62,10 +66,11 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-[#0B162C] border-b border-[#00A8B5]/20 p-6 flex flex-col gap-4 shadow-[0_20px_40px_rgba(0,168,181,0.1)]">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-[#0B162C] border-b border-[#00A8B5]/20 p-6 flex flex-col gap-4 shadow-[0_20px_40px_rgba(0,168,181,0.1)]">
           <Link to="/" onClick={() => setIsOpen(false)} aria-current={isActive("/") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Home</Link>
           <Link to="/platform" onClick={() => setIsOpen(false)} aria-current={isActive("/platform") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/platform") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Platform</Link>
           <Link to="/solutions" onClick={() => setIsOpen(false)} aria-current={isActive("/solutions") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/solutions") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Solutions</Link>
+          <Link to="/compliance" onClick={() => setIsOpen(false)} aria-current={isActive("/compliance") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/compliance") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Compliance</Link>
           <Link to="/industries" onClick={() => setIsOpen(false)} aria-current={isActive("/industries") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/industries") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Industries</Link>
           <Link to="/about" onClick={() => setIsOpen(false)} aria-current={isActive("/about") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/about") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>About</Link>
           <Link to="/resources" onClick={() => setIsOpen(false)} aria-current={isActive("/resources") ? "page" : undefined} className={`text-lg font-bold uppercase tracking-widest text-[#94A3B8] hover:text-[#00A8B5] ${isActive("/resources") ? "relative text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-6 after:bg-[#C89B3C] after:content-['']" : ""}`}>Resources</Link>
