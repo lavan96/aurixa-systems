@@ -16,6 +16,7 @@ import {
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
 import { VoiceAgentSection } from "../components/VoiceAgentSection";
+import { AnimatedGearSystem } from "../components/AnimatedGearSystem";
 
 export default function Platform() {
   return (
@@ -23,7 +24,8 @@ export default function Platform() {
       <HeroBackground variant="platform" />
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
         {/* Header */}
-        <div className="max-w-4xl mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)] gap-8 items-center mb-24">
+          <div>
           <div className="flex items-center gap-3 mb-8">
             <span className="w-12 h-px bg-[#C89B3C]" />
             <span className="text-[11px] font-bold tracking-widest uppercase text-white/50">Architectural Overview</span>
@@ -44,6 +46,8 @@ export default function Platform() {
           >
             Aurixa Systems is not a generic tool. It is a patented, end-to-end framework. An interconnected operating system combining live property data, macroeconomic variables, CRM syncing, and complex lending matrices. We do not provide software; we provide technological supremacy. The Aurixa Ecosystem provides operational infrastructure layers designed to simplify complexity with structured intelligence systems that help your business scale.
           </motion.p>
+          </div>
+          <AnimatedGearSystem />
         </div>
 
         {/* Modules */}

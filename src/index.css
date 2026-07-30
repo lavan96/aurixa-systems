@@ -45,6 +45,24 @@
 }
 
 @layer utilities {
+  @keyframes gear-turn { to { transform: rotate(360deg); } }
+  @keyframes gear-pulse {
+    0%, 100% { opacity: 0.2; transform: scale(0.92); }
+    50% { opacity: 0.48; transform: scale(1.06); }
+  }
+  @keyframes gear-node { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+  .platform-gear { animation: gear-turn 24s linear infinite; }
+  .platform-gear--medium { animation-duration: 16s; }
+  .platform-gear--fast { animation-duration: 11s; }
+  .platform-gear--reverse { animation-direction: reverse; }
+  .platform-gear-pulse { transform-box: fill-box; transform-origin: center; animation: gear-pulse 4s ease-in-out infinite; }
+  .platform-gear-node { animation: gear-node 2.4s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .platform-gear, .platform-gear-pulse, .platform-gear-node { animation-play-state: paused; }
+  }
+
   .text-penny-drop {
     background: linear-gradient(180deg, #FFFFFF 0%, #A0AABF 45%, #2D3748 50%, #A0AABF 55%, #FFFFFF 100%);
     -webkit-background-clip: text;
