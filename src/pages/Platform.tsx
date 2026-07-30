@@ -138,7 +138,7 @@ export default function Platform() {
             </div>
             <h2 className="text-4xl md:text-5xl font-display font-light tracking-tight mb-6 text-white drop-shadow-md">Expansion <span className="italic text-chrome-prismatic drop-shadow-xl text-transparent bg-clip-text">Modules.</span></h2>
             <p className="text-gray-400 text-lg font-light leading-relaxed">
-              Scale your firm's technical infrastructure with bespoke modular additions. Each sub-system encapsulates a critical operational node—empowering absolute control over lending feasibility, brand alignment, and client interaction. Infrastructure expansions extend integrated client ecosystems and enterprise governance protocols.
+              Scale your firm's technical infrastructure with bespoke modular additions. Each sub-system encapsulates a critical operational node, empowering absolute control over lending feasibility, brand alignment, and client interaction. Infrastructure expansions extend integrated client ecosystems and enterprise governance protocols.
             </p>
           </div>
 
