@@ -40,6 +40,28 @@ const MODULE_CATEGORIES = [
   },
   {
     id: "02",
+    title: "FINANCIAL INTELLIGENCE",
+    description: "Borrowing capacity, cash flow, depreciation integration, and financial operations.",
+    items: [
+      {
+        name: "Lending Position",
+        icon: DollarSign,
+        description: "Clarifies borrowing capacity and financial readiness before an opportunity or strategy progresses."
+      },
+      {
+        name: "Cash Flow Intelligence",
+        icon: Activity,
+        description: "Connects current, projected and scenario-based cash flow to support stronger planning and decisions."
+      },
+      {
+        name: "Depreciation Intelligence",
+        icon: Layers,
+        description: "Integrates depreciation data and comparisons into a more complete financial assessment."
+      },
+    ]
+  },
+  {
+    id: "03",
     title: "INTELLIGENCE & AI",
     description: "Automated analysis, live telemetry, & generative outputs. Property analysis, scenario modelling, strategic recommendations.",
     items: [
@@ -67,28 +89,6 @@ const MODULE_CATEGORIES = [
         name: "White-Label Reports",
         icon: Palette,
         description: "Creates polished, organisation-branded reports that reinforce credibility at every client presentation."
-      },
-    ]
-  },
-  {
-    id: "03",
-    title: "FINANCIAL INTELLIGENCE",
-    description: "Borrowing capacity, cash flow, depreciation integration, and financial operations.",
-    items: [
-      {
-        name: "Lending Position",
-        icon: DollarSign,
-        description: "Clarifies borrowing capacity and financial readiness before an opportunity or strategy progresses."
-      },
-      {
-        name: "Cash Flow Intelligence",
-        icon: Activity,
-        description: "Connects current, projected and scenario-based cash flow to support stronger planning and decisions."
-      },
-      {
-        name: "Depreciation Intelligence",
-        icon: Layers,
-        description: "Integrates depreciation data and comparisons into a more complete financial assessment."
       },
     ]
   },
