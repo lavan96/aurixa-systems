@@ -2,6 +2,7 @@ import { MotionConfig, motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PRIVACY_POLICY_URL } from "../lib/waitlist";
+import { AnimatedGovernanceSystem } from "../components/AnimatedGovernanceSystem";
 
 const overviewCards = [
   {
@@ -163,7 +164,7 @@ export default function Compliance() {
       <div className="w-full overflow-hidden bg-[#040B16]">
         <section
           aria-labelledby="compliance-heading"
-          className="relative border-b border-white/5 pb-20 pt-36 md:flex md:min-h-[680px] md:items-center md:pb-24 md:pt-40 lg:min-h-[720px]"
+          className="relative border-b border-white/5 pb-20 pt-32"
         >
           <div
             aria-hidden="true"
@@ -176,38 +177,42 @@ export default function Compliance() {
                 "radial-gradient(circle at 70% 45%, black, transparent 62%)",
             }}
           />
-          <div
-            aria-hidden="true"
-            className="absolute right-[-12rem] top-20 h-[620px] w-[620px] rounded-full border border-[#00A8B5]/15 shadow-[0_0_120px_rgba(0,168,181,.12)]"
-          />
-          <div
-            aria-hidden="true"
-            className="absolute right-4 top-44 hidden h-[390px] w-[390px] rotate-45 border border-[#C89B3C]/15 md:block"
-          >
-            <div className="absolute inset-[18%] border border-[#00A8B5]/20" />
-            <div className="absolute inset-[38%] bg-[#C89B3C]/10" />
-          </div>
           <div className="relative z-10 mx-auto w-full max-w-7xl px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-4xl"
-            >
-              <Eyebrow>Compliance & Governance</Eyebrow>
-              <h1
-                id="compliance-heading"
-                className="mt-8 max-w-4xl text-4xl font-light leading-[1.08] tracking-tight text-white sm:text-5xl md:text-7xl lg:text-[5rem]"
-              >
-                Compliance, Structured Into{" "}
-                <span className="italic text-[#5EDDE8]">Every Layer.</span>
-              </h1>
-              <p className="mt-7 max-w-3xl text-base font-light leading-relaxed text-[#9CA3AF] sm:text-lg md:mt-8 md:text-xl">
-                Aurixa brings security, due diligence and governance workflows
-                into one connected operational environment, helping
-                organisations maintain stronger oversight across client
-                onboarding, information handling and platform use.
-              </p>
-            </motion.div>
+            <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(420px,.85fr)]">
+              <div>
+                <div className="mb-8 flex items-center gap-3">
+                  <span className="h-px w-12 bg-[#C89B3C]" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">
+                    Compliance & Governance
+                  </span>
+                </div>
+                <motion.h1
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  id="compliance-heading"
+                  className="mb-8 text-4xl font-display font-light leading-[1.05] tracking-tight text-white sm:text-5xl md:text-7xl lg:text-[5rem]"
+                >
+                  <span className="block drop-shadow-md">
+                    Compliance, Structured
+                  </span>
+                  <span className="block italic text-[#C89B3C] drop-shadow-[0_0_18px_rgba(200,155,60,0.18)]">
+                    Into Every Layer.
+                  </span>
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="max-w-3xl text-lg font-light leading-relaxed text-[#9CA3AF] md:text-xl"
+                >
+                  Aurixa brings security, due diligence and governance workflows
+                  into one connected operational environment, helping
+                  organisations maintain stronger oversight across client
+                  onboarding, information handling and platform use.
+                </motion.p>
+              </div>
+              <AnimatedGovernanceSystem />
+            </div>
           </div>
         </section>
 
