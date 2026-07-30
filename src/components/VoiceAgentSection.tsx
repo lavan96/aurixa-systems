@@ -83,7 +83,7 @@ const CAPABILITIES = [
   {
     icon: Sparkles,
     title: "Steps Specific To You",
-    desc: "The routine actions that sit either side of a conversation in your business — configured, not templated.",
+    desc: "The routine actions that sit either side of a conversation in your business, configured, not templated.",
     accent: "#C89B3C",
   },
 ];
@@ -108,14 +108,14 @@ const MODES = [
     icon: PhoneIncoming,
     tag: "Mode 01",
     title: "Inbound Voice Agent",
-    desc: "Answers calls as they arrive — through busy periods, outside normal operating hours, or whenever additional coverage is required.",
+    desc: "Answers calls as they arrive, through busy periods, outside normal operating hours, or whenever additional coverage is required.",
     accent: "#00A8B5",
   },
   {
     icon: PhoneOutgoing,
     tag: "Mode 02",
     title: "Outbound Calling Support",
-    desc: "Places calls against your lists — following up enquiries, confirming details, and progressing conversations that would otherwise wait.",
+    desc: "Places calls against your lists, following up enquiries, confirming details, and progressing conversations that would otherwise wait.",
     accent: "#C89B3C",
   },
   {
@@ -254,7 +254,7 @@ export function VoiceAgentSection() {
         </motion.h2>
         <p className="text-lg font-light leading-relaxed text-[#9CA3AF] md:text-xl">
           Missed calls, delayed follow-ups and unanswered enquiries may create gaps in the customer
-          experience — and opportunities for greater operational efficiency.
+          experience, and opportunities for greater operational efficiency.
         </p>
       </div>
 
@@ -269,7 +269,7 @@ export function VoiceAgentSection() {
         >
           <p className="text-lg font-light leading-relaxed text-[#9CA3B8]">
             Aurixa Voice provides your organisation with AI-assisted voice agents designed around
-            your workflows, systems and service requirements — helping your team remain responsive
+            your workflows, systems and service requirements, helping your team remain responsive
             during busy periods, outside normal operating hours, or whenever additional
             communication support is required.
           </p>
@@ -318,7 +318,7 @@ export function VoiceAgentSection() {
             <span className="italic text-liquid-chrome-clean">can assist with.</span>
           </h3>
           <p className="max-w-md text-sm font-light leading-relaxed text-[#9CA3B8]">
-            Each capability is configured against your own systems and service requirements — never
+            Each capability is configured against your own systems and service requirements, never
             deployed as a generic script.
           </p>
         </div>
