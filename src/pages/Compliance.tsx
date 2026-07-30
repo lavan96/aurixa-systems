@@ -32,11 +32,11 @@ const responsibilities = [
 const reveal = { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: 0.18 }, transition: { duration: 0.7, ease: "easeOut" as const } };
 
 function Eyebrow({ children }: { children: string }) {
-  return <div className="compliance-eyebrow"><span />{children}</div>;
+  return <div className="compliance-eyebrow"><span aria-hidden="true" />{children}</div>;
 }
 
-function SectionHeader({ eyebrow, title, description, align = "left", className = "" }: { eyebrow: string; title: string; description: string; align?: "left" | "right"; className?: string }) {
-  return <motion.header {...reveal} className={`compliance-section-header compliance-section-header--${align} ${className}`.trim()}>
+function SectionHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+  return <motion.header {...reveal} className="compliance-section-header compliance-section-header--centered">
     <Eyebrow>{eyebrow}</Eyebrow><h2>{title}</h2><p>{description}</p>
   </motion.header>;
 }
@@ -149,7 +149,7 @@ export default function Compliance() {
       <ComplianceFrameworkVisual />
     </div></section>
     <section className="compliance-section compliance-section--security"><SectionTransition number="02" /><div className="compliance-container">
-      <SectionHeader eyebrow="Security Architecture" title="Protection Across Every Layer." description="Aurixa combines independently assessed infrastructure, encrypted data handling and application-level controls to support secure and accountable platform delivery." align="right" />
+      <SectionHeader eyebrow="Security Architecture" title="Protection Across Every Layer." description="Aurixa combines independently assessed infrastructure, encrypted data handling and application-level controls to support secure and accountable platform delivery." />
       <SecurityArchitectureVisual />
     </div></section>
     <section className="compliance-section compliance-section--diligence"><SectionTransition number="03" /><div className="compliance-container">
@@ -157,7 +157,7 @@ export default function Compliance() {
       <DueDiligenceFlow />
     </div></section>
     <section className="compliance-section compliance-section--governance"><SectionTransition number="04" /><div className="compliance-container">
-      <SectionHeader className="information-governance-header" eyebrow="Information Governance" title="Clear Policies. Defined Responsibilities." description="Privacy practices and platform terms provide a clear framework for how information is handled and how the Aurixa environment may be accessed and used." />
+      <SectionHeader eyebrow="Information Governance" title="Clear Policies. Defined Responsibilities." description="Privacy practices and platform terms provide a clear framework for how information is handled and how the Aurixa environment may be accessed and used." />
       <InformationGovernanceVisual />
     </div></section>
     <section className="compliance-section compliance-section--responsibility"><SectionTransition number="05" /><div className="compliance-container">
