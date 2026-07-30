@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { ArrowRight, Target, Crosshair, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
+import { SolutionsHeroVisual } from "../components/AnimatedHeroVisuals";
 
 export default function Solutions() {
   return (
@@ -9,7 +10,8 @@ export default function Solutions() {
       <HeroBackground variant="solutions" />
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
         {/* Header */}
-        <div className="max-w-4xl mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.12fr)_minmax(420px,.88fr)] gap-8 items-center mb-24">
+          <div>
           <div className="flex items-center gap-3 mb-8">
             <span className="w-12 h-px bg-[#00A8B5]" />
             <span className="text-[11px] font-bold tracking-widest uppercase text-white/50">Strategic Solutions</span>
@@ -30,6 +32,8 @@ export default function Solutions() {
           >
             We build solutions that eliminate the guesswork from high-level advisory. By weaponizing data and cash flow models, your firm transforms from a service provider into an undeniable market authority. Strategic overview: model convergence, value realisation, and locked alignment. Businesses care about outcomes. Aurixa Systems transforms operations, empowering property enterprises to scale efficiently, improve client delivery, and dominate their market position.
           </motion.p>
+          </div>
+          <SolutionsHeroVisual />
         </div>
 
         <div className="grid grid-cols-1 gap-16 mb-32 relative">

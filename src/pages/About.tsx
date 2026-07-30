@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { ArrowRight, Hexagon, ShieldAlert, Network, Lock, Crosshair, Fingerprint, Terminal, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
+import { AboutHeroVisual } from "../components/AnimatedHeroVisuals";
 
 export default function About() {
   return (
@@ -11,7 +12,8 @@ export default function About() {
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
         
         {/* HERO SECTION */}
-        <div className="max-w-5xl mb-32 relative z-20">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.12fr)_minmax(420px,.88fr)] gap-8 items-center mb-32 relative z-20">
+          <div>
           <div className="flex items-center gap-3 mb-8">
             <span className="w-12 h-px bg-white/30" />
             <span className="text-[11px] font-bold tracking-widest uppercase text-white/50">Classified Intelligence // Alpha-Tier</span>
@@ -40,6 +42,8 @@ export default function About() {
               Aurixa Systems is the result of property professionals and quantitative engineers solving the exact operational bottlenecks that limit modern real estate businesses. We engineer asymmetric leverage for firms that refuse to operate on archaic infrastructure.
             </p>
           </motion.div>
+          </div>
+          <AboutHeroVisual />
         </div>
 
         {/* THE GENESIS PROTOCOL - Asymmetric Block */}

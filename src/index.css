@@ -45,6 +45,45 @@
 }
 
 @layer utilities {
+  @keyframes gear-turn { to { transform: rotate(360deg); } }
+  @keyframes gear-pulse {
+    0%, 100% { opacity: 0.2; transform: scale(0.92); }
+    50% { opacity: 0.48; transform: scale(1.06); }
+  }
+  @keyframes gear-node { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+  .platform-gear { animation: gear-turn 24s linear infinite; }
+  .platform-gear--medium { animation-duration: 16s; }
+  .platform-gear--fast { animation-duration: 11s; }
+  .platform-gear--reverse { animation-direction: reverse; }
+  .platform-gear-pulse { transform-box: fill-box; transform-origin: center; animation: gear-pulse 4s ease-in-out infinite; }
+  .platform-gear-node { animation: gear-node 2.4s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .platform-gear, .platform-gear-pulse, .platform-gear-node { animation-play-state: paused; }
+  }
+
+  @keyframes hero-visual-spin { to { transform: rotate(360deg); } }
+  @keyframes hero-visual-breathe { 0%, 100% { opacity: .45; transform: scale(.94); } 50% { opacity: .9; transform: scale(1.05); } }
+  @keyframes hero-visual-node { 0%, 100% { opacity: .45; } 50% { opacity: 1; filter: drop-shadow(0 0 8px #00a8b5); } }
+  @keyframes solution-line-draw { 0% { stroke-dashoffset: 900; opacity: .15; } 45%, 100% { stroke-dashoffset: 0; opacity: 1; } }
+  @keyframes data-link { 0%, 100% { stroke-dashoffset: 28; opacity: .16; } 50% { stroke-dashoffset: 0; opacity: .55; } }
+
+  .hero-visual-spin-slow { transform-box: fill-box; transform-origin: center; animation: hero-visual-spin 35s linear infinite; }
+  .hero-visual-spin-reverse { transform-box: fill-box; transform-origin: center; animation: hero-visual-spin 20s linear infinite reverse; }
+  .hero-visual-breathe { transform-box: fill-box; transform-origin: center; animation: hero-visual-breathe 5s ease-in-out infinite; }
+  .hero-visual-node, .industry-orbit-node, .about-person-node { animation: hero-visual-node 2.8s ease-in-out infinite; }
+  .solution-scan { animation: hero-visual-spin 7s linear infinite; }
+  .solution-growth-line { stroke-dasharray: 900; animation: solution-line-draw 4s ease-in-out infinite; }
+  .industry-capital-ring { animation: hero-visual-spin 9s linear infinite; }
+  .about-data-link { stroke-dasharray: 7 7; animation: data-link 2.2s linear infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-visual-spin-slow, .hero-visual-spin-reverse, .hero-visual-breathe, .hero-visual-node,
+    .solution-scan, .solution-growth-line, .industry-orbit-node, .industry-capital-ring,
+    .about-person-node, .about-data-link { animation-play-state: paused; }
+  }
+
   .text-penny-drop {
     background: linear-gradient(180deg, #FFFFFF 0%, #A0AABF 45%, #2D3748 50%, #A0AABF 55%, #FFFFFF 100%);
     -webkit-background-clip: text;
