@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowRight, ShieldAlert, CheckCircle2, Mail } from "lucide-react";
 import { HeroBackground } from "../components/HeroBackgrounds";
@@ -24,7 +24,6 @@ import {
   MAX_IMPROVEMENT_AREAS,
   MAX_TECH_STACK_BOTTLENECKS,
   ORGANISATION_TYPE_OPTIONS,
-  PRIVACY_POLICY_URL,
   READINESS_QUESTIONNAIRE_URL,
   ROLE_OPTIONS,
   VOLUME_OPTIONS,
@@ -563,9 +562,7 @@ export default function Contact() {
                       <p>
                         To access or correct your information, withdraw your application or make a privacy
                         complaint, contact{" "}
-                        <a className="text-[#C89B3C] hover:underline" href="mailto:admin@aurixasystems.com.au">
-                          admin@aurixasystems.com.au
-                        </a>
+                        <Link className="text-[#C89B3C] underline underline-offset-2" to="/contact">Aurixa</Link>
                         .
                       </p>
                       <p>{WAITLIST_COPY.confidentiality}</p>
@@ -591,19 +588,7 @@ export default function Contact() {
                       <span>
                         {WAITLIST_COPY.privacyAcknowledgement}
                         <span className="text-[#C89B3C] ml-1" aria-hidden="true">*</span>
-                        {PRIVACY_POLICY_URL && (
-                          <>
-                            {" "}
-                            <a
-                              href={PRIVACY_POLICY_URL}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[#C89B3C] hover:underline"
-                            >
-                              Read the Privacy Policy
-                            </a>
-                          </>
-                        )}
+                        {" "}<Link to="/privacy-policy" className="text-[#C89B3C] underline underline-offset-2">Read the Privacy Policy</Link>
                       </span>
                     </label>
                     {errors.privacyAcknowledged && (

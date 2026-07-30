@@ -1,7 +1,6 @@
 import { MotionConfig, motion } from "motion/react";
 import { ArrowRight, Check } from "lucide-react";
 import { Link } from "react-router-dom";
-import { PRIVACY_POLICY_URL } from "../lib/waitlist";
 import { AnimatedGovernanceSystem } from "../components/AnimatedGovernanceSystem";
 import { HeroBackground } from "../components/HeroBackgrounds";
 
@@ -175,21 +174,15 @@ function SectionHeader({
   );
 }
 
-function LegalLink({ href, children }: { href: string; children: string }) {
-  const unavailable = !href;
+function LegalLink({ to, children }: { to: string; children: string }) {
   return (
-    <a
-      href={href || "#"}
-      onClick={unavailable ? (event) => event.preventDefault() : undefined}
-      target={href ? "_blank" : undefined}
-      rel={href ? "noreferrer" : undefined}
-      aria-disabled={unavailable || undefined}
-      title={unavailable ? "This document is not yet available" : undefined}
-      className={`group mt-9 inline-flex max-w-full items-center rounded-sm border border-[#C89B3C]/40 px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00A8B5] sm:px-6 sm:tracking-[0.25em] lg:mt-auto ${unavailable ? "cursor-not-allowed opacity-60" : "transition-colors hover:border-[#C89B3C]"}`}
+    <Link
+      to={to}
+      className="group mt-9 inline-flex max-w-full items-center rounded-sm border border-[#C89B3C]/40 px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:border-[#C89B3C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00A8B5] sm:px-6 sm:tracking-[0.25em] lg:mt-auto"
     >
       {children}
       <ArrowRight className="ml-3 h-4 w-4 shrink-0 text-[#C89B3C] transition-transform group-hover:translate-x-1" />
-    </a>
+    </Link>
   );
 }
 
@@ -414,7 +407,7 @@ export default function Compliance() {
                   user rights and the available processes for privacy enquiries,
                   access requests and correction requests.
                 </p>
-                <LegalLink href={PRIVACY_POLICY_URL}>
+                <LegalLink to="/privacy-policy">
                   View Privacy Policy
                 </LegalLink>
               </motion.article>
@@ -440,7 +433,7 @@ export default function Compliance() {
                   subscriptions, intellectual property, service availability and
                   termination.
                 </p>
-                <LegalLink href="">View Terms & Conditions</LegalLink>
+                <LegalLink to="/terms-and-conditions">View Terms & Conditions</LegalLink>
               </motion.article>
             </div>
           </div>

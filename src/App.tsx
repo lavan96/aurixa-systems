@@ -18,6 +18,8 @@ import CardSaved from "./pages/CardSaved";
 import Questionnaire from "./pages/Questionnaire";
 import Feedback from "./pages/Feedback";
 import Compliance from "./pages/Compliance";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -51,6 +53,8 @@ function AppShell() {
             <Route path="/resources" element={<Resources />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/compliance" element={<Compliance />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             <Route path="/questionnaire" element={<Questionnaire />} />
             <Route path="/feedback" element={<Feedback />} />
           </Routes>
