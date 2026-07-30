@@ -11,15 +11,18 @@ type ComplianceModuleProps = {
 };
 
 function ComplianceModule({ x, y, title, subtitle, delay, symbol }: ComplianceModuleProps) {
+  const textX = x - 37;
+  const isDueDiligence = title === "AML/CTF & CDD";
+
   return (
     <g
       className="compliance-module"
       style={{ transformOrigin: `${x}px ${y}px`, animationDelay: delay }}
     >
       <rect
-        x={x - 78}
+        x={x - 88}
         y={y - 48}
-        width="156"
+        width="176"
         height="96"
         rx="9"
         fill="url(#compliance-panel)"
@@ -28,21 +31,35 @@ function ComplianceModule({ x, y, title, subtitle, delay, symbol }: ComplianceMo
         filter="url(#compliance-shadow)"
       />
       <path
-        d={`M${x - 66} ${y - 35}H${x - 50}M${x + 50} ${y - 35}H${x + 66}M${x - 66} ${y + 35}H${x - 50}M${x + 50} ${y + 35}H${x + 66}`}
+        d={`M${x - 76} ${y - 35}H${x - 60}M${x + 60} ${y - 35}H${x + 76}M${x - 76} ${y + 35}H${x - 60}M${x + 60} ${y + 35}H${x + 76}`}
         stroke="#00a8b5"
         strokeOpacity=".42"
       />
-      <g transform={`translate(${x - 51} ${y - 7})`}>{symbol}</g>
-      <circle cx={x + 62} cy={y - 33} r="4.5" fill="#071522" stroke="#00a8b5" />
-      <circle cx={x + 62} cy={y - 33} r="1.8" fill="#f5d17a" className="platform-gear-node" />
-      <text x={x - 28} y={y - 8} fill="#e3e8ee" fontSize="11.5" fontWeight="600" letterSpacing="1.15">
+      <g transform={`translate(${x - 62} ${y})`}>{symbol}</g>
+      <circle cx={x + 72} cy={y - 33} r="4.5" fill="#071522" stroke="#00a8b5" />
+      <circle cx={x + 72} cy={y - 33} r="1.8" fill="#f5d17a" className="platform-gear-node" />
+      <text
+        x={textX}
+        y={y - 7}
+        fill="#e3e8ee"
+        fontSize={isDueDiligence ? "10.5" : "11.5"}
+        fontWeight="600"
+        letterSpacing={isDueDiligence ? ".85" : "1.15"}
+      >
         {title}
       </text>
-      <text x={x - 28} y={y + 12} fill="#9aa8b8" fontSize="8.6" letterSpacing=".35">
+      <text
+        x={textX}
+        y={y + 13}
+        fill="#9aa8b8"
+        fontSize="8.6"
+        letterSpacing=".25"
+        {...(isDueDiligence ? { textLength: 108, lengthAdjust: "spacingAndGlyphs" } : {})}
+      >
         {subtitle}
       </text>
-      <path d={`M${x - 28} ${y + 25}H${x + 51}`} stroke="#60758a" strokeOpacity=".28" />
-      <path d={`M${x - 28} ${y + 25}H${x + 16}`} stroke="#c89b3c" strokeOpacity=".55" />
+      <path d={`M${textX} ${y + 27}H${x + 65}`} stroke="#60758a" strokeOpacity=".28" />
+      <path d={`M${textX} ${y + 27}H${x + 18}`} stroke="#c89b3c" strokeOpacity=".55" />
     </g>
   );
 }
@@ -149,8 +166,8 @@ export function AnimatedGovernanceSystem() {
 
         <circle cx="315" cy="285" r="126" fill="url(#compliance-core-glow)" className="platform-gear-pulse" />
         <g filter="url(#compliance-shadow)">
-          <rect x="238" y="229" width="154" height="112" rx="16" fill="url(#compliance-panel)" stroke="url(#compliance-stroke)" strokeWidth="1.5" />
-          <rect x="249" y="240" width="132" height="90" rx="10" fill="#06101e" stroke="#00a8b5" strokeOpacity=".3" />
+          <rect x="220" y="229" width="190" height="112" rx="16" fill="url(#compliance-panel)" stroke="url(#compliance-stroke)" strokeWidth="1.5" />
+          <rect x="231" y="240" width="168" height="90" rx="10" fill="#06101e" stroke="#00a8b5" strokeOpacity=".3" />
           <g className="platform-gear platform-gear--slow" style={{ transformOrigin: "315px 285px" }} fill="none">
             <circle cx="315" cy="285" r="47" stroke="#00a8b5" strokeOpacity=".32" strokeDasharray="30 12 4 14" />
             <circle cx="315" cy="285" r="37" stroke="#c89b3c" strokeOpacity=".3" strokeDasharray="2 9" />
@@ -158,7 +175,7 @@ export function AnimatedGovernanceSystem() {
           <circle cx="315" cy="272" r="17" fill="#09182a" stroke="#c89b3c" strokeOpacity=".75" />
           <path d="M306 272H324M315 263V281" stroke="#00a8b5" strokeWidth="1.5" />
           <circle cx="315" cy="272" r="5" fill="#d7b35f" className="compliance-core-activity" />
-          <text x="315" y="307" textAnchor="middle" fill="#e3e8ee" fontSize="10.5" fontWeight="600" letterSpacing=".9">COMPLIANCE OPERATING LAYER</text>
+          <text x="315" y="307" textAnchor="middle" fill="#e3e8ee" fontSize="10.5" fontWeight="600" letterSpacing=".7" textLength="158" lengthAdjust="spacingAndGlyphs">COMPLIANCE OPERATING LAYER</text>
           <text x="315" y="321" textAnchor="middle" fill="#8190a1" fontSize="7.5" letterSpacing="1">CONNECTED OVERSIGHT</text>
         </g>
 
