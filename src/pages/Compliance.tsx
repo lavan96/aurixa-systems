@@ -1,78 +1,112 @@
 import { MotionConfig, motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PRIVACY_POLICY_URL } from "../lib/waitlist";
 import { AnimatedGovernanceSystem } from "../components/AnimatedGovernanceSystem";
 import { HeroBackground } from "../components/HeroBackgrounds";
 
-const overviewCards = [
+const frameworkLayers = [
   {
-    label: "Security",
-    title: "Security & Infrastructure",
+    number: "01",
+    title: "Infrastructure Protection",
     description:
-      "Infrastructure, encryption and access controls designed to support the secure operation of the Aurixa environment.",
+      "Established infrastructure, encrypted data handling and controlled access supporting the secure operation of the Aurixa environment.",
   },
   {
-    label: "Due diligence",
-    title: "AML/CTF & CDD",
+    number: "02",
+    title: "Client Due Diligence",
     description:
-      "Structured workflows that support customer due diligence, information collection, review processes and operational recordkeeping.",
+      "Structured AML/CTF and customer due diligence workflows supporting client information collection, review and record management.",
   },
   {
-    label: "Privacy",
-    title: "Privacy Management",
+    number: "03",
+    title: "Information Governance",
     description:
-      "Clear information about how personal information is collected, used, protected and managed within the Aurixa environment.",
+      "Clear privacy practices, controlled information handling and defined terms governing use of the Aurixa platform.",
   },
   {
-    label: "Platform governance",
-    title: "Terms & Conditions",
+    number: "04",
+    title: "Operational Responsibility",
     description:
-      "Clear terms governing platform access, account responsibilities, permitted use and service arrangements.",
-  },
-] as const;
-
-const securityCards = [
-  {
-    label: "Backend infrastructure",
-    title: "Secure Backend Infrastructure",
-    description:
-      "Aurixa’s backend operates within enterprise-grade infrastructure supported by independently assessed SOC 2 Type 2 controls and ISO 27001 certification. Customer data is protected using AES-256 encryption at rest and TLS encryption while in transit.",
-  },
-  {
-    label: "Web infrastructure",
-    title: "Protected Web Infrastructure",
-    description:
-      "Aurixa’s web environment is delivered through secure, globally distributed infrastructure designed to strengthen protected access, service resilience and application delivery. The underlying infrastructure maintains independently assessed SOC 2 Type II controls and ISO 27001:2022 certification.",
-  },
-  {
-    label: "Aurixa controls",
-    title: "Shared Security Responsibility",
-    description:
-      "Aurixa maintains responsibility for application configuration, access governance, user permissions and internal operational safeguards. These controls are managed within the Aurixa environment to support secure, accountable and consistent platform delivery.",
+      "Application controls, internal governance and clearly assigned responsibilities supporting accountable platform use.",
   },
 ] as const;
 
-const capabilities = [
+const protectionLayers = [
   {
-    title: "Client Information Collection",
+    number: "01",
+    label: "Infrastructure assurance",
+    title: "Established Infrastructure Controls",
     description:
-      "Bring relevant client information, supporting documents and onboarding details into one structured operational environment.",
+      "Aurixa operates within enterprise-grade infrastructure supported by independently assessed SOC 2 Type II controls and ISO 27001:2022 certification.",
   },
   {
-    title: "Due Diligence Workflows",
+    number: "02",
+    label: "Data protection",
+    title: "Protected at Rest and in Transit",
     description:
-      "Coordinate customer due diligence activities through defined steps, responsibilities and review processes.",
+      "Customer data is protected using AES-256 encryption while stored and TLS encryption while being transmitted between authorised systems and users.",
   },
   {
-    title: "Review Tracking",
+    number: "03",
+    label: "Application governance",
+    title: "Controlled Within Aurixa",
+    description:
+      "Aurixa maintains responsibility for application configuration, access governance, user permissions and internal operational safeguards within the platform environment.",
+  },
+] as const;
+
+const diligenceStages = [
+  {
+    number: "01",
+    title: "Collect",
+    subtitle: "Client Information",
+    description:
+      "Bring relevant client details, supporting documents and onboarding information into one structured operational environment.",
+  },
+  {
+    number: "02",
+    title: "Assess",
+    subtitle: "Due Diligence Requirements",
+    description:
+      "Coordinate customer due diligence activities through defined steps, assigned responsibilities and documented review processes.",
+  },
+  {
+    number: "03",
+    title: "Review",
+    subtitle: "Ongoing Oversight",
     description:
       "Maintain visibility over outstanding information, follow-up actions, scheduled reviews and unresolved requirements.",
   },
   {
-    title: "Operational Records",
+    number: "04",
+    title: "Retain",
+    subtitle: "Operational Records",
     description:
-      "Retain a clearer record of activities, documents, decisions and actions associated with the client relationship.",
+      "Maintain a clearer record of documents, activities, decisions and actions associated with the client relationship.",
+  },
+] as const;
+
+const responsibilities = [
+  {
+    label: "Aurixa provides",
+    items: [
+      "Operational structure",
+      "Workflow visibility",
+      "Access controls",
+      "Record management",
+      "Platform governance",
+    ],
+  },
+  {
+    label: "The organisation maintains",
+    items: [
+      "Regulatory responsibility",
+      "Internal compliance programs",
+      "Business-specific controls",
+      "Policy decisions",
+      "Appropriate platform use",
+    ],
   },
 ] as const;
 
@@ -131,7 +165,7 @@ function SectionHeader({
       className={centred ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}
     >
       <Eyebrow centred={centred}>{eyebrow}</Eyebrow>
-      <h2 className="mt-6 text-4xl font-light leading-tight tracking-tight text-white md:text-5xl">
+      <h2 className="mt-6 font-display text-4xl font-light leading-tight tracking-tight text-white md:text-5xl">
         {title}
       </h2>
       <p className="mt-6 text-base font-light leading-relaxed text-[#9CA3AF] md:text-lg">
@@ -151,11 +185,26 @@ function LegalLink({ href, children }: { href: string; children: string }) {
       rel={href ? "noreferrer" : undefined}
       aria-disabled={unavailable || undefined}
       title={unavailable ? "This document is not yet available" : undefined}
-      className="group mt-9 inline-flex items-center rounded-sm border border-[#C89B3C]/40 px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white transition-colors hover:border-[#C89B3C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00A8B5] lg:mt-auto"
+      className={`group mt-9 inline-flex max-w-full items-center rounded-sm border border-[#C89B3C]/40 px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00A8B5] sm:px-6 sm:tracking-[0.25em] lg:mt-auto ${unavailable ? "cursor-not-allowed opacity-60" : "transition-colors hover:border-[#C89B3C]"}`}
     >
       {children}
-      <ArrowRight className="ml-3 h-4 w-4 text-[#C89B3C] transition-transform group-hover:translate-x-1" />
+      <ArrowRight className="ml-3 h-4 w-4 shrink-0 text-[#C89B3C] transition-transform group-hover:translate-x-1" />
     </a>
+  );
+}
+
+function SystemSignal() {
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute inset-x-6 top-0 hidden h-px lg:block"
+    >
+      <motion.span
+        className="absolute -top-1 h-2 w-2 rounded-full bg-[#D7B35F] shadow-[0_0_14px_#D7B35F]"
+        animate={{ left: ["0%", "100%"], opacity: [0, 1, 1, 0] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
   );
 }
 
@@ -207,30 +256,41 @@ export default function Compliance() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 py-20 md:py-28 lg:py-32">
+        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-6 md:py-28 lg:py-32">
           <SectionHeader
-            eyebrow="Connected Governance"
-            title="Clearer Control Across Critical Operations."
-            description="Aurixa supports organisations across the operational areas where security, accountability and structured processes matter most."
+            eyebrow="Connected Compliance"
+            title="One Environment. Four Operational Layers."
+            description="Aurixa brings infrastructure protection, client due diligence, information governance and operational responsibility into one connected framework. Each layer supports clearer oversight while remaining part of the same operational environment."
             centred
           />
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {overviewCards.map((card, index) => (
+          <div className="relative mt-16 border-y border-white/10 bg-[#081426]/55 lg:grid lg:grid-cols-4">
+            <CornerTicks />
+            <div
+              aria-hidden="true"
+              className="absolute bottom-0 left-8 top-0 w-px bg-gradient-to-b from-[#00A8B5]/10 via-[#00A8B5]/70 to-[#C89B3C]/30 lg:bottom-auto lg:left-0 lg:right-0 lg:top-8 lg:h-px lg:w-auto"
+            />
+            <SystemSignal />
+            {frameworkLayers.map((layer, index) => (
               <motion.article
                 {...reveal}
-                transition={{ duration: 0.5, delay: index * 0.06 }}
-                key={card.label}
-                className="glass-panel glass-panel-hover relative min-h-64 overflow-hidden p-7 md:min-h-72 md:p-8"
+                transition={{ duration: 0.5, delay: index * 0.08 }}
+                key={layer.number}
+                className="relative min-w-0 py-8 pl-16 pr-7 lg:border-r lg:border-white/10 lg:px-7 lg:pb-10 lg:pt-16 lg:last:border-r-0 xl:px-9"
               >
-                <CornerTicks />
-                <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#5EDDE8]">
-                  {card.label}
-                </p>
-                <h3 className="mt-7 text-2xl font-light leading-tight text-white">
-                  {card.title}
+                <span className="absolute left-[1.7rem] top-9 h-2.5 w-2.5 rounded-full border border-[#5EDDE8] bg-[#071426] shadow-[0_0_10px_#00A8B5] lg:left-7 lg:top-[1.7rem]" />
+                <div className="flex items-center justify-between gap-4">
+                  <span className="font-mono text-xs tracking-[0.3em] text-[#D7B35F]">
+                    {layer.number}
+                  </span>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#5EDDE8]/70">
+                    Layer online
+                  </span>
+                </div>
+                <h3 className="mt-6 font-display text-2xl font-light leading-tight text-white">
+                  {layer.title}
                 </h3>
                 <p className="mt-5 text-sm font-light leading-relaxed text-[#9CA3AF]">
-                  {card.description}
+                  {layer.description}
                 </p>
               </motion.article>
             ))}
@@ -238,150 +298,232 @@ export default function Compliance() {
         </section>
 
         <section className="border-y border-white/5 bg-[#0B162C]/25 py-20 md:py-28 lg:py-32">
-          <div className="mx-auto max-w-7xl px-6">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6">
             <SectionHeader
-              eyebrow="Security & Infrastructure"
-              title="Built on Trusted Infrastructure."
-              description="Aurixa Systems operates using established infrastructure supported by independently assessed security and compliance programs."
+              eyebrow="Security Architecture"
+              title="Protection Across Every Layer."
+              description="Aurixa combines independently assessed infrastructure, encrypted data handling and application-level controls to support secure and accountable platform delivery."
             />
-            <div className="mt-14 grid gap-8 lg:grid-cols-3">
-              {securityCards.map((card, index) => (
+            <div className="relative mt-16 overflow-hidden border border-white/10 bg-[#071322]/70">
+              <CornerTicks />
+              <div
+                aria-hidden="true"
+                className="absolute bottom-10 left-7 top-10 w-px bg-gradient-to-b from-[#00A8B5] via-[#00A8B5]/50 to-[#C89B3C] lg:left-1/2 lg:top-0"
+              />
+              {protectionLayers.map((layer, index) => (
                 <motion.article
                   {...reveal}
-                  key={card.label}
-                  className={`group relative overflow-hidden rounded-2xl border bg-[#0B162C]/40 p-8 shadow-[0_30px_80px_-30px] backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 md:p-9 ${index === 1 ? "border-[#C89B3C]/40 shadow-[#C89B3C]/20" : "border-[#00A8B5]/35 shadow-[#00A8B5]/20"}`}
+                  key={layer.number}
+                  className="relative grid gap-5 border-b border-white/10 py-9 pl-14 pr-6 last:border-b-0 sm:pl-16 md:p-10 md:pl-20 lg:grid-cols-[minmax(220px,.75fr)_minmax(0,1.25fr)] lg:gap-16 lg:px-14"
                 >
-                  <CornerTicks />
-                  <p
-                    className={`font-mono text-[10px] uppercase tracking-[0.3em] ${index === 1 ? "text-[#C89B3C]" : "text-[#5EDDE8]"}`}
-                  >
-                    {card.label}
-                  </p>
-                  <h3 className="mt-6 text-2xl font-semibold leading-tight text-white">
-                    {card.title}
-                  </h3>
-                  <p className="mt-5 text-sm leading-relaxed text-[#94A3B8]">
-                    {card.description}
-                  </p>
+                  <span
+                    className={`absolute left-[1.55rem] top-11 h-2.5 w-2.5 rounded-full border bg-[#071322] lg:left-1/2 lg:-translate-x-1/2 ${index === 1 ? "border-[#D7B35F] shadow-[0_0_12px_#C89B3C]" : "border-[#5EDDE8] shadow-[0_0_10px_#00A8B5]"}`}
+                  />
+                  <div>
+                    <span className="font-mono text-xs tracking-[0.3em] text-[#D7B35F]">
+                      {layer.number}
+                    </span>
+                    <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.26em] text-[#5EDDE8]">
+                      {layer.label}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-2xl font-light text-white md:text-3xl">
+                      {layer.title}
+                    </h3>
+                    <p className="mt-4 max-w-2xl text-sm font-light leading-relaxed text-[#9CA3AF] md:text-base">
+                      {layer.description}
+                    </p>
+                  </div>
                 </motion.article>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 py-20 md:py-28 lg:py-32">
+        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-6 md:py-28 lg:py-32">
           <SectionHeader
             eyebrow="AML/CTF & Customer Due Diligence"
-            title="Structured Due Diligence. Clearer Oversight."
-            description="Aurixa supports structured AML/CTF and customer due diligence workflows across client onboarding, information collection, review and record management. The platform helps teams organise required steps, maintain visibility over outstanding actions and retain a clearer operational record throughout the client lifecycle."
+            title="Due Diligence in Motion."
+            description="Aurixa supports structured AML/CTF and customer due diligence workflows throughout the client lifecycle. Information, responsibilities, reviews and operational records remain connected within one controlled process."
           />
-          <div className="mt-16 grid border-l border-t border-white/10 md:grid-cols-2">
-            {capabilities.map((item, index) => (
+          <div className="relative mt-16 border-y border-white/10 bg-[#081426]/45 lg:grid lg:grid-cols-4">
+            <CornerTicks />
+            <div
+              aria-hidden="true"
+              className="absolute bottom-8 left-[1.85rem] top-8 w-px bg-[#00A8B5]/60 lg:bottom-auto lg:left-8 lg:right-8 lg:top-[3.15rem] lg:h-px lg:w-auto"
+            />
+            <SystemSignal />
+            {diligenceStages.map((stage, index) => (
               <motion.article
                 {...reveal}
-                key={item.title}
-                className="relative border-b border-r border-white/10 p-8 md:p-10"
+                transition={{ duration: 0.5, delay: index * 0.08 }}
+                key={stage.number}
+                className="relative min-w-0 py-8 pl-16 pr-6 lg:border-r lg:border-white/10 lg:px-7 lg:pb-11 lg:pt-20 lg:last:border-r-0 xl:px-9"
               >
-                <span className="font-mono text-[10px] tracking-[0.3em] text-[#00A8B5]">
-                  0{index + 1}
-                </span>
-                <h3 className="mt-5 text-2xl font-light text-white">
-                  {item.title}
+                <span className="absolute left-[1.55rem] top-10 grid h-3 w-3 place-items-center rounded-full border border-[#D7B35F] bg-[#081426] shadow-[0_0_10px_#C89B3C] lg:left-7 lg:top-[2.8rem]" />
+                <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#5EDDE8]">
+                  {stage.number} {stage.title}
+                </p>
+                <h3 className="mt-6 font-display text-3xl font-light text-white">
+                  {stage.title}
                 </h3>
-                <p className="mt-4 max-w-lg text-sm font-light leading-relaxed text-[#9CA3AF]">
-                  {item.description}
+                <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#D7B35F]">
+                  {stage.subtitle}
+                </p>
+                <p className="mt-5 text-sm font-light leading-relaxed text-[#9CA3AF]">
+                  {stage.description}
                 </p>
               </motion.article>
             ))}
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
-          <div className="grid overflow-hidden border border-white/10 bg-[#0B162C]/35 lg:grid-cols-2">
-            <motion.article
-              {...reveal}
-              className="relative flex flex-col items-start p-8 md:p-14 lg:border-r lg:border-white/10"
-            >
+        <section className="border-y border-white/5 bg-[#0B162C]/25 py-20 md:py-28 lg:py-32">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6">
+            <SectionHeader
+              eyebrow="Information Governance"
+              title="Clear Policies. Defined Responsibilities."
+              description="Privacy practices and platform terms provide a clear framework for how information is handled and how the Aurixa environment may be accessed and used."
+            />
+            <div className="relative mt-16 grid overflow-hidden border border-white/10 bg-[#081426]/70 lg:grid-cols-2">
               <CornerTicks />
-              <Eyebrow>Privacy</Eyebrow>
-              <h2 className="mt-6 text-4xl font-light text-white">
-                Privacy, Explained Clearly.
-              </h2>
-              <p className="mt-6 font-light leading-relaxed text-[#9CA3AF]">
-                Aurixa’s Privacy Policy explains how personal information may be
-                collected, used, protected and disclosed, together with the
-                choices and rights available to users. It also explains how
-                privacy enquiries, access requests and correction requests can
-                be raised.
-              </p>
-              <LegalLink href={PRIVACY_POLICY_URL}>
-                View Privacy Policy
-              </LegalLink>
-            </motion.article>
-            <motion.article
-              {...reveal}
-              className="relative flex flex-col items-start p-8 md:p-14"
-            >
-              <CornerTicks />
-              <Eyebrow>Platform Terms</Eyebrow>
-              <h2 className="mt-6 text-4xl font-light text-white">
-                Clear Terms for Platform Use.
-              </h2>
-              <p className="mt-6 font-light leading-relaxed text-[#9CA3AF]">
-                Aurixa’s Terms and Conditions establish the rules governing
-                access to and use of the platform, including account
-                responsibilities, permitted use, subscriptions, intellectual
-                property, service availability and termination.
-              </p>
-              <LegalLink href="">View Terms & Conditions</LegalLink>
-            </motion.article>
+              <div
+                aria-hidden="true"
+                className="absolute left-1/2 top-0 hidden h-full w-px bg-gradient-to-b from-[#00A8B5]/15 via-[#C89B3C]/60 to-[#00A8B5]/15 lg:block"
+              />
+              <motion.article
+                {...reveal}
+                className="relative flex flex-col items-start border-b border-white/10 p-7 sm:p-10 lg:border-b-0 lg:p-14"
+              >
+                <div className="flex w-full items-center justify-between gap-4">
+                  <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.22em] text-[#5EDDE8]">
+                    Privacy & Information Handling
+                  </p>
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full bg-[#00A8B5] shadow-[0_0_10px_#00A8B5]"
+                    aria-hidden="true"
+                  />
+                </div>
+                <h3 className="mt-7 font-display text-3xl font-light text-white md:text-4xl">
+                  Privacy, Explained Clearly.
+                </h3>
+                <p className="mt-6 font-light leading-relaxed text-[#9CA3AF]">
+                  Aurixa’s Privacy Policy explains how personal information may
+                  be collected, used, protected and disclosed. It also outlines
+                  user rights and the available processes for privacy enquiries,
+                  access requests and correction requests.
+                </p>
+                <LegalLink href={PRIVACY_POLICY_URL}>
+                  View Privacy Policy
+                </LegalLink>
+              </motion.article>
+              <motion.article
+                {...reveal}
+                className="relative flex flex-col items-start p-7 sm:p-10 lg:p-14"
+              >
+                <div className="flex w-full items-center justify-between gap-4">
+                  <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.22em] text-[#D7B35F]">
+                    Platform Terms & Responsibilities
+                  </p>
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full border border-[#C89B3C]"
+                    aria-hidden="true"
+                  />
+                </div>
+                <h3 className="mt-7 font-display text-3xl font-light text-white md:text-4xl">
+                  Clear Terms for Platform Use.
+                </h3>
+                <p className="mt-6 font-light leading-relaxed text-[#9CA3AF]">
+                  Aurixa’s Terms and Conditions define the rules governing
+                  platform access, account responsibilities, permitted use,
+                  subscriptions, intellectual property, service availability and
+                  termination.
+                </p>
+                <LegalLink href="">View Terms & Conditions</LegalLink>
+              </motion.article>
+            </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 pb-24 md:pb-32">
+        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-6 md:py-28 lg:py-32">
+          <SectionHeader
+            eyebrow="Shared Governance"
+            title="Structured Systems. Clear Responsibility."
+            description="Aurixa provides the operational structure needed to organise compliance-related workflows, controls and records. Each organisation remains responsible for understanding its obligations, maintaining its internal compliance program and determining how Aurixa should be applied within its business."
+          />
+          <div className="relative mt-16 grid border border-[#C89B3C]/25 bg-gradient-to-br from-[#C89B3C]/5 via-[#081426]/80 to-[#00A8B5]/5 md:grid-cols-2">
+            <CornerTicks />
+            <div
+              aria-hidden="true"
+              className="absolute left-1/2 top-0 hidden h-full w-px bg-white/10 md:block"
+            />
+            {responsibilities.map((responsibility, index) => (
+              <motion.article
+                {...reveal}
+                key={responsibility.label}
+                className={`relative p-7 sm:p-10 lg:p-14 ${index === 0 ? "border-b border-white/10 md:border-b-0" : ""}`}
+              >
+                <div className="flex items-center gap-4">
+                  <span
+                    className={`h-2 w-2 rounded-full ${index === 0 ? "bg-[#00A8B5] shadow-[0_0_10px_#00A8B5]" : "bg-[#C89B3C] shadow-[0_0_10px_#C89B3C]"}`}
+                  />
+                  <h3 className="font-mono text-[11px] font-bold uppercase tracking-[0.26em] text-white">
+                    {responsibility.label}
+                  </h3>
+                </div>
+                <ul className="mt-8 space-y-4">
+                  {responsibility.items.map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-4 text-sm font-light text-[#B1B8C5] sm:text-base"
+                    >
+                      <Check
+                        className={`h-4 w-4 shrink-0 ${index === 0 ? "text-[#5EDDE8]" : "text-[#D7B35F]"}`}
+                        aria-hidden="true"
+                      />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </motion.article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-5 pb-32 sm:px-6">
           <motion.div
             {...reveal}
-            className="relative overflow-hidden border border-[#C89B3C]/30 bg-gradient-to-br from-[#C89B3C]/10 via-[#0B162C]/70 to-[#00A8B5]/10 p-9 md:p-16"
+            className="relative overflow-hidden border border-[#00A8B5]/30 bg-[#081426] px-6 py-14 text-center sm:px-10 md:p-20"
           >
             <CornerTicks />
             <div
               aria-hidden="true"
-              className="absolute -right-24 -top-24 h-80 w-80 rotate-45 border border-[#00A8B5]/15"
+              className="absolute left-1/2 top-0 h-16 w-px bg-gradient-to-b from-[#C89B3C] to-transparent"
             />
-            <div className="relative max-w-4xl">
-              <Eyebrow>Governance Principle</Eyebrow>
-              <h2 className="mt-7 text-4xl font-light leading-tight text-white md:text-5xl">
-                Technology Supports Compliance. Responsibility Remains Clear.
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-10 top-8 h-px bg-gradient-to-r from-transparent via-[#00A8B5]/50 to-transparent"
+            />
+            <div className="relative">
+              <Eyebrow centred>Operational Confidence</Eyebrow>
+              <h2 className="mx-auto mt-7 max-w-4xl font-display text-4xl font-light leading-tight text-white md:text-6xl">
+                Bring Greater Structure to Compliance Operations.
               </h2>
-              <p className="mt-7 max-w-3xl text-lg font-light leading-relaxed text-[#B1B8C5]">
-                Aurixa provides systems and workflows designed to support
-                structured operational and compliance processes. Each
-                organisation remains responsible for understanding its
-                obligations, maintaining its internal controls and determining
-                how the platform should be used within its business.
+              <p className="mx-auto mt-6 max-w-2xl text-base font-light leading-relaxed text-[#9CA3AF] md:text-lg">
+                Connect security, due diligence, information governance and
+                operational responsibility within one structured Aurixa
+                environment.
               </p>
+              <Link
+                to="/contact"
+                className="group mt-10 inline-flex max-w-full items-center rounded-sm bg-[#00A8B5] px-7 py-3 font-mono text-[11px] font-black uppercase tracking-[0.22em] text-white shadow-[0_0_50px_-10px] shadow-[#00A8B5]/70 transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#C89B3C] sm:px-8 sm:tracking-[0.25em]"
+              >
+                Join Waitlist
+                <ArrowRight className="ml-2 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
+              </Link>
             </div>
           </motion.div>
-        </section>
-
-        <section className="mx-auto max-w-5xl px-6 pb-32">
-          <div className="relative overflow-hidden rounded-3xl border border-[#00A8B5]/30 bg-gradient-to-br from-[#00A8B5]/10 via-[#0B162C] to-[#C89B3C]/10 p-10 text-center md:p-20">
-            <Eyebrow centred>Structured Operations</Eyebrow>
-            <h2 className="mt-7 text-4xl font-light md:text-6xl">
-              Build With Greater Confidence.
-            </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg font-light leading-relaxed text-[#9CA3AF]">
-              Bring security, governance and compliance-related workflows into
-              one connected operational environment.
-            </p>
-            <Link
-              to="/contact"
-              className="group mt-10 inline-flex items-center rounded-sm bg-[#00A8B5] px-8 py-3 font-mono text-[11px] font-black uppercase tracking-[0.25em] text-white shadow-[0_0_50px_-10px] shadow-[#00A8B5]/70 transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#C89B3C]"
-            >
-              Join Waitlist{" "}
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
         </section>
       </div>
     </MotionConfig>
