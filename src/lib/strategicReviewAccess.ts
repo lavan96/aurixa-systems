@@ -9,9 +9,19 @@
  * browser is not a gate — the bundle ships to the visitor, who can edit it — so
  * the page asks the "Aurixa Stage 3 Access" scenario and renders the scheduler
  * only if that answers yes. The admission policy itself is not in this file
- * either: it is the `Stage 3 Access` formula on the Aurixa Waitlist table, and
- * the Airtable query filters on it, so a reference the policy denies is never
- * even read back, let alone returned.
+ * either. It has two halves, each checked where its truth actually lives:
+ *
+ *   1. The application is live — a `Stage 3 Access (Application)` formula on
+ *      the Aurixa Waitlist table, which the Airtable query filters on, so a
+ *      denied application is never read back, let alone returned.
+ *   2. Stage 2 is finished — a Business Readiness response exists for that
+ *      Application ID. This is read from the responses table directly rather
+ *      than from a rollup on the waitlist, because the rollup only counts
+ *      *linked* responses and the link is written by an Airtable automation.
+ *      Admission would then depend on that automation having already run, and
+ *      on nobody switching it off, which is not something a gate should rest
+ *      on. The response row is written by the Stage 2 scenario as the
+ *      questionnaire is submitted, so it is true the moment it is true.
  *
  * Failures are deliberately indistinguishable. An unknown reference, a
  * reference belonging to a declined application and a reference belonging to
@@ -50,11 +60,17 @@ export type AccessDecision = {
   reason?: AccessFailure;
 };
 
+/**
+ * The `unverified` message names both reasons an applicant can be turned away —
+ * an unrecognised reference, and a questionnaire that is not finished — because
+ * the server will not say which it was. Naming both is actionable; naming the
+ * actual one would tell a stranger whether an application exists.
+ */
 export const ACCESS_COPY: Record<AccessFailure, string> = {
   missing_reference:
-    "This page is part of an Aurixa priority access application. Open it from the link in your Aurixa email, or continue with the application reference issued with your application.",
+    "This page is the final stage of an Aurixa priority access application. Open it from the link in your Aurixa email, or continue with the application reference issued with your application.",
   unverified:
-    "We could not verify that application reference. Check it against your Aurixa confirmation email, or contact the team and quote it.",
+    "We could not open the scheduler for that application reference. Either it is not one we recognise, or the Business Readiness Questionnaire is not complete yet — the strategic review opens once it is. Check the reference against your Aurixa email, or contact the team and quote it.",
   unavailable:
     "We could not reach the Aurixa application service just now. Please try again in a moment.",
 };
