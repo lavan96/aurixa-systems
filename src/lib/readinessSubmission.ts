@@ -56,7 +56,19 @@ export type ReadinessSubmissionFields = {
   projectSponsor: string;
 };
 
-export type HandoffSubmissionPayload = {
+/**
+ * How the applicant reached Stage 2. Mirrors the Airtable "Stage 2 Access
+ * Method" options exactly — the Make scenario maps this value straight through,
+ * so an expired-link recovery is visible in the operations record instead of
+ * looking like a normal submission.
+ */
+export type StageTwoAccessMode =
+  | "Secure link (token)"
+  | "Application ID fallback"
+  | "Same-session handoff"
+  | "Manual entry";
+
+export type ReadinessSubmissionPayload = {
   submissionType: typeof SUBMISSION_TYPE;
   source: typeof SUBMISSION_SOURCE;
   page: typeof SUBMISSION_PAGE;
@@ -64,6 +76,7 @@ export type HandoffSubmissionPayload = {
   questionnaireVersion: string;
   responseVersion: number;
   submittedAt: string;
+  accessMode: StageTwoAccessMode;
   applicant: ReadinessPrefill;
   fields: ReadinessSubmissionFields;
   answers: StoredAnswer[];
@@ -73,18 +86,24 @@ export type HandoffSubmissionPayload = {
   rawResponseJson: string;
 };
 
-export type HandoffSubmissionResult = {
+export type ReadinessSubmissionResult = {
   ok: boolean;
   applicationId?: string;
   completedAt?: string;
-  reason?: "http_error" | "network_error" | "timeout" | "invalid_response";
+  /**
+   * `already_completed` is the one outcome the scenario itself reports, by
+   * answering `{"error":"already_completed"}` when a response is already on
+   * file for this application. Everything else describes the transport.
+   */
+  reason?: "already_completed" | "http_error" | "network_error" | "timeout" | "invalid_response";
 };
 
-type SubmitHandoffInput = {
+type SubmitReadinessInput = {
   applicationId: string;
   answers: AnswerMap;
   responseVersion: number;
   prefill: ReadinessPrefill;
+  accessMode?: StageTwoAccessMode | string;
   /** Test seam; production always uses the browser fetch implementation. */
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
@@ -135,7 +154,7 @@ export const buildSummaryText = (sections: ReviewSection[]): string =>
     })
     .join("\n\n--------------------------------------------------\n\n");
 
-export function buildHandoffSubmissionPayload(input: Omit<SubmitHandoffInput, "fetchImpl" | "timeoutMs">): HandoffSubmissionPayload {
+export function buildReadinessSubmissionPayload(input: Omit<SubmitReadinessInput, "fetchImpl" | "timeoutMs">): ReadinessSubmissionPayload {
   const submittedAt = (input.now?.() ?? new Date()).toISOString();
   const completion = buildCompletionPayload(input.applicationId, input.answers, input.responseVersion);
   const reviewSections = buildReviewSections(input.answers);
@@ -145,6 +164,7 @@ export function buildHandoffSubmissionPayload(input: Omit<SubmitHandoffInput, "f
     source: SUBMISSION_SOURCE,
     page: SUBMISSION_PAGE,
     submittedAt,
+    accessMode: (input.accessMode as StageTwoAccessMode) ?? "Secure link (token)",
     applicant: { ...input.prefill },
     fields: buildFields(reviewSections),
     reviewSections,
@@ -157,10 +177,10 @@ export function buildHandoffSubmissionPayload(input: Omit<SubmitHandoffInput, "f
 const validDate = (value: unknown): value is string =>
   typeof value === "string" && value.trim() !== "" && !Number.isNaN(Date.parse(value));
 
-export async function submitHandoffQuestionnaire(input: SubmitHandoffInput): Promise<HandoffSubmissionResult> {
+export async function submitReadinessQuestionnaire(input: SubmitReadinessInput): Promise<ReadinessSubmissionResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), input.timeoutMs ?? DEFAULT_TIMEOUT_MS);
-  const payload = buildHandoffSubmissionPayload(input);
+  const payload = buildReadinessSubmissionPayload(input);
 
   try {
     const response = await (input.fetchImpl ?? fetch)(MAKE_READINESS_WEBHOOK_URL, {
@@ -183,6 +203,9 @@ export async function submitHandoffQuestionnaire(input: SubmitHandoffInput): Pro
     }
     if (!parsed || typeof parsed !== "object") return { ok: false, reason: "invalid_response" };
     const result = parsed as Record<string, unknown>;
+    // A second submission for the same application is a real answer, not a
+    // malformed one: the page has an "already submitted" screen for it.
+    if (result.error === "already_completed") return { ok: false, reason: "already_completed" };
     if (result.success !== true || result.applicationId !== input.applicationId || !validDate(result.completedAt)) {
       return { ok: false, reason: "invalid_response" };
     }

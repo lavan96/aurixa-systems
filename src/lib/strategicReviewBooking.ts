@@ -80,11 +80,35 @@ export function isApplicationReference(value: unknown): value is string {
 }
 
 /**
- * Reads the application reference from the link, falling back to one already
- * accepted in this tab. A malformed or repeated `ref` parameter is ignored
- * rather than displayed, and any stored value that no longer parses is dropped.
+ * How the applicant reached the scheduler. Mirrors the Airtable "Stage 3 Access
+ * Method" options exactly — the Stage 3 Make scenario maps this value straight
+ * through, so a booking made by continuing with an Application ID is visible in
+ * operations instead of looking like an anonymous visit.
+ *
+ * There is no token mode here on purpose: Stage 3 is reached with the
+ * Application ID itself, so there is nothing to expire and nothing to reissue.
  */
-export function resolveApplicationReference(url: URL, storage?: Pick<Storage, "getItem" | "setItem" | "removeItem">): string {
+export type StageThreeAccessMode =
+  | "Application ID fallback"
+  | "Same-session handoff"
+  | "Direct visit"
+  | "Manual entry";
+
+export type ApplicationAccess = {
+  reference: string;
+  accessMode: StageThreeAccessMode;
+};
+
+/**
+ * Reads the application reference from the link, falling back to one already
+ * accepted in this tab, and reports which of the two it was. A malformed or
+ * repeated `ref` parameter is ignored rather than displayed, and any stored
+ * value that no longer parses is dropped.
+ */
+export function resolveApplicationAccess(
+  url: URL,
+  storage?: Pick<Storage, "getItem" | "setItem" | "removeItem">,
+): ApplicationAccess {
   const supplied = url.searchParams.getAll("ref");
 
   if (supplied.length === 1) {
@@ -95,22 +119,30 @@ export function resolveApplicationReference(url: URL, storage?: Pick<Storage, "g
       } catch {
         // Storage may be unavailable; the reference still shows this page load.
       }
-      return reference;
+      return { reference, accessMode: "Application ID fallback" };
     }
-    return "";
+    return { reference: "", accessMode: "Direct visit" };
   }
 
-  if (supplied.length > 1) return "";
+  if (supplied.length > 1) return { reference: "", accessMode: "Direct visit" };
 
   try {
     const stored = storage?.getItem(REVIEW_REFERENCE_STORAGE_KEY) ?? null;
-    if (stored === null) return "";
-    if (isApplicationReference(stored)) return stored;
+    if (stored === null) return { reference: "", accessMode: "Direct visit" };
+    if (isApplicationReference(stored)) return { reference: stored, accessMode: "Same-session handoff" };
     storage?.removeItem(REVIEW_REFERENCE_STORAGE_KEY);
-    return "";
+    return { reference: "", accessMode: "Direct visit" };
   } catch {
-    return "";
+    return { reference: "", accessMode: "Direct visit" };
   }
+}
+
+/** The reference alone, for callers that do not care how it arrived. */
+export function resolveApplicationReference(
+  url: URL,
+  storage?: Pick<Storage, "getItem" | "setItem" | "removeItem">,
+): string {
+  return resolveApplicationAccess(url, storage).reference;
 }
 
 // Zone handling lives in ./timeZone, which the scheduler shares. Re-exported

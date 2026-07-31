@@ -208,7 +208,12 @@ export default function Contact() {
 
   return (
     <div className="w-full relative pt-32 pb-20 min-h-screen bg-[#040B16] overflow-hidden">
-      {showHandoff && <StageOneCompleteModal onProceed={() => navigate("/questionnaire")} />}
+      {showHandoff && (
+        <StageOneCompleteModal
+          onProceed={() => navigate("/questionnaire")}
+          applicationId={applicationIdRef.current}
+        />
+      )}
       <HeroBackground variant="contact" />
 
       <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 relative z-10">

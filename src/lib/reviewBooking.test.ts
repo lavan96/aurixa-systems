@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   EMPTY_BOOKING_DETAILS,
   buildBookingPayload,
@@ -226,4 +227,38 @@ test("buildReviewIcs escapes text and folds the description", () => {
 test("icsFileName names the file after the applicant's date", () => {
   assert.equal(icsFileName(SLOT, HOST_TIME_ZONE), "aurixa-strategic-review-2026-08-07.ics");
   assert.equal(icsFileName(SLOT, "America/Los_Angeles"), "aurixa-strategic-review-2026-08-06.ics");
+});
+
+test("the payload carries the applicant's own notes and how they reached the scheduler", () => {
+  const withNotes = buildBookingPayload({
+    slot: SLOT,
+    details: { ...details, notes: "  Two directors will join.  " },
+    applicantTimeZone: "Australia/Brisbane",
+    applicationReference: "AX-7Q2M4L9XZ1",
+    accessMode: "Application ID fallback",
+    now: NOW,
+  });
+  assert.equal(withNotes.notes, "Two directors will join.");
+  assert.equal(withNotes.accessMode, "Application ID fallback");
+  assert.match(withNotes.summaryText, /Context: Two directors will join\./);
+});
+
+test("access mode defaults from whether a reference was held at all", () => {
+  const base = { slot: SLOT, details, applicantTimeZone: "Australia/Brisbane", now: NOW };
+  assert.equal(buildBookingPayload({ ...base, applicationReference: "AX-7Q2M4L9XZ1" }).accessMode, "Application ID fallback");
+  assert.equal(buildBookingPayload(base).accessMode, "Direct visit");
+  assert.equal(buildBookingPayload({ ...base, accessMode: "  " }).accessMode, "Direct visit", "blank is not a mode");
+  assert.equal(buildBookingPayload({ ...base, accessMode: "Same-session handoff" }).accessMode, "Same-session handoff");
+});
+
+// The client reads `import.meta.env`, which throws outside a bundler, so its
+// wiring is asserted from the source rather than by importing it.
+test("the client submits to the Stage 3 webhook and only mirrors afterwards", async () => {
+  const source = await readFile(new URL("./reviewBookingClient.ts", import.meta.url), "utf8");
+  assert.match(source, /export const MAKE_BOOKING_WEBHOOK_URL = "https:\/\/hook\.eu2\.make\.com\/15tz9divuqyvfsgccgf75horevi5kvdf"/);
+  assert.match(source, /endpoint: MAKE_BOOKING_WEBHOOK_URL,/);
+  assert.ok(
+    source.indexOf("if (!result.ok) return result;") < source.indexOf("mirror(`${STOREFRONT_BASE}/capture-lead`"),
+    "the mirrors must run only after the applicant's own submission succeeded",
+  );
 });

@@ -65,7 +65,11 @@ export type BookingPayload = {
   company: string;
   phone: string;
   message: string;
+  /** The applicant's own words, kept separate from the assembled summary. */
+  notes: string;
   applicationReference: string;
+  /** How the applicant reached the scheduler; recorded, never trusted as access. */
+  accessMode: string;
   submittedAt: string;
   requestedStartUtc: string;
   requestedEndUtc: string;
@@ -83,6 +87,7 @@ export type BuildBookingPayloadInput = {
   details: BookingDetails;
   applicantTimeZone: string;
   applicationReference?: string;
+  accessMode?: string;
   now?: Date;
 };
 
@@ -114,7 +119,9 @@ export function buildBookingPayload(input: BuildBookingPayloadInput): BookingPay
     company: input.details.organisation.trim(),
     phone: input.details.phone.trim(),
     message: summaryText,
+    notes: input.details.notes.trim(),
     applicationReference: reference,
+    accessMode: input.accessMode?.trim() || (reference ? "Application ID fallback" : "Direct visit"),
     submittedAt: (input.now ?? new Date()).toISOString(),
     requestedStartUtc: start.toISOString(),
     requestedEndUtc: end.toISOString(),

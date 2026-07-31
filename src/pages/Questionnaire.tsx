@@ -90,6 +90,7 @@ import {
   hasVerifiedPrefill,
   isPreviewAvailable,
   openAccessSession,
+  resumeQuestionnaireByReference,
   saveQuestionnaireDraft,
 } from "../lib/readinessQuestionnaireService";
 import { readReadinessHandoff } from "../lib/readinessHandoff";
@@ -97,7 +98,9 @@ import {
   clearQuestionnaireLinkAccess,
   resolveQuestionnaireLink,
 } from "../lib/questionnaireLinkAccess";
-import { submitHandoffQuestionnaire } from "../lib/readinessSubmission";
+import { submitReadinessQuestionnaire } from "../lib/readinessSubmission";
+import { ResumeByReference } from "../components/questionnaire/ResumeByReference";
+import { readReferenceFromUrl, type ResumeFailure } from "../lib/questionnaireResume";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
 
 const PAGE_TITLE = "Business Readiness Questionnaire | Aurixa Systems";
@@ -153,6 +156,7 @@ export default function Questionnaire() {
   const [submissionError, setSubmissionError] = useState("");
   const [completion, setCompletion] = useState<Completion | null>(null);
   const [showErrorSummary, setShowErrorSummary] = useState(false);
+  const [linkedReference, setLinkedReference] = useState("");
 
   const sectionHeadingRef = useRef<HTMLHeadingElement>(null);
   const completionHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -161,6 +165,8 @@ export default function Questionnaire() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startedAtRef = useRef<string | null>(null);
   const linkAccessRef = useRef(false);
+  /** Matches the Airtable "Stage 2 Access Method" options. */
+  const accessModeRef = useRef("Secure link (token)");
 
   // ── Page metadata. Scoped to this page only; restored on unmount so no other
   // route's title, description or robots behaviour changes. ─────────────────
@@ -188,6 +194,7 @@ export default function Questionnaire() {
   // ── Secure access: exchange the opaque token for an authorised session, then
   // strip the raw token from the visible URL. ───────────────────────────────
   const startOpenAccess = useCallback(() => {
+    accessModeRef.current = linkAccessRef.current ? "Secure link (token)" : "Manual entry";
     const open = openAccessSession();
     setSession(open);
     setAnswers({});
@@ -210,6 +217,7 @@ export default function Questionnaire() {
     if (!token) {
       const prefill = readReadinessHandoff();
       if (prefill) {
+        accessModeRef.current = "Same-session handoff";
         const session = handoffSession(prefill);
         setSession(session);
         setAnswers(seedPrefilledAnswers(session));
@@ -268,8 +276,55 @@ export default function Questionnaire() {
     setPhase("form");
   }, []);
 
+  /**
+   * Fallback entry for an applicant whose secure link has expired. Returns the
+   * failure reason for the form to show, or null once the questionnaire is open.
+   */
+  const resumeByReference = useCallback(
+    async (details: { applicationId: string; workEmail: string }): Promise<ResumeFailure | null> => {
+      const result = await resumeQuestionnaireByReference(details);
+
+      if (!result.ok || !result.session) {
+        if (result.reason === "already_completed" && result.applicationId) {
+          setCompletion({ applicationId: result.applicationId, completedAt: result.completedAt ?? "" });
+          setBlockedBy("already_completed");
+        }
+        return result.reason ?? "invalid_reference";
+      }
+
+      const resumed = result.session;
+      if (resumed.status === "completed") {
+        setBlockedBy("already_completed");
+        setCompletion({ applicationId: resumed.applicationId, completedAt: resumed.completedAt ?? "" });
+        return "already_completed";
+      }
+
+      accessModeRef.current = "Application ID fallback";
+      setSession(resumed);
+      setAnswers(seedPrefilledAnswers(resumed));
+      setResponseVersion(resumed.responseVersion);
+      startedAtRef.current = resumed.startedAt;
+      savedSnapshotRef.current = JSON.stringify(buildStoredAnswers(resumed.answers ?? {}));
+      setPhase("form");
+      return null;
+    },
+    [],
+  );
+
   useEffect(() => {
     const url = new URL(window.location.href);
+
+    // `?ref=` comes from the Stage 1 email's "continue with your application ID"
+    // link. It only prefills the resume form — the work email is still required
+    // — so it is read before anything else and then dropped from the address bar.
+    const reference = readReferenceFromUrl(url);
+    if (url.searchParams.has("ref") || url.searchParams.has("reference")) {
+      setLinkedReference(reference);
+      url.searchParams.delete("ref");
+      url.searchParams.delete("reference");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+
     const linkAccess = resolveQuestionnaireLink(url);
 
     if (linkAccess === "link" || linkAccess === "session") {
@@ -445,20 +500,21 @@ export default function Questionnaire() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     const payload = buildCompletionPayload(session.applicationId, answers, responseVersion);
-    const result = session.access === "handoff"
-      ? await submitHandoffQuestionnaire({
-          applicationId: payload.applicationId,
-          answers,
-          responseVersion: payload.responseVersion,
-          prefill: session.prefill,
-        })
-      : await completeQuestionnaire({
-          sessionToken: session.sessionToken,
-          applicationId: payload.applicationId,
-          responseVersion: payload.responseVersion,
-          answers: payload.answers,
-          activeConditionalQuestionIds: payload.activeConditionalQuestionIds,
-        });
+
+    // Every access mode submits through the Stage 2 webhook: that is the
+    // pipeline the response actually travels down (Airtable, the applicant's
+    // confirmation, the Stage 3 invitation), and it is the same submission
+    // whether the applicant arrived on a secure link, carried a session over
+    // from Stage 1, or came back with their Application ID. The access mode
+    // rides along so an expired-link recovery stays visible in operations
+    // rather than looking like a normal submission.
+    const result = await submitReadinessQuestionnaire({
+      applicationId: payload.applicationId,
+      answers,
+      responseVersion: payload.responseVersion,
+      prefill: session.prefill,
+      accessMode: accessModeRef.current,
+    });
 
     setIsSubmitting(false);
 
@@ -468,11 +524,7 @@ export default function Questionnaire() {
         setPhase("blocked");
         return;
       }
-      setSubmissionError(
-        result.reason === "not_configured"
-          ? READINESS_COPY.submissionNotConfigured
-          : READINESS_COPY.submissionError,
-      );
+      setSubmissionError(READINESS_COPY.submissionError);
       return;
     }
 
@@ -517,6 +569,8 @@ export default function Questionnaire() {
           reason={blockedBy}
           completion={completion}
           onRetry={() => void authorise(tokenRef.current)}
+          onResume={resumeByReference}
+          linkedReference={linkedReference}
         />
       </QuestionnaireShell>
     );
@@ -853,10 +907,14 @@ function BlockedState({
   reason,
   completion,
   onRetry,
+  onResume,
+  linkedReference,
 }: {
   reason: ReadinessAccessFailure;
   completion: Completion | null;
   onRetry: () => void;
+  onResume: (details: { applicationId: string; workEmail: string }) => Promise<ResumeFailure | null>;
+  linkedReference: string;
 }) {
   const copy = READINESS_COPY.access;
 
@@ -882,6 +940,11 @@ function BlockedState({
         heading={copy.expiredHeading}
         body={copy.expiredBody}
       >
+        <ResumeByReference
+          onResume={onResume}
+          supportEmail={SUPPORT_EMAIL}
+          initialReference={linkedReference}
+        />
         <ContactNote />
         <HomeLink />
       </AccessPanel>
@@ -915,11 +978,18 @@ function BlockedState({
       heading={copy.requiredHeading}
       body={copy.requiredBody}
     >
+      <ResumeByReference
+          onResume={onResume}
+          supportEmail={SUPPORT_EMAIL}
+          initialReference={linkedReference}
+        />
       <ContactNote />
       <HomeLink />
     </AccessPanel>
   );
 }
+
+const SUPPORT_EMAIL = "admin@aurixasystems.com.au";
 
 function ContactNote() {
   return (

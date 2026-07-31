@@ -7,6 +7,10 @@
 //               ONCE, for the transactional email. Never called by the browser.
 //   authorise — exchanges a questionnaire token for a short-lived session,
 //               the verified prefill, the existing draft and completion state.
+//   resume    — the fallback for an applicant whose emailed link has expired:
+//               the Stage 1 application reference PLUS the work email it was
+//               filed under are exchanged for a fresh short-lived token, which
+//               then follows the ordinary `authorise` path.
 //   save      — autosaves a draft against an authorised session.
 //   complete  — revalidates every active required answer server-side, freezes
 //               the response version, records completion and queues review.
@@ -514,6 +518,74 @@ async function handleComplete(client: ReturnType<typeof db>, body: Record<string
   });
 }
 
+
+/** How long a token minted by the resume fallback stays usable. */
+const RESUME_TOKEN_TTL_MINUTES = 30;
+
+/** Failed resume attempts allowed per application within the window. */
+const RESUME_ATTEMPT_LIMIT = 5;
+const RESUME_ATTEMPT_WINDOW_MINUTES = 15;
+
+/**
+ * Resume by application reference.
+ *
+ * The reference alone is never enough: it travels in email and gets forwarded,
+ * so the work email the application was filed under is required as a second
+ * factor. An unknown reference, a reference belonging to somebody else and a
+ * mismatched email all return the same `invalid_reference`, so the endpoint
+ * never reveals whether a particular application exists.
+ *
+ * On success this mints a short-lived questionnaire token and hands straight to
+ * `handleAuthorise`, so the session, draft and completion rules are the proven
+ * ones rather than a second implementation of the same thing.
+ */
+async function handleResume(client: ReturnType<typeof db>, body: Record<string, unknown>) {
+  const applicationId = str(body.applicationId, 32).toUpperCase();
+  const workEmail = str(body.workEmail, 320).toLowerCase();
+
+  if (!/^AX-[A-Z0-9]{10}$/.test(applicationId) || !workEmail.includes("@")) {
+    return json({ ok: false, error: "invalid_reference" }, 400);
+  }
+
+  // Throttle by application so a guessed reference cannot be walked through a
+  // list of email addresses.
+  const windowStart = new Date(Date.now() - RESUME_ATTEMPT_WINDOW_MINUTES * 60_000).toISOString();
+  const { count: recentFailures } = await client
+    .from("readiness_events")
+    .select("id", { count: "exact", head: true })
+    .eq("application_id", applicationId)
+    .eq("name", "readiness.resume_failed")
+    .gte("created_at", windowStart);
+  if ((recentFailures ?? 0) >= RESUME_ATTEMPT_LIMIT) {
+    return json({ ok: false, error: "throttled" }, 429);
+  }
+
+  const { data: application } = await client
+    .from("readiness_applications")
+    .select("application_id, work_email")
+    .eq("application_id", applicationId)
+    .maybeSingle();
+
+  const matches = Boolean(application) && str(application?.work_email, 320).toLowerCase() === workEmail;
+  if (!matches) {
+    await recordEvent(client, applicationId, "readiness.resume_failed", { reason: "no_match" });
+    return json({ ok: false, error: "invalid_reference" }, 401);
+  }
+
+  // Mint a short-lived token and reuse the ordinary authorisation path.
+  const token = opaqueToken();
+  const expiresAt = new Date(Date.now() + RESUME_TOKEN_TTL_MINUTES * 60_000).toISOString();
+  const { error: tokenError } = await client.from("readiness_questionnaire_tokens").insert({
+    application_id: applicationId,
+    token_hash: await sha256(token),
+    expires_at: expiresAt,
+  });
+  if (tokenError) return json({ ok: false, error: "unavailable" }, 500);
+
+  await recordEvent(client, applicationId, "readiness.resumed_by_reference", { expiresAt });
+  return handleAuthorise(client, { token });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -532,6 +604,8 @@ Deno.serve(async (req) => {
       return handleIssue(client, body, req);
     case "authorise":
       return handleAuthorise(client, body);
+    case "resume":
+      return handleResume(client, body);
     case "save":
       return handleSave(client, body);
     case "complete":
