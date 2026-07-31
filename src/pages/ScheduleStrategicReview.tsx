@@ -4,6 +4,7 @@ import { ArrowUpRight, Check, Copy, ExternalLink, LockKeyhole, Mail, RotateCcw }
 import { HeroBackground } from "../components/HeroBackgrounds";
 import { ReviewScheduler } from "../components/schedule/ReviewScheduler";
 import { StageRail, type Stage } from "../components/schedule/StageRail";
+import { StrategicReviewChecking, StrategicReviewLock } from "../components/schedule/StrategicReviewLock";
 import { readReadinessHandoff } from "../lib/readinessHandoff";
 import { HOST_TIME_ZONE, SESSION_MINUTES } from "../lib/reviewAvailability";
 import {
@@ -13,6 +14,8 @@ import {
   resolveBookingUrl,
 } from "../lib/strategicReviewBooking";
 import { describeTimeZone, formatLocalTime, isValidTimeZone, readTimeZoneId, type TimeZoneDescriptor } from "../lib/timeZone";
+import { verifyStrategicReviewAccess } from "../lib/strategicReviewAccessClient";
+import type { AccessDecision, AccessFailure } from "../lib/strategicReviewAccess";
 
 /**
  * An approved Microsoft Bookings embed URL. When set, the live calendar takes
@@ -385,21 +388,69 @@ function SupportRail({ mailto }: { mailto: string }) {
   );
 }
 
+/**
+ * `checking` until the server has ruled on the reference this visit arrived
+ * with. The scheduler only ever renders under `granted`.
+ */
+type AccessPhase = "checking" | "granted" | "locked";
+
 export default function ScheduleStrategicReview() {
+  const [phase, setPhase] = useState<AccessPhase>("checking");
+  const [failure, setFailure] = useState<AccessFailure>("missing_reference");
   const [reference, setReference] = useState("");
   const [accessMode, setAccessMode] = useState<StageThreeAccessMode>("Direct visit");
   // The address this visit started on. Held because the effect below rewrites
   // the visible URL, and the reference has to be read from the original.
   const arrivalHref = useRef(typeof window === "undefined" ? "" : window.location.href);
+  /**
+   * The reference the link carried, kept only to prefill the locked form when
+   * the server refuses it — so the applicant can see what was tried and fix a
+   * typo rather than being told "no" against an empty box.
+   */
+  const lockPrefill = useRef("");
   const [prefill, setPrefill] = useState({ fullName: "", workEmail: "", organisation: "" });
   const [timeZone, setTimeZone] = useState(() => readTimeZoneId() || HOST_TIME_ZONE);
   const [tick, setTick] = useState(() => Date.now());
   /** Set once the applicant picks a zone, so auto-detection stops overriding it. */
   const zoneChosen = useRef(false);
 
-  // Identity: an issued reference in the link, plus any Stage 1/2 details still
-  // held in this tab. Both are conveniences — neither grants access to anything.
+  /**
+   * Opens the page for a reference the server has just accepted.
+   *
+   * Everything the applicant sees about themselves comes from this verdict, not
+   * from the link: the name and organisation shown on the booking form are the
+   * ones Aurixa holds, so a doctored URL cannot put words in anybody's mouth.
+   */
+  const grant = useCallback((decision: AccessDecision, mode: StageThreeAccessMode) => {
+    const applicant = decision.applicant;
+    if (!decision.granted || !applicant) return false;
+    setReference(applicant.applicationId);
+    setAccessMode(mode);
+    setPrefill({
+      fullName: [applicant.firstName, applicant.lastName].filter(Boolean).join(" "),
+      workEmail: applicant.workEmail,
+      organisation: applicant.organisationName,
+    });
+    setPhase("granted");
+    return true;
+  }, []);
+
+  /** The locked screen's way in: the applicant types the reference themselves. */
+  const unlock = useCallback(
+    async (typed: string): Promise<AccessFailure | null> => {
+      const decision = await verifyStrategicReviewAccess(typed);
+      if (grant(decision, "Manual entry")) return null;
+      return decision.reason ?? "unverified";
+    },
+    [grant],
+  );
+
+  // Admission. A reference in the link, or one already accepted in this tab, is
+  // only ever a claim — it is checked against Aurixa's records before any of
+  // this page renders, and the page stays locked until that check says yes.
   useEffect(() => {
+    let cancelled = false;
+
     let storage: Storage | undefined;
     try {
       storage = window.sessionStorage;
@@ -413,29 +464,36 @@ export default function ScheduleStrategicReview() {
     // handoff instead of the Application ID link it actually was.
     const url = new URL(arrivalHref.current);
     const access = resolveApplicationAccess(url, storage);
-    setReference(access.reference);
-    setAccessMode(access.accessMode);
 
     if (url.searchParams.has("ref")) {
       url.searchParams.delete("ref");
       window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
     }
 
+    // The Stage 2 handoff can supply a reference this tab has not stored yet.
+    // It is a claim like any other and gets checked the same way.
     const handoff = readReadinessHandoff();
-    if (handoff) {
-      setPrefill({
-        fullName: [handoff.firstName, handoff.lastName].filter(Boolean).join(" "),
-        workEmail: handoff.workEmail,
-        organisation: handoff.organisationName,
-      });
-      // A reference recovered from the Stage 2 handoff is this same session
-      // carrying on, not the applicant re-entering their Application ID.
-      if (!access.reference) {
-        setReference(handoff.applicationId);
-        setAccessMode("Same-session handoff");
-      }
+    const claimed = access.reference || (handoff?.applicationId ?? "");
+    const mode: StageThreeAccessMode = access.reference ? access.accessMode : "Same-session handoff";
+    lockPrefill.current = claimed;
+
+    if (!claimed) {
+      setPhase("locked");
+      setFailure("missing_reference");
+      return;
     }
-  }, []);
+
+    void verifyStrategicReviewAccess(claimed).then((decision) => {
+      if (cancelled) return;
+      if (grant(decision, mode)) return;
+      setPhase("locked");
+      setFailure(decision.reason === "unavailable" ? "unavailable" : "unverified");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [grant]);
 
   // Keep the stated time zone and clock honest across long visits and travel.
   useEffect(() => {
@@ -488,6 +546,29 @@ export default function ScheduleStrategicReview() {
     zoneChosen.current = true;
     setTimeZone(next);
   }, []);
+
+  // Nothing about a real application is rendered until the server has said yes:
+  // no name, no organisation, no reference, no calendar. The locked screen is
+  // the whole page, not an overlay over one.
+  if (phase !== "granted") {
+    return (
+      <div className="strategic-review-page">
+        <div className="strategic-review-bg" aria-hidden="true"><HeroBackground variant="about" /><span className="review-light-field" /></div>
+        <div className="review-container">
+          {phase === "checking" ? (
+            <StrategicReviewChecking />
+          ) : (
+            <StrategicReviewLock
+              onUnlock={unlock}
+              initialFailure={failure}
+              initialReference={lockPrefill.current}
+              supportEmail={SUPPORT_EMAIL}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`strategic-review-page${REVEAL_SUPPORTED ? " is-armed" : ""}`}>
