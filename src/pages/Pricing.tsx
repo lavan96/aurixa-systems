@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
+  ArrowUpRight,
   Check,
   FileText,
   Infinity as InfinityIcon,
@@ -16,6 +17,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { accountReference, resolveAddonPurchase } from "../lib/addonPurchaseLinks";
 import { featuresForTier, type TierFeatures } from "../lib/pricing/tierFeatures";
 import {
   ANNUAL_DISCOUNT,
@@ -377,6 +379,16 @@ export default function Pricing() {
   // Downgrade instead of offering "Get started" to an existing customer.
   const currentPlanSlug = purchaser?.currentPlanSlug ?? null;
   const canBuy = !!credential;
+  // Modules are bought through Stripe Payment Links, which cannot carry a
+  // handoff the way `startCheckout` does — a link mints its own subscription
+  // and knows nothing about the workspace. So whatever the page does know about
+  // who is looking travels as Stripe's `client_reference_id`, and the link also
+  // asks the buyer to name their account. Two independent answers, because
+  // reconciling a standalone subscription to a customer by hand is the failure
+  // mode this is here to avoid.
+  const moduleReference = accountReference(
+    purchaser?.cloneName ?? purchaser?.originUsername ?? usernameHint,
+  );
 
   const buy = useCallback(
     async (mode: CheckoutMode, itemId: string) => {
@@ -851,7 +863,7 @@ export default function Pricing() {
               {items.map((a) => (
                 <div
                   key={a.id}
-                  className="group relative overflow-hidden rounded-lg border border-white/10 bg-[#0B162C]/40 p-6 backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-[#00A8B5]/40 hover:bg-[#0B162C]/60"
+                  className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-white/10 bg-[#0B162C]/40 p-6 backdrop-blur-xl transition-all hover:-translate-y-1 hover:border-[#00A8B5]/40 hover:bg-[#0B162C]/60"
                 >
                   <CornerTicks />
                   <div className="flex items-start justify-between gap-2">
@@ -887,11 +899,31 @@ export default function Pricing() {
                       ))}
                     </div>
                   )}
+                  {/* Pinned to the bottom so the CTAs line up across a row
+                      whatever length the descriptions run to. */}
+                  <div className="mt-auto pt-5">
+                    <AddonAction
+                      purchase={resolveAddonPurchase(a, {
+                        currentPlanSlug,
+                        accountReference: moduleReference,
+                      })}
+                      name={a.name}
+                    />
+                  </div>
                 </div>
               ))}
                   </div>
                 </div>
               ))}
+              {/* Said once, under the grid, rather than on twenty-three cards.
+                  A module is its own subscription — it does not fold into a
+                  plan's invoice — and it is switched on by a person, so the
+                  page should not imply it appears the moment payment clears. */}
+              <p className="border-t border-white/[0.07] pt-6 text-xs leading-relaxed text-[#94A3B8]">
+                Each module is billed as its own monthly subscription in AUD, incl. GST, and can be
+                cancelled independently of your plan. Name the account it is for at checkout and the
+                team enables it — usually within one business day.
+              </p>
             </div>
           }
           setup={
@@ -1950,6 +1982,64 @@ function FaqItem({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The one action on an add-on module card.
+ *
+ * Three outcomes, and each is a real state rather than a fallback:
+ *
+ *   · **Add module** — a live Stripe Payment Link whose price matches the
+ *     number on the card. It opens in a new tab so the price list stays where
+ *     the customer left it; they will be comparing more than one module.
+ *   · **Included with your plan** — they already have it, and offering to sell
+ *     it again would be worse than showing nothing.
+ *   · **Enquire** — nothing is sold for this module yet (or the catalog and
+ *     Stripe disagree on the price, in which case not charging is the only
+ *     honest option). The contact funnel is where the site sends everything it
+ *     cannot complete on its own.
+ */
+function AddonAction({
+  purchase,
+  name,
+}: {
+  purchase: ReturnType<typeof resolveAddonPurchase>;
+  name: string;
+}) {
+  if (purchase.available) {
+    return (
+      <a
+        href={purchase.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-1.5 rounded-sm border border-[#00A8B5]/40 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:border-[#00A8B5] hover:bg-[#00A8B5]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5EDDE8] focus-visible:ring-offset-2 focus-visible:ring-offset-[#040B16]"
+      >
+        {/* The module is named for a screen reader, which hears this link out
+            of the context of the card it sits in. */}
+        <span aria-hidden="true">Add module</span>
+        <span className="sr-only">Add the {name} module — opens Stripe in a new tab</span>
+        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+      </a>
+    );
+  }
+
+  if (purchase.reason === "already_included") {
+    return (
+      <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#5EDDE8]">
+        <Check className="h-3.5 w-3.5" aria-hidden="true" /> Included with your plan
+      </p>
+    );
+  }
+
+  return (
+    <Link
+      to="/contact"
+      className="flex items-center justify-center rounded-sm border border-white/15 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-[#94A3B8] transition-colors hover:border-[#00A8B5]/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5EDDE8] focus-visible:ring-offset-2 focus-visible:ring-offset-[#040B16]"
+    >
+      <span aria-hidden="true">Enquire</span>
+      <span className="sr-only">Enquire about the {name} module</span>
+    </Link>
   );
 }
 
