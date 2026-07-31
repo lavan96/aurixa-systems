@@ -27,8 +27,6 @@ interface ImportMetaEnv {
    * address, and anything else is ignored.
    */
   readonly VITE_BOOKINGS_URL?: string;
-  /** Optional Make.com scenario mirroring Stage 3 booking requests. */
-  readonly VITE_MAKE_BOOKING_WEBHOOK_URL?: string;
 }
 
 interface ImportMeta {

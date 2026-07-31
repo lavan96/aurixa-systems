@@ -39,6 +39,8 @@ export type ReviewSchedulerProps = {
   timeZone: string;
   onTimeZoneChange: (timeZone: string) => void;
   applicationReference: string;
+  /** How the applicant reached the scheduler; recorded with the booking. */
+  accessMode: string;
   prefill: { fullName: string; workEmail: string; organisation: string };
   supportEmail: string;
   /** Mailto fallback, given the currently selected time. */
@@ -65,6 +67,7 @@ export function ReviewScheduler({
   timeZone,
   onTimeZoneChange,
   applicationReference,
+  accessMode,
   prefill,
   supportEmail,
   buildFallbackMailto,
@@ -223,6 +226,7 @@ export function ReviewScheduler({
       details,
       applicantTimeZone: timeZone,
       applicationReference,
+      accessMode,
     });
 
     if (result.ok) {

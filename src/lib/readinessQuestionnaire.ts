@@ -481,8 +481,6 @@ export const READINESS_COPY = {
 
   submissionError:
     "We could not submit your readiness profile just now. Please try again - your answers have been kept.",
-  submissionNotConfigured:
-    "This questionnaire is not yet connected for submission. Your answers have been kept on screen - please contact Aurixa to complete your readiness profile.",
   validationSummary:
     "Some answers need attention before you can continue. Please review the questions marked below.",
 } as const;

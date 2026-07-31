@@ -98,7 +98,7 @@ import {
   clearQuestionnaireLinkAccess,
   resolveQuestionnaireLink,
 } from "../lib/questionnaireLinkAccess";
-import { submitHandoffQuestionnaire } from "../lib/readinessSubmission";
+import { submitReadinessQuestionnaire } from "../lib/readinessSubmission";
 import { ResumeByReference } from "../components/questionnaire/ResumeByReference";
 import { readReferenceFromUrl, type ResumeFailure } from "../lib/questionnaireResume";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
@@ -500,21 +500,21 @@ export default function Questionnaire() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     const payload = buildCompletionPayload(session.applicationId, answers, responseVersion);
-    const result = session.access === "handoff"
-      ? await submitHandoffQuestionnaire({
-          applicationId: payload.applicationId,
-          answers,
-          responseVersion: payload.responseVersion,
-          prefill: session.prefill,
-          accessMode: accessModeRef.current,
-        })
-      : await completeQuestionnaire({
-          sessionToken: session.sessionToken,
-          applicationId: payload.applicationId,
-          responseVersion: payload.responseVersion,
-          answers: payload.answers,
-          activeConditionalQuestionIds: payload.activeConditionalQuestionIds,
-        });
+
+    // Every access mode submits through the Stage 2 webhook: that is the
+    // pipeline the response actually travels down (Airtable, the applicant's
+    // confirmation, the Stage 3 invitation), and it is the same submission
+    // whether the applicant arrived on a secure link, carried a session over
+    // from Stage 1, or came back with their Application ID. The access mode
+    // rides along so an expired-link recovery stays visible in operations
+    // rather than looking like a normal submission.
+    const result = await submitReadinessQuestionnaire({
+      applicationId: payload.applicationId,
+      answers,
+      responseVersion: payload.responseVersion,
+      prefill: session.prefill,
+      accessMode: accessModeRef.current,
+    });
 
     setIsSubmitting(false);
 
@@ -524,11 +524,7 @@ export default function Questionnaire() {
         setPhase("blocked");
         return;
       }
-      setSubmissionError(
-        result.reason === "not_configured"
-          ? READINESS_COPY.submissionNotConfigured
-          : READINESS_COPY.submissionError,
-      );
+      setSubmissionError(READINESS_COPY.submissionError);
       return;
     }
 

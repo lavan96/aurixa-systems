@@ -8,7 +8,8 @@ import { readReadinessHandoff } from "../lib/readinessHandoff";
 import { HOST_TIME_ZONE, SESSION_MINUTES } from "../lib/reviewAvailability";
 import {
   buildSchedulingFallbackMailto,
-  resolveApplicationReference,
+  resolveApplicationAccess,
+  type StageThreeAccessMode,
   resolveBookingUrl,
 } from "../lib/strategicReviewBooking";
 import { describeTimeZone, formatLocalTime, isValidTimeZone, readTimeZoneId, type TimeZoneDescriptor } from "../lib/timeZone";
@@ -317,6 +318,7 @@ function StrategicReviewBookingPanel({
   onTimeZoneChange,
   zone,
   reference,
+  accessMode,
   prefill,
   buildMailto,
 }: {
@@ -325,6 +327,7 @@ function StrategicReviewBookingPanel({
   onTimeZoneChange: (timeZone: string) => void;
   zone: TimeZoneDescriptor;
   reference: string;
+  accessMode: StageThreeAccessMode;
   prefill: { fullName: string; workEmail: string; organisation: string };
   buildMailto: (requestedTime?: string) => string;
 }) {
@@ -349,6 +352,7 @@ function StrategicReviewBookingPanel({
             timeZone={timeZone}
             onTimeZoneChange={onTimeZoneChange}
             applicationReference={reference}
+            accessMode={accessMode}
             prefill={prefill}
             supportEmail={SUPPORT_EMAIL}
             buildFallbackMailto={buildMailto}
@@ -383,6 +387,10 @@ function SupportRail({ mailto }: { mailto: string }) {
 
 export default function ScheduleStrategicReview() {
   const [reference, setReference] = useState("");
+  const [accessMode, setAccessMode] = useState<StageThreeAccessMode>("Direct visit");
+  // The address this visit started on. Held because the effect below rewrites
+  // the visible URL, and the reference has to be read from the original.
+  const arrivalHref = useRef(typeof window === "undefined" ? "" : window.location.href);
   const [prefill, setPrefill] = useState({ fullName: "", workEmail: "", organisation: "" });
   const [timeZone, setTimeZone] = useState(() => readTimeZoneId() || HOST_TIME_ZONE);
   const [tick, setTick] = useState(() => Date.now());
@@ -399,9 +407,14 @@ export default function ScheduleStrategicReview() {
       storage = undefined;
     }
 
-    const url = new URL(window.location.href);
-    const resolved = resolveApplicationReference(url, storage);
-    setReference(resolved);
+    // Read the address as it first arrived, not as it stands now: this effect
+    // strips `ref` from the visible URL, so re-running against the live address
+    // would see only the stored copy and report the arrival as a same-session
+    // handoff instead of the Application ID link it actually was.
+    const url = new URL(arrivalHref.current);
+    const access = resolveApplicationAccess(url, storage);
+    setReference(access.reference);
+    setAccessMode(access.accessMode);
 
     if (url.searchParams.has("ref")) {
       url.searchParams.delete("ref");
@@ -415,7 +428,12 @@ export default function ScheduleStrategicReview() {
         workEmail: handoff.workEmail,
         organisation: handoff.organisationName,
       });
-      if (!resolved) setReference(handoff.applicationId);
+      // A reference recovered from the Stage 2 handoff is this same session
+      // carrying on, not the applicant re-entering their Application ID.
+      if (!access.reference) {
+        setReference(handoff.applicationId);
+        setAccessMode("Same-session handoff");
+      }
     }
   }, []);
 
@@ -501,6 +519,7 @@ export default function ScheduleStrategicReview() {
             onTimeZoneChange={selectTimeZone}
             zone={zone}
             reference={reference}
+            accessMode={accessMode}
             prefill={prefill}
             buildMailto={buildMailto}
           />

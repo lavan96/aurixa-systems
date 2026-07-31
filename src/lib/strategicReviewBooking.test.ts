@@ -5,6 +5,7 @@ import {
   buildSchedulingFallbackMailto,
   describeTimeZone,
   isApplicationReference,
+  resolveApplicationAccess,
   resolveApplicationReference,
   resolveBookingUrl,
 } from "./strategicReviewBooking";
@@ -145,4 +146,40 @@ test("buildSchedulingFallbackMailto carries a time the applicant already picked"
   assert.match(body, /The time I would like to request:/);
   assert.match(body, /Friday 7 August 2026, 9:00 am/);
   assert.doesNotMatch(body, /Suitable times for me are/);
+});
+
+test("resolveApplicationAccess reports how the reference arrived", () => {
+  const base = "https://aurixasystems.com.au/schedule-strategic-review";
+  const storage = new MemoryStorage();
+
+  assert.deepEqual(
+    resolveApplicationAccess(new URL(`${base}?ref=ax-7q2m4l9xz1`), storage),
+    { reference: "AX-7Q2M4L9XZ1", accessMode: "Application ID fallback" },
+    "arriving on the emailed Application ID link is the fallback path",
+  );
+
+  assert.deepEqual(
+    resolveApplicationAccess(new URL(base), storage),
+    { reference: "AX-7Q2M4L9XZ1", accessMode: "Same-session handoff" },
+    "a reference already accepted in this tab is the same session carrying on",
+  );
+
+  assert.deepEqual(
+    resolveApplicationAccess(new URL(base)),
+    { reference: "", accessMode: "Direct visit" },
+    "no reference at all is an ordinary visit",
+  );
+});
+
+test("resolveApplicationAccess reports a direct visit for anything it will not accept", () => {
+  const base = "https://aurixasystems.com.au/schedule-strategic-review";
+  for (const query of ["?ref=nope", "?ref=AX-7Q2M4L9XZ1&ref=AX-0000000000", ""]) {
+    const access = resolveApplicationAccess(new URL(`${base}${query}`), new MemoryStorage());
+    assert.deepEqual(access, { reference: "", accessMode: "Direct visit" }, query);
+  }
+
+  const tampered = new MemoryStorage();
+  tampered.setItem(REVIEW_REFERENCE_STORAGE_KEY, "tampered");
+  assert.deepEqual(resolveApplicationAccess(new URL(base), tampered), { reference: "", accessMode: "Direct visit" });
+  assert.equal(tampered.getItem(REVIEW_REFERENCE_STORAGE_KEY), null);
 });

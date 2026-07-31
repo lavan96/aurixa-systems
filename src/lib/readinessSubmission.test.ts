@@ -5,8 +5,8 @@ import test from "node:test";
 import { AnswerMap, Q } from "./readinessQuestionnaire";
 import {
   MAKE_READINESS_WEBHOOK_URL,
-  buildHandoffSubmissionPayload,
-  submitHandoffQuestionnaire,
+  buildReadinessSubmissionPayload,
+  submitReadinessQuestionnaire,
 } from "./readinessSubmission";
 
 const applicationId = "AX-0123456789";
@@ -45,7 +45,7 @@ test("uses the dedicated Stage 2 Make webhook", () => {
 });
 
 test("payload includes the existing ID, Stage 1 prefill, raw answers and readable labels", () => {
-  const payload = buildHandoffSubmissionPayload(input());
+  const payload = buildReadinessSubmissionPayload(input());
   assert.equal(payload.applicationId, applicationId);
   assert.deepEqual(payload.applicant, prefill);
   assert.ok(payload.answers.some((answer) => answer.questionId === Q.adminTime && answer.value === "5_to_10_hours"));
@@ -54,7 +54,7 @@ test("payload includes the existing ID, Stage 1 prefill, raw answers and readabl
 });
 
 test("ranked capabilities retain selection order and receive readable rank prefixes", () => {
-  const payload = buildHandoffSubmissionPayload(input());
+  const payload = buildReadinessSubmissionPayload(input());
   assert.deepEqual(payload.fields.capabilities, [
     "1. Report generation", "2. CRM", "3. Cash-flow and portfolio analysis",
     "4. Suburb and market reporting", "5. Calendar and task automation",
@@ -63,7 +63,7 @@ test("ranked capabilities retain selection order and receive readable rank prefi
 });
 
 test("summary and fields contain active conditional answers but exclude inactive ones", () => {
-  const payload = buildHandoffSubmissionPayload(input());
+  const payload = buildReadinessSubmissionPayload(input());
   assert.equal(payload.fields.authorityOther, "I chair the purchasing committee");
   assert.match(payload.summaryText, /I chair the purchasing committee/);
   assert.doesNotMatch(payload.summaryText, /Inactive former role/);
@@ -71,7 +71,7 @@ test("summary and fields contain active conditional answers but exclude inactive
 });
 
 test("rawResponseJson is valid, complete structured JSON without recursion", () => {
-  const payload = buildHandoffSubmissionPayload(input());
+  const payload = buildReadinessSubmissionPayload(input());
   const raw = JSON.parse(payload.rawResponseJson);
   assert.equal(raw.applicationId, applicationId);
   assert.deepEqual(raw.answers, payload.answers);
@@ -81,7 +81,7 @@ test("rawResponseJson is valid, complete structured JSON without recursion", () 
 test("submission posts JSON with the Application ID header and accepts verified Make details", async () => {
   let requestUrl = "";
   let request: RequestInit | undefined;
-  const result = await submitHandoffQuestionnaire({
+  const result = await submitReadinessQuestionnaire({
     ...input(),
     fetchImpl: async (url, init) => {
       requestUrl = String(url); request = init;
@@ -97,30 +97,62 @@ test("submission posts JSON with the Application ID header and accepts verified 
 });
 
 test("an empty successful Make acknowledgement is handled without crashing", async () => {
-  const result = await submitHandoffQuestionnaire({ ...input(), fetchImpl: async () => new Response("", { status: 200 }) });
+  const result = await submitReadinessQuestionnaire({ ...input(), fetchImpl: async () => new Response("", { status: 200 }) });
   assert.deepEqual(result, { ok: true, applicationId, completedAt: "2026-07-29T12:00:00.000Z" });
 });
 
 test("non-2xx, network and malformed responses fail safely", async () => {
-  assert.equal((await submitHandoffQuestionnaire({ ...input(), fetchImpl: async () => new Response("no", { status: 500 }) })).reason, "http_error");
-  assert.equal((await submitHandoffQuestionnaire({ ...input(), fetchImpl: async () => { throw new TypeError("offline"); } })).reason, "network_error");
-  assert.equal((await submitHandoffQuestionnaire({ ...input(), fetchImpl: async () => new Response("not json", { status: 200 }) })).reason, "invalid_response");
-  assert.equal((await submitHandoffQuestionnaire({ ...input(), fetchImpl: async () => new Response(JSON.stringify({ success: true, applicationId: "AX-WRONG", completedAt: "invalid" }), { status: 200 }) })).reason, "invalid_response");
+  assert.equal((await submitReadinessQuestionnaire({ ...input(), fetchImpl: async () => new Response("no", { status: 500 }) })).reason, "http_error");
+  assert.equal((await submitReadinessQuestionnaire({ ...input(), fetchImpl: async () => { throw new TypeError("offline"); } })).reason, "network_error");
+  assert.equal((await submitReadinessQuestionnaire({ ...input(), fetchImpl: async () => new Response("not json", { status: 200 }) })).reason, "invalid_response");
+  assert.equal((await submitReadinessQuestionnaire({ ...input(), fetchImpl: async () => new Response(JSON.stringify({ success: true, applicationId: "AX-WRONG", completedAt: "invalid" }), { status: 200 }) })).reason, "invalid_response");
+});
+
+test("a duplicate submission is reported as already completed, not as a broken response", async () => {
+  const fetchImpl: typeof fetch = async () =>
+    new Response(JSON.stringify({ error: "already_completed" }), { status: 200 });
+  const result = await submitReadinessQuestionnaire({ ...input(), fetchImpl });
+  assert.deepEqual(result, { ok: false, reason: "already_completed" });
+});
+
+test("every access mode reaches the webhook with its access mode attached", async () => {
+  for (const accessMode of [
+    "Secure link (token)",
+    "Application ID fallback",
+    "Same-session handoff",
+    "Manual entry",
+  ] as const) {
+    let seen: { url: string; body: string } | null = null;
+    const fetchImpl: typeof fetch = async (url, init) => {
+      seen = { url: String(url), body: String(init?.body ?? "") };
+      return new Response("", { status: 200 });
+    };
+    const result = await submitReadinessQuestionnaire({ ...input(), accessMode, fetchImpl });
+    assert.equal(result.ok, true, accessMode);
+    assert.equal(seen!.url, MAKE_READINESS_WEBHOOK_URL, accessMode);
+    assert.equal(JSON.parse(seen!.body).accessMode, accessMode);
+  }
 });
 
 test("a request exceeding the timeout is aborted and fails as a timeout", async () => {
   const fetchImpl: typeof fetch = async (_url, init) => new Promise<Response>((_resolve, reject) => {
     init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
   });
-  const result = await submitHandoffQuestionnaire({ ...input(), fetchImpl, timeoutMs: 5 });
+  const result = await submitReadinessQuestionnaire({ ...input(), fetchImpl, timeoutMs: 5 });
   assert.deepEqual(result, { ok: false, reason: "timeout" });
 });
 
-test("page branching preserves handoff, token, open, retry and double-submit behaviour", async () => {
+test("the page submits every access mode through the webhook, once, with the access mode", async () => {
   const source = await readFile(new URL("../pages/Questionnaire.tsx", import.meta.url), "utf8");
   assert.match(source, /if \(isSubmitting \|\| !session\) return/);
-  assert.match(source, /session\.access === "handoff"\s*\? await submitHandoffQuestionnaire/);
-  assert.match(source, /: await completeQuestionnaire/);
+  assert.match(source, /const result = await submitReadinessQuestionnaire\(\{/);
+  assert.match(source, /accessMode: accessModeRef\.current,/);
+  assert.doesNotMatch(
+    source,
+    /session\.access === "handoff"\s*\?/,
+    "the transport must not branch on access mode — a token session submits the same way",
+  );
+  assert.doesNotMatch(source, /await completeQuestionnaire\(/, "the undeployed edge function is no longer the transport");
   assert.match(source, /if \(!result\.ok \|\| !result\.completedAt\)[\s\S]*setSubmissionError[\s\S]*return;/);
   assert.match(source, /if \(session\.access === "handoff"\) endHandoffSession\(\);/);
   assert.ok(source.indexOf("endHandoffSession();") > source.indexOf("if (!result.ok || !result.completedAt)"));

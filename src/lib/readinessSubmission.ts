@@ -68,7 +68,7 @@ export type StageTwoAccessMode =
   | "Same-session handoff"
   | "Manual entry";
 
-export type HandoffSubmissionPayload = {
+export type ReadinessSubmissionPayload = {
   submissionType: typeof SUBMISSION_TYPE;
   source: typeof SUBMISSION_SOURCE;
   page: typeof SUBMISSION_PAGE;
@@ -86,14 +86,19 @@ export type HandoffSubmissionPayload = {
   rawResponseJson: string;
 };
 
-export type HandoffSubmissionResult = {
+export type ReadinessSubmissionResult = {
   ok: boolean;
   applicationId?: string;
   completedAt?: string;
-  reason?: "http_error" | "network_error" | "timeout" | "invalid_response";
+  /**
+   * `already_completed` is the one outcome the scenario itself reports, by
+   * answering `{"error":"already_completed"}` when a response is already on
+   * file for this application. Everything else describes the transport.
+   */
+  reason?: "already_completed" | "http_error" | "network_error" | "timeout" | "invalid_response";
 };
 
-type SubmitHandoffInput = {
+type SubmitReadinessInput = {
   applicationId: string;
   answers: AnswerMap;
   responseVersion: number;
@@ -149,7 +154,7 @@ export const buildSummaryText = (sections: ReviewSection[]): string =>
     })
     .join("\n\n--------------------------------------------------\n\n");
 
-export function buildHandoffSubmissionPayload(input: Omit<SubmitHandoffInput, "fetchImpl" | "timeoutMs">): HandoffSubmissionPayload {
+export function buildReadinessSubmissionPayload(input: Omit<SubmitReadinessInput, "fetchImpl" | "timeoutMs">): ReadinessSubmissionPayload {
   const submittedAt = (input.now?.() ?? new Date()).toISOString();
   const completion = buildCompletionPayload(input.applicationId, input.answers, input.responseVersion);
   const reviewSections = buildReviewSections(input.answers);
@@ -172,10 +177,10 @@ export function buildHandoffSubmissionPayload(input: Omit<SubmitHandoffInput, "f
 const validDate = (value: unknown): value is string =>
   typeof value === "string" && value.trim() !== "" && !Number.isNaN(Date.parse(value));
 
-export async function submitHandoffQuestionnaire(input: SubmitHandoffInput): Promise<HandoffSubmissionResult> {
+export async function submitReadinessQuestionnaire(input: SubmitReadinessInput): Promise<ReadinessSubmissionResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), input.timeoutMs ?? DEFAULT_TIMEOUT_MS);
-  const payload = buildHandoffSubmissionPayload(input);
+  const payload = buildReadinessSubmissionPayload(input);
 
   try {
     const response = await (input.fetchImpl ?? fetch)(MAKE_READINESS_WEBHOOK_URL, {
@@ -198,6 +203,9 @@ export async function submitHandoffQuestionnaire(input: SubmitHandoffInput): Pro
     }
     if (!parsed || typeof parsed !== "object") return { ok: false, reason: "invalid_response" };
     const result = parsed as Record<string, unknown>;
+    // A second submission for the same application is a real answer, not a
+    // malformed one: the page has an "already submitted" screen for it.
+    if (result.error === "already_completed") return { ok: false, reason: "already_completed" };
     if (result.success !== true || result.applicationId !== input.applicationId || !validDate(result.completedAt)) {
       return { ok: false, reason: "invalid_response" };
     }
