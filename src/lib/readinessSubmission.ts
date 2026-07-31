@@ -56,6 +56,18 @@ export type ReadinessSubmissionFields = {
   projectSponsor: string;
 };
 
+/**
+ * How the applicant reached Stage 2. Mirrors the Airtable "Stage 2 Access
+ * Method" options exactly — the Make scenario maps this value straight through,
+ * so an expired-link recovery is visible in the operations record instead of
+ * looking like a normal submission.
+ */
+export type StageTwoAccessMode =
+  | "Secure link (token)"
+  | "Application ID fallback"
+  | "Same-session handoff"
+  | "Manual entry";
+
 export type HandoffSubmissionPayload = {
   submissionType: typeof SUBMISSION_TYPE;
   source: typeof SUBMISSION_SOURCE;
@@ -64,6 +76,7 @@ export type HandoffSubmissionPayload = {
   questionnaireVersion: string;
   responseVersion: number;
   submittedAt: string;
+  accessMode: StageTwoAccessMode;
   applicant: ReadinessPrefill;
   fields: ReadinessSubmissionFields;
   answers: StoredAnswer[];
@@ -85,6 +98,7 @@ type SubmitHandoffInput = {
   answers: AnswerMap;
   responseVersion: number;
   prefill: ReadinessPrefill;
+  accessMode?: StageTwoAccessMode | string;
   /** Test seam; production always uses the browser fetch implementation. */
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
@@ -145,6 +159,7 @@ export function buildHandoffSubmissionPayload(input: Omit<SubmitHandoffInput, "f
     source: SUBMISSION_SOURCE,
     page: SUBMISSION_PAGE,
     submittedAt,
+    accessMode: (input.accessMode as StageTwoAccessMode) ?? "Secure link (token)",
     applicant: { ...input.prefill },
     fields: buildFields(reviewSections),
     reviewSections,

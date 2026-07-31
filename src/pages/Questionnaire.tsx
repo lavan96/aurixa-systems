@@ -90,6 +90,7 @@ import {
   hasVerifiedPrefill,
   isPreviewAvailable,
   openAccessSession,
+  resumeQuestionnaireByReference,
   saveQuestionnaireDraft,
 } from "../lib/readinessQuestionnaireService";
 import { readReadinessHandoff } from "../lib/readinessHandoff";
@@ -98,6 +99,8 @@ import {
   resolveQuestionnaireLink,
 } from "../lib/questionnaireLinkAccess";
 import { submitHandoffQuestionnaire } from "../lib/readinessSubmission";
+import { ResumeByReference } from "../components/questionnaire/ResumeByReference";
+import type { ResumeFailure } from "../lib/questionnaireResume";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
 
 const PAGE_TITLE = "Business Readiness Questionnaire | Aurixa Systems";
@@ -161,6 +164,8 @@ export default function Questionnaire() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startedAtRef = useRef<string | null>(null);
   const linkAccessRef = useRef(false);
+  /** Matches the Airtable "Stage 2 Access Method" options. */
+  const accessModeRef = useRef("Secure link (token)");
 
   // ── Page metadata. Scoped to this page only; restored on unmount so no other
   // route's title, description or robots behaviour changes. ─────────────────
@@ -188,6 +193,7 @@ export default function Questionnaire() {
   // ── Secure access: exchange the opaque token for an authorised session, then
   // strip the raw token from the visible URL. ───────────────────────────────
   const startOpenAccess = useCallback(() => {
+    accessModeRef.current = linkAccessRef.current ? "Secure link (token)" : "Manual entry";
     const open = openAccessSession();
     setSession(open);
     setAnswers({});
@@ -210,6 +216,7 @@ export default function Questionnaire() {
     if (!token) {
       const prefill = readReadinessHandoff();
       if (prefill) {
+        accessModeRef.current = "Same-session handoff";
         const session = handoffSession(prefill);
         setSession(session);
         setAnswers(seedPrefilledAnswers(session));
@@ -267,6 +274,41 @@ export default function Questionnaire() {
     savedSnapshotRef.current = JSON.stringify(buildStoredAnswers(authorised.answers ?? {}));
     setPhase("form");
   }, []);
+
+  /**
+   * Fallback entry for an applicant whose secure link has expired. Returns the
+   * failure reason for the form to show, or null once the questionnaire is open.
+   */
+  const resumeByReference = useCallback(
+    async (details: { applicationId: string; workEmail: string }): Promise<ResumeFailure | null> => {
+      const result = await resumeQuestionnaireByReference(details);
+
+      if (!result.ok || !result.session) {
+        if (result.reason === "already_completed" && result.applicationId) {
+          setCompletion({ applicationId: result.applicationId, completedAt: result.completedAt ?? "" });
+          setBlockedBy("already_completed");
+        }
+        return result.reason ?? "invalid_reference";
+      }
+
+      const resumed = result.session;
+      if (resumed.status === "completed") {
+        setBlockedBy("already_completed");
+        setCompletion({ applicationId: resumed.applicationId, completedAt: resumed.completedAt ?? "" });
+        return "already_completed";
+      }
+
+      accessModeRef.current = "Application ID fallback";
+      setSession(resumed);
+      setAnswers(seedPrefilledAnswers(resumed));
+      setResponseVersion(resumed.responseVersion);
+      startedAtRef.current = resumed.startedAt;
+      savedSnapshotRef.current = JSON.stringify(buildStoredAnswers(resumed.answers ?? {}));
+      setPhase("form");
+      return null;
+    },
+    [],
+  );
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -451,6 +493,7 @@ export default function Questionnaire() {
           answers,
           responseVersion: payload.responseVersion,
           prefill: session.prefill,
+          accessMode: accessModeRef.current,
         })
       : await completeQuestionnaire({
           sessionToken: session.sessionToken,
@@ -517,6 +560,7 @@ export default function Questionnaire() {
           reason={blockedBy}
           completion={completion}
           onRetry={() => void authorise(tokenRef.current)}
+          onResume={resumeByReference}
         />
       </QuestionnaireShell>
     );
@@ -853,10 +897,12 @@ function BlockedState({
   reason,
   completion,
   onRetry,
+  onResume,
 }: {
   reason: ReadinessAccessFailure;
   completion: Completion | null;
   onRetry: () => void;
+  onResume: (details: { applicationId: string; workEmail: string }) => Promise<ResumeFailure | null>;
 }) {
   const copy = READINESS_COPY.access;
 
@@ -882,6 +928,7 @@ function BlockedState({
         heading={copy.expiredHeading}
         body={copy.expiredBody}
       >
+        <ResumeByReference onResume={onResume} supportEmail={SUPPORT_EMAIL} />
         <ContactNote />
         <HomeLink />
       </AccessPanel>
@@ -915,11 +962,14 @@ function BlockedState({
       heading={copy.requiredHeading}
       body={copy.requiredBody}
     >
+      <ResumeByReference onResume={onResume} supportEmail={SUPPORT_EMAIL} />
       <ContactNote />
       <HomeLink />
     </AccessPanel>
   );
 }
+
+const SUPPORT_EMAIL = "admin@aurixasystems.com.au";
 
 function ContactNote() {
   return (

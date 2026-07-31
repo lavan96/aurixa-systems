@@ -23,6 +23,7 @@
 import { AnswerMap, QUESTIONNAIRE_VERSION, StoredAnswer } from "./readinessQuestionnaire";
 import { STOREFRONT_BASE } from "./leads";
 import { clearReadinessHandoff } from "./readinessHandoff";
+import { normaliseReference, type ResumeFailure } from "./questionnaireResume";
 
 const READINESS_API_URL = (() => {
   const explicit = import.meta.env.VITE_READINESS_API_URL as string | undefined;
@@ -276,6 +277,65 @@ export async function authoriseQuestionnaire(token: string): Promise<AuthoriseRe
       applicationId: result.applicationId,
     };
   }
+  return { ok: true, session: { ...result.session, access: "token" } };
+}
+
+export type ResumeResult = {
+  ok: boolean;
+  session?: ReadinessSession;
+  reason?: ResumeFailure;
+  completedAt?: string | null;
+  applicationId?: string;
+};
+
+const RESUME_FAILURES: ResumeFailure[] = [
+  "invalid_reference",
+  "already_completed",
+  "throttled",
+  "not_configured",
+  "unavailable",
+];
+
+/**
+ * Resumes Stage 2 with the Stage 1 application reference and the work email it
+ * was filed under, for applicants whose secure link has expired.
+ *
+ * The session this returns is a real server-issued session — the same kind the
+ * token path produces — so it is marked `token`: it autosaves and carries
+ * verified prefill. Only the way in was different, and the page records that
+ * separately for the operations record.
+ *
+ * A backend that does not yet know this action answers `unknown_action`, which
+ * maps to `not_configured` so the page can say so plainly instead of implying
+ * the applicant got their own details wrong.
+ */
+export async function resumeQuestionnaireByReference(input: {
+  applicationId: string;
+  workEmail: string;
+}): Promise<ResumeResult> {
+  const applicationId = normaliseReference(input.applicationId);
+  const workEmail = input.workEmail.trim().toLowerCase();
+  if (!applicationId || !workEmail) return { ok: false, reason: "invalid_reference" };
+
+  const result = await post<AuthoriseResponse>("resume", { applicationId, workEmail });
+  if (!result) return { ok: false, reason: "unavailable" };
+
+  if (!result.ok || !result.session) {
+    const error = result.error;
+    const reason: ResumeFailure =
+      error === "unknown_action" || error === "not_configured"
+        ? "not_configured"
+        : RESUME_FAILURES.includes(error as ResumeFailure)
+          ? (error as ResumeFailure)
+          : "invalid_reference";
+    return {
+      ok: false,
+      reason,
+      completedAt: result.completedAt ?? null,
+      applicationId: result.applicationId,
+    };
+  }
+
   return { ok: true, session: { ...result.session, access: "token" } };
 }
 

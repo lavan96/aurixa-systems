@@ -20,9 +20,19 @@ export const STAGE_ONE_MODAL_COPY = {
     "Your Priority Access Application has been successfully recorded. You may now proceed to the Business Readiness Questionnaire, where we will gather the operational, technical and implementation context required to identify the most relevant Aurixa pathway for your organisation.",
   supporting: "The next stage takes approximately 6–8 minutes to complete.",
   action: "PROCEED",
+  referenceLabel: "YOUR APPLICATION REFERENCE",
+  referenceHint:
+    "Keep this. If your secure questionnaire link expires, this reference and your work email will reopen the questionnaire.",
 } as const;
 
-export function StageOneCompleteModal({ onProceed }: { onProceed: () => void }) {
+export function StageOneCompleteModal({
+  onProceed,
+  applicationId = "",
+}: {
+  onProceed: () => void;
+  /** Shown so the applicant keeps the reference the expiry fallback needs. */
+  applicationId?: string;
+}) {
   const proceedRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -108,6 +118,20 @@ export function StageOneCompleteModal({ onProceed }: { onProceed: () => void }) 
         >
           {STAGE_ONE_MODAL_COPY.heading}
         </h2>
+
+        {applicationId && (
+          <div className="mt-5 border border-[#C89B3C]/35 bg-[#C89B3C]/[0.07] px-4 py-3">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#9CA3B8]">
+              {STAGE_ONE_MODAL_COPY.referenceLabel}
+            </p>
+            <p className="mt-1.5 select-all font-mono text-[17px] tracking-[0.06em] text-[#F5D17A]">
+              {applicationId}
+            </p>
+            <p className="mt-2 text-[12px] font-light leading-relaxed text-[#9CA3B8]">
+              {STAGE_ONE_MODAL_COPY.referenceHint}
+            </p>
+          </div>
+        )}
 
         <p
           id="stage-one-complete-message"
