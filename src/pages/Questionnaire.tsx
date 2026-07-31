@@ -98,7 +98,7 @@ import {
   clearQuestionnaireLinkAccess,
   resolveQuestionnaireLink,
 } from "../lib/questionnaireLinkAccess";
-import { submitReadinessQuestionnaire } from "../lib/readinessSubmission";
+import { submitReadinessQuestionnaireWithMirrors } from "../lib/readinessSubmissionClient";
 import { ResumeByReference } from "../components/questionnaire/ResumeByReference";
 import { readReferenceFromUrl, type ResumeFailure } from "../lib/questionnaireResume";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
@@ -508,7 +508,11 @@ export default function Questionnaire() {
     // from Stage 1, or came back with their Application ID. The access mode
     // rides along so an expired-link recovery stays visible in operations
     // rather than looking like a normal submission.
-    const result = await submitReadinessQuestionnaire({
+    //
+    // Once the webhook has landed, the same response is mirrored to Aurixa's
+    // own store of record and the operator console. Those run after the fact
+    // and can never change what the applicant is told.
+    const result = await submitReadinessQuestionnaireWithMirrors({
       applicationId: payload.applicationId,
       answers,
       responseVersion: payload.responseVersion,

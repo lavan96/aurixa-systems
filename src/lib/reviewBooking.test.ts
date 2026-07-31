@@ -67,6 +67,41 @@ test("buildBookingPayload trims the applicant's details for the backend", () => 
   assert.equal(payload.submittedAt, NOW.toISOString());
 });
 
+test("buildBookingPayload names the applicant in the shape the lead stores read", () => {
+  const payload = buildPayload();
+  // Mission Control identifies a person by first and last name and ties them
+  // to their application by `applicationId`. Sending only `name` and only
+  // `applicationReference` made every mirrored booking unparseable — and the
+  // mirror is fire-and-forget, so nobody found out.
+  assert.equal(payload.firstName, "Ada");
+  assert.equal(payload.lastName, "Lovelace");
+  assert.equal(payload.applicationId, "AX-7Q2M4L9XZ1");
+  assert.equal(payload.applicationId, payload.applicationReference);
+});
+
+test("buildBookingPayload splits a longer name on the last word", () => {
+  const payload = buildBookingPayload({
+    slot: SLOT,
+    details: { ...details, fullName: "  Mary  Anne Van Der Berg " },
+    applicantTimeZone: HOST_TIME_ZONE,
+    now: NOW,
+  });
+  assert.equal(payload.firstName, "Mary Anne Van Der");
+  assert.equal(payload.lastName, "Berg");
+  assert.equal(payload.name, "Mary  Anne Van Der Berg", "name is trimmed, not re-spaced");
+});
+
+test("buildBookingPayload keeps a single-word name as the first name", () => {
+  const payload = buildBookingPayload({
+    slot: SLOT,
+    details: { ...EMPTY_BOOKING_DETAILS, fullName: "Prince", workEmail: "prince@example.com" },
+    applicantTimeZone: HOST_TIME_ZONE,
+    now: NOW,
+  });
+  assert.equal(payload.firstName, "Prince");
+  assert.equal(payload.lastName, "");
+});
+
 test("buildBookingPayload states the time in UTC and in both wall clocks", () => {
   const payload = buildPayload();
   assert.equal(payload.requestedStartUtc, "2026-08-06T23:00:00.000Z");
