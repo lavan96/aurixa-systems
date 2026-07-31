@@ -6,6 +6,7 @@ import {
   formatReferenceInput,
   isApplicationReference,
   normaliseReference,
+  readReferenceFromUrl,
   validateResumeDetails,
 } from "./questionnaireResume";
 
@@ -68,6 +69,21 @@ test("validateResumeDetails checks the email", () => {
   assert.ok(validateResumeDetails({ ...base, workEmail: "not an email" }).workEmail);
   assert.ok(validateResumeDetails({ ...base, workEmail: `${"a".repeat(320)}@example.com` }).workEmail);
   assert.equal(validateResumeDetails({ ...base, workEmail: " ada@example.com " }).workEmail, undefined);
+});
+
+test("readReferenceFromUrl picks up the reference the Stage 1 email links with", () => {
+  const base = "https://aurixasystems.com.au/questionnaire";
+  assert.equal(readReferenceFromUrl(new URL(`${base}?ref=AX-7Q2M4L9XZ1`)), "AX-7Q2M4L9XZ1");
+  assert.equal(readReferenceFromUrl(new URL(`${base}?ref=ax-7q2m4l9xz1`)), "AX-7Q2M4L9XZ1");
+  assert.equal(readReferenceFromUrl(new URL(`${base}?reference=AX-7Q2M4L9XZ1`)), "AX-7Q2M4L9XZ1");
+});
+
+test("readReferenceFromUrl ignores anything that is not an issued reference", () => {
+  const base = "https://aurixasystems.com.au/questionnaire";
+  assert.equal(readReferenceFromUrl(new URL(base)), "");
+  assert.equal(readReferenceFromUrl(new URL(`${base}?ref=`)), "");
+  assert.equal(readReferenceFromUrl(new URL(`${base}?ref=%3Cscript%3E`)), "");
+  assert.equal(readReferenceFromUrl(new URL(`${base}?ref=AX-123`)), "");
 });
 
 test("every failure reason has copy the applicant can act on", () => {

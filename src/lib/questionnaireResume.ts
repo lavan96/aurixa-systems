@@ -52,6 +52,18 @@ export function isApplicationReference(value: unknown): value is string {
   return typeof value === "string" && REFERENCE_PATTERN.test(value);
 }
 
+/**
+ * Reads the reference the Stage 1 email links with (`?ref=AX-...`).
+ *
+ * The link is a convenience, not a credential — it only saves the applicant
+ * retyping the reference. They still have to supply the work email the
+ * application was filed under before anything reopens.
+ */
+export function readReferenceFromUrl(url: URL | { searchParams: URLSearchParams }): string {
+  const raw = url.searchParams.get("ref") ?? url.searchParams.get("reference") ?? "";
+  return normaliseReference(raw);
+}
+
 /** Field-level validation for the resume form. */
 export function validateResumeDetails(details: ResumeDetails): ResumeDetailErrors {
   const errors: ResumeDetailErrors = {};

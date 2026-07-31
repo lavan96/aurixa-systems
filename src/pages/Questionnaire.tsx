@@ -100,7 +100,7 @@ import {
 } from "../lib/questionnaireLinkAccess";
 import { submitHandoffQuestionnaire } from "../lib/readinessSubmission";
 import { ResumeByReference } from "../components/questionnaire/ResumeByReference";
-import type { ResumeFailure } from "../lib/questionnaireResume";
+import { readReferenceFromUrl, type ResumeFailure } from "../lib/questionnaireResume";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
 
 const PAGE_TITLE = "Business Readiness Questionnaire | Aurixa Systems";
@@ -156,6 +156,7 @@ export default function Questionnaire() {
   const [submissionError, setSubmissionError] = useState("");
   const [completion, setCompletion] = useState<Completion | null>(null);
   const [showErrorSummary, setShowErrorSummary] = useState(false);
+  const [linkedReference, setLinkedReference] = useState("");
 
   const sectionHeadingRef = useRef<HTMLHeadingElement>(null);
   const completionHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -312,6 +313,18 @@ export default function Questionnaire() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
+
+    // `?ref=` comes from the Stage 1 email's "continue with your application ID"
+    // link. It only prefills the resume form — the work email is still required
+    // — so it is read before anything else and then dropped from the address bar.
+    const reference = readReferenceFromUrl(url);
+    if (url.searchParams.has("ref") || url.searchParams.has("reference")) {
+      setLinkedReference(reference);
+      url.searchParams.delete("ref");
+      url.searchParams.delete("reference");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+
     const linkAccess = resolveQuestionnaireLink(url);
 
     if (linkAccess === "link" || linkAccess === "session") {
@@ -561,6 +574,7 @@ export default function Questionnaire() {
           completion={completion}
           onRetry={() => void authorise(tokenRef.current)}
           onResume={resumeByReference}
+          linkedReference={linkedReference}
         />
       </QuestionnaireShell>
     );
@@ -898,11 +912,13 @@ function BlockedState({
   completion,
   onRetry,
   onResume,
+  linkedReference,
 }: {
   reason: ReadinessAccessFailure;
   completion: Completion | null;
   onRetry: () => void;
   onResume: (details: { applicationId: string; workEmail: string }) => Promise<ResumeFailure | null>;
+  linkedReference: string;
 }) {
   const copy = READINESS_COPY.access;
 
@@ -928,7 +944,11 @@ function BlockedState({
         heading={copy.expiredHeading}
         body={copy.expiredBody}
       >
-        <ResumeByReference onResume={onResume} supportEmail={SUPPORT_EMAIL} />
+        <ResumeByReference
+          onResume={onResume}
+          supportEmail={SUPPORT_EMAIL}
+          initialReference={linkedReference}
+        />
         <ContactNote />
         <HomeLink />
       </AccessPanel>
@@ -962,7 +982,11 @@ function BlockedState({
       heading={copy.requiredHeading}
       body={copy.requiredBody}
     >
-      <ResumeByReference onResume={onResume} supportEmail={SUPPORT_EMAIL} />
+      <ResumeByReference
+          onResume={onResume}
+          supportEmail={SUPPORT_EMAIL}
+          initialReference={linkedReference}
+        />
       <ContactNote />
       <HomeLink />
     </AccessPanel>

@@ -7,7 +7,7 @@
  * reference travels in email and is not a credential on its own.
  */
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
 import {
   EMPTY_RESUME_DETAILS,
@@ -30,14 +30,29 @@ export type ResumeByReferenceProps = {
   /** Resolves with the failure reason, or null once the session is open. */
   onResume: (details: { applicationId: string; workEmail: string }) => Promise<ResumeFailure | null>;
   supportEmail: string;
+  /**
+   * Reference carried in from the Stage 1 email's `?ref=` link. When present the
+   * form starts open with the reference filled in and the cursor in the email
+   * field, so the applicant only has to supply the second factor.
+   */
+  initialReference?: string;
 };
 
-export function ResumeByReference({ onResume, supportEmail }: ResumeByReferenceProps) {
-  const [open, setOpen] = useState(false);
-  const [details, setDetails] = useState<ResumeDetails>(EMPTY_RESUME_DETAILS);
+export function ResumeByReference({ onResume, supportEmail, initialReference = "" }: ResumeByReferenceProps) {
+  const [open, setOpen] = useState(Boolean(initialReference));
+  const [details, setDetails] = useState<ResumeDetails>(
+    initialReference ? { ...EMPTY_RESUME_DETAILS, reference: initialReference } : EMPTY_RESUME_DETAILS,
+  );
   const [errors, setErrors] = useState<ResumeDetailErrors>({});
   const [failure, setFailure] = useState<ResumeFailure | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  // Only when the applicant arrived on the link — otherwise the form opens by a
+  // deliberate click and moving focus would take it off the button they pressed.
+  useEffect(() => {
+    if (initialReference) emailRef.current?.focus();
+  }, [initialReference]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -81,8 +96,9 @@ export function ResumeByReference({ onResume, supportEmail }: ResumeByReferenceP
         CONTINUE WITH YOUR REFERENCE
       </p>
       <p className="mt-3 text-[13px] font-light leading-relaxed text-[#9CA3B8]">
-        Enter the application reference from your Aurixa email and the work email you applied with.
-        We need both before reopening the questionnaire.
+        {initialReference
+          ? "We have filled in the reference from your link. Confirm the work email your application was submitted with and we will reopen the questionnaire."
+          : "Enter the application reference from your Aurixa email and the work email you applied with. We need both before reopening the questionnaire."}
       </p>
 
       <label className="mt-5 block">
@@ -112,6 +128,7 @@ export function ResumeByReference({ onResume, supportEmail }: ResumeByReferenceP
       <label className="mt-4 block">
         <span className={LABEL_CLASS}>Work email</span>
         <input
+          ref={emailRef}
           name="workEmail"
           type="email"
           value={details.workEmail}
