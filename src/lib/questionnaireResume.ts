@@ -11,11 +11,16 @@
  * network call lives in `readinessQuestionnaireService`.
  */
 
-/** References issued at Stage 1, e.g. `AX-7Q2M4L9XZ1`. */
-const REFERENCE_PATTERN = /^AX-[A-Z0-9]{10}$/;
+import {
+  formatReferenceInput,
+  isApplicationReference,
+  normaliseReference,
+  readReferenceFromUrl,
+} from "./applicationReference";
 
-/** The reference body without its prefix. */
-const BODY_PATTERN = /^[A-Z0-9]{10}$/;
+// The reference format itself lives in ./applicationReference, which the Stage 3
+// gate shares. Re-exported here so the resume form keeps a single import.
+export { formatReferenceInput, isApplicationReference, normaliseReference, readReferenceFromUrl };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -27,42 +32,6 @@ export type ResumeDetails = {
 export type ResumeDetailErrors = Partial<Record<keyof ResumeDetails, string>>;
 
 export const EMPTY_RESUME_DETAILS: ResumeDetails = { reference: "", workEmail: "" };
-
-/**
- * Cleans up what the applicant typed as they type it: upper case, no spaces,
- * and the `AX-` prefix supplied for them. People copy the reference out of an
- * email, so it arrives with stray spaces, lower case, or no prefix at all.
- */
-export function formatReferenceInput(value: string): string {
-  const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  const body = cleaned.startsWith("AX") ? cleaned.slice(2) : cleaned;
-  return body ? `AX-${body.slice(0, 10)}` : cleaned.startsWith("AX") ? "AX-" : "";
-}
-
-/** Normalises a reference for submission, or "" when it is not a valid one. */
-export function normaliseReference(value: string): string {
-  const cleaned = String(value ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  const body = cleaned.startsWith("AX") ? cleaned.slice(2) : cleaned;
-  if (!BODY_PATTERN.test(body)) return "";
-  const reference = `AX-${body}`;
-  return REFERENCE_PATTERN.test(reference) ? reference : "";
-}
-
-export function isApplicationReference(value: unknown): value is string {
-  return typeof value === "string" && REFERENCE_PATTERN.test(value);
-}
-
-/**
- * Reads the reference the Stage 1 email links with (`?ref=AX-...`).
- *
- * The link is a convenience, not a credential — it only saves the applicant
- * retyping the reference. They still have to supply the work email the
- * application was filed under before anything reopens.
- */
-export function readReferenceFromUrl(url: URL | { searchParams: URLSearchParams }): string {
-  const raw = url.searchParams.get("ref") ?? url.searchParams.get("reference") ?? "";
-  return normaliseReference(raw);
-}
 
 /** Field-level validation for the resume form. */
 export function validateResumeDetails(details: ResumeDetails): ResumeDetailErrors {

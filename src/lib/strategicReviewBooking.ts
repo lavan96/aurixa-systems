@@ -17,6 +17,8 @@
  *      it is showing instead of asserting a fixed offset.
  */
 
+import { isApplicationReference } from "./applicationReference";
+
 /** Hosts that may be framed as the booking calendar. */
 export const BOOKING_HOST_ALLOWLIST = [
   "outlook.office.com",
@@ -25,9 +27,6 @@ export const BOOKING_HOST_ALLOWLIST = [
   "bookings.microsoft.com",
   "book.ms",
 ] as const;
-
-/** Issued application references, e.g. `AX-7Q2M4L9XZ1`. */
-const APPLICATION_REFERENCE_PATTERN = /^AX-[A-Z0-9]{10}$/;
 
 export const REVIEW_REFERENCE_STORAGE_KEY = "aurixa_strategic_review_reference";
 
@@ -74,10 +73,9 @@ export function resolveBookingUrl(raw: string | null | undefined, prefill: Booki
   return url.toString();
 }
 
-/** True when `value` matches the reference format issued with an application. */
-export function isApplicationReference(value: unknown): value is string {
-  return typeof value === "string" && APPLICATION_REFERENCE_PATTERN.test(value);
-}
+// The reference format lives in ./applicationReference, shared with the Stage 2
+// resume form and the Stage 3 gate. Re-exported so callers keep one import.
+export { isApplicationReference };
 
 /**
  * How the applicant reached the scheduler. Mirrors the Airtable "Stage 3 Access
