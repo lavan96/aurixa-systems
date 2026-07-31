@@ -65,6 +65,20 @@ export type BookingPayload = {
   company: string;
   phone: string;
   message: string;
+  /**
+   * The name split into parts, and the reference under the aliases the
+   * operator console keys on.
+   *
+   * Mission Control's ingest identifies a person by first and last name and
+   * ties them to their application by `applicationId`. This payload carried
+   * only a combined `name` and only `applicationReference`, so every mirrored
+   * booking was rejected — and rejected silently, because the mirror is
+   * fire-and-forget. Sending both shapes costs nothing and means a booking
+   * cannot vanish between the two systems again.
+   */
+  firstName: string;
+  lastName: string;
+  applicationId: string;
   /** The applicant's own words, kept separate from the assembled summary. */
   notes: string;
   applicationReference: string;
@@ -91,6 +105,20 @@ export type BuildBookingPayloadInput = {
   now?: Date;
 };
 
+/**
+ * Splits the scheduler's single name field on the last space.
+ *
+ * The form asks for "the name the review should be booked under", which is how
+ * people write their name — one field. Downstream systems store two. Splitting
+ * here, once, beats every consumer guessing differently.
+ */
+function splitName(value: string): { first: string; last: string } {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { first: "", last: "" };
+  if (parts.length === 1) return { first: parts[0], last: "" };
+  return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
+}
+
 export function buildBookingPayload(input: BuildBookingPayloadInput): BookingPayload {
   const start = new Date(input.slot);
   const end = new Date(input.slot + SESSION_MINUTES * 60_000);
@@ -98,6 +126,7 @@ export function buildBookingPayload(input: BuildBookingPayloadInput): BookingPay
   const applicantLocalTime = `${formatDayLabel(toDayKey(start, input.applicantTimeZone))}, ${formatSlotRange(input.slot, input.applicantTimeZone)}`;
   const hostLocalTime = `${formatDayLabel(toDayKey(start, HOST_TIME_ZONE))}, ${formatSlotRange(input.slot, HOST_TIME_ZONE)}`;
   const reference = input.applicationReference?.trim() ?? "";
+  const { first, last } = splitName(input.details.fullName);
 
   const summaryText = [
     "Strategic review requested",
@@ -120,6 +149,9 @@ export function buildBookingPayload(input: BuildBookingPayloadInput): BookingPay
     phone: input.details.phone.trim(),
     message: summaryText,
     notes: input.details.notes.trim(),
+    firstName: first,
+    lastName: last,
+    applicationId: reference,
     applicationReference: reference,
     accessMode: input.accessMode?.trim() || (reference ? "Application ID fallback" : "Direct visit"),
     submittedAt: (input.now ?? new Date()).toISOString(),

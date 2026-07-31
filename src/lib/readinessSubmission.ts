@@ -91,6 +91,13 @@ export type ReadinessSubmissionResult = {
   applicationId?: string;
   completedAt?: string;
   /**
+   * What was actually sent. Returned so a caller can mirror the same document
+   * onward — to Aurixa's own store of record and the operator console — after
+   * the Stage 2 webhook has already succeeded, without rebuilding it (and
+   * stamping a second, different `submittedAt` in the process).
+   */
+  payload?: ReadinessSubmissionPayload;
+  /**
    * `already_completed` is the one outcome the scenario itself reports, by
    * answering `{"error":"already_completed"}` when a response is already on
    * file for this application. Everything else describes the transport.
@@ -174,6 +181,47 @@ export function buildReadinessSubmissionPayload(input: Omit<SubmitReadinessInput
   return { ...responseDocument, rawResponseJson: JSON.stringify(responseDocument) };
 }
 
+/**
+ * Flattens a completed Stage 2 response into the shape the lead stores expect.
+ *
+ * `capture-lead` and Mission Control both read the applicant's identity from
+ * the top level of the body; this payload keeps it nested under `applicant`,
+ * which is why neither system has ever recorded a questionnaire completion.
+ * The answers themselves ride along unchanged so the operator console can show
+ * what the applicant actually said.
+ *
+ * `rawResponseJson` is dropped: it is a stringified copy of everything else in
+ * the document, and the Stage 2 webhook is the pipeline that needs it.
+ */
+export function buildReadinessMirrorPayload(
+  payload: ReadinessSubmissionPayload,
+): Record<string, unknown> {
+  const { rawResponseJson: _raw, ...document } = payload;
+  const applicant = payload.applicant;
+  const firstName = (applicant.firstName ?? "").trim();
+  const lastName = (applicant.lastName ?? "").trim();
+
+  return {
+    ...document,
+    // Identity, where the lead stores look for it.
+    email: (applicant.workEmail ?? "").trim().toLowerCase(),
+    firstName,
+    lastName,
+    name: `${firstName} ${lastName}`.trim(),
+    company: (applicant.organisationName ?? "").trim(),
+    // The questionnaire is the applicant's own account of their operation —
+    // a far better `message` than anything assembled from the form.
+    message: payload.summaryText,
+    completedAt: payload.submittedAt,
+    completionStatus: "Completed",
+    // The buying signals, lifted out of `fields` so a consumer that does not
+    // understand the answer schema can still read them.
+    nextStep: payload.fields.nextStep,
+    investmentRange: payload.fields.investmentRange,
+    timing: payload.fields.timing,
+  };
+}
+
 const validDate = (value: unknown): value is string =>
   typeof value === "string" && value.trim() !== "" && !Number.isNaN(Date.parse(value));
 
@@ -193,7 +241,13 @@ export async function submitReadinessQuestionnaire(input: SubmitReadinessInput):
 
     const body = await response.text();
     // Make may acknowledge with an empty 2xx while the response mapping is being configured.
-    if (!body.trim()) return { ok: true, applicationId: input.applicationId, completedAt: payload.submittedAt };
+    if (!body.trim())
+      return {
+        ok: true,
+        applicationId: input.applicationId,
+        completedAt: payload.submittedAt,
+        payload,
+      };
 
     let parsed: unknown;
     try {
@@ -209,7 +263,7 @@ export async function submitReadinessQuestionnaire(input: SubmitReadinessInput):
     if (result.success !== true || result.applicationId !== input.applicationId || !validDate(result.completedAt)) {
       return { ok: false, reason: "invalid_response" };
     }
-    return { ok: true, applicationId: input.applicationId, completedAt: result.completedAt };
+    return { ok: true, applicationId: input.applicationId, completedAt: result.completedAt, payload };
   } catch (error) {
     return { ok: false, reason: controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError") ? "timeout" : "network_error" };
   } finally {

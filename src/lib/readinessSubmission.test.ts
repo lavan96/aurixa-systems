@@ -5,6 +5,7 @@ import test from "node:test";
 import { AnswerMap, Q } from "./readinessQuestionnaire";
 import {
   MAKE_READINESS_WEBHOOK_URL,
+  buildReadinessMirrorPayload,
   buildReadinessSubmissionPayload,
   submitReadinessQuestionnaire,
 } from "./readinessSubmission";
@@ -93,12 +94,18 @@ test("submission posts JSON with the Application ID header and accepts verified 
   assert.equal((request?.headers as Record<string, string>)["Content-Type"], "application/json");
   assert.equal((request?.headers as Record<string, string>)["X-Application-Id"], applicationId);
   assert.equal(JSON.parse(String(request?.body)).applicationId, applicationId);
-  assert.deepEqual(result, { ok: true, applicationId, completedAt: "2026-07-29T12:30:00.000Z" });
+  assert.deepEqual(
+    { ok: result.ok, applicationId: result.applicationId, completedAt: result.completedAt },
+    { ok: true, applicationId, completedAt: "2026-07-29T12:30:00.000Z" },
+  );
 });
 
 test("an empty successful Make acknowledgement is handled without crashing", async () => {
   const result = await submitReadinessQuestionnaire({ ...input(), fetchImpl: async () => new Response("", { status: 200 }) });
-  assert.deepEqual(result, { ok: true, applicationId, completedAt: "2026-07-29T12:00:00.000Z" });
+  assert.deepEqual(
+    { ok: result.ok, applicationId: result.applicationId, completedAt: result.completedAt },
+    { ok: true, applicationId, completedAt: "2026-07-29T12:00:00.000Z" },
+  );
 });
 
 test("non-2xx, network and malformed responses fail safely", async () => {
@@ -145,7 +152,7 @@ test("a request exceeding the timeout is aborted and fails as a timeout", async 
 test("the page submits every access mode through the webhook, once, with the access mode", async () => {
   const source = await readFile(new URL("../pages/Questionnaire.tsx", import.meta.url), "utf8");
   assert.match(source, /if \(isSubmitting \|\| !session\) return/);
-  assert.match(source, /const result = await submitReadinessQuestionnaire\(\{/);
+  assert.match(source, /const result = await submitReadinessQuestionnaireWithMirrors\(\{/);
   assert.match(source, /accessMode: accessModeRef\.current,/);
   assert.doesNotMatch(
     source,
@@ -156,4 +163,45 @@ test("the page submits every access mode through the webhook, once, with the acc
   assert.match(source, /if \(!result\.ok \|\| !result\.completedAt\)[\s\S]*setSubmissionError[\s\S]*return;/);
   assert.match(source, /if \(session\.access === "handoff"\) endHandoffSession\(\);/);
   assert.ok(source.indexOf("endHandoffSession();") > source.indexOf("if (!result.ok || !result.completedAt)"));
+});
+
+test("a successful submission returns what it sent, so it can be mirrored onward", async () => {
+  const result = await submitReadinessQuestionnaire({
+    ...input(),
+    fetchImpl: (async () => ({ ok: true, status: 200, text: async () => "" }) as Response) as typeof fetch,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.payload?.applicationId, applicationId);
+  assert.equal(result.payload?.submittedAt, result.completedAt);
+});
+
+test("the mirror payload lifts the applicant's identity to the top level", () => {
+  // `capture-lead` and Mission Control both read the applicant from the top of
+  // the body. This document keeps it under `applicant`, which is why neither
+  // system had ever recorded a completed questionnaire.
+  const mirror = buildReadinessMirrorPayload(buildReadinessSubmissionPayload(input()));
+  assert.equal(mirror.email, "ada@example.test");
+  assert.equal(mirror.firstName, "Ada");
+  assert.equal(mirror.lastName, "Lovelace");
+  assert.equal(mirror.name, "Ada Lovelace");
+  assert.equal(mirror.company, "Analytical Engines");
+  assert.equal(mirror.applicationId, applicationId);
+  assert.equal(mirror.submissionType, "business_readiness_questionnaire");
+});
+
+test("the mirror payload carries the buying signals and the completion stamp", () => {
+  const payload = buildReadinessSubmissionPayload(input());
+  const mirror = buildReadinessMirrorPayload(payload);
+  assert.equal(mirror.completionStatus, "Completed");
+  assert.equal(mirror.completedAt, payload.submittedAt);
+  assert.equal(mirror.nextStep, payload.fields.nextStep);
+  assert.equal(mirror.investmentRange, payload.fields.investmentRange);
+  assert.equal(mirror.timing, payload.fields.timing);
+  assert.equal(mirror.message, payload.summaryText);
+});
+
+test("the mirror payload drops the stringified duplicate of itself", () => {
+  const mirror = buildReadinessMirrorPayload(buildReadinessSubmissionPayload(input()));
+  assert.equal("rawResponseJson" in mirror, false);
+  assert.ok(Array.isArray(mirror.answers), "the answers themselves still travel");
 });
