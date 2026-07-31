@@ -144,6 +144,13 @@ test("every failure has copy the applicant can act on, and none of it leaks", ()
   }
 });
 
+test("the refusal names both reasons, because the server will not say which", () => {
+  // Naming only one would either mislead the applicant or, if it were the true
+  // one, tell a stranger whether a particular application exists.
+  assert.match(ACCESS_COPY.unverified, /not one we recognise/i);
+  assert.match(ACCESS_COPY.unverified, /Business Readiness Questionnaire is not complete/i);
+});
+
 // The page is a component, so its gating is asserted from the source: these are
 // the properties that make the gate a gate rather than a decoration.
 test("the page renders nothing about an application until the server has granted access", async () => {
