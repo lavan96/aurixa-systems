@@ -113,92 +113,17 @@ export function resolveApplicationReference(url: URL, storage?: Pick<Storage, "g
   }
 }
 
-export type TimeZoneDescriptor = {
-  /** IANA zone id when the environment reports one, otherwise "". */
-  timeZone: string;
-  /** Display label, e.g. "Australia/Sydney" or "Your device time zone". */
-  label: string;
-  /** Short label, e.g. "Sydney". */
-  shortLabel: string;
-  /** Offset from UTC, e.g. "UTC+10:00". */
-  offsetLabel: string;
-};
+// Zone handling lives in ./timeZone, which the scheduler shares. Re-exported
+// here so callers of this module keep a single import for the page's needs.
+export {
+  describeTimeZone,
+  formatLocalTime,
+  formatUtcOffset,
+  readTimeZoneId,
+  type TimeZoneDescriptor,
+} from "./timeZone";
 
-/** Formats a minutes-from-UTC offset the way the page states it: `UTC+10:00`. */
-export function formatUtcOffset(offsetMinutes: number): string {
-  if (!Number.isFinite(offsetMinutes)) return "UTC";
-  const rounded = Math.round(offsetMinutes);
-  const sign = rounded < 0 ? "-" : "+";
-  const absolute = Math.abs(rounded);
-  const hours = String(Math.floor(absolute / 60)).padStart(2, "0");
-  const minutes = String(absolute % 60).padStart(2, "0");
-  return `UTC${sign}${hours}:${minutes}`;
-}
-
-const parseGmtOffset = (formatted: string): number | null => {
-  const match = /GMT(?:([+-])(\d{1,2})(?::?(\d{2}))?)?/.exec(formatted);
-  if (!match) return null;
-  if (!match[1]) return 0;
-  const hours = Number(match[2]);
-  const minutes = Number(match[3] ?? "0");
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-  return (match[1] === "-" ? -1 : 1) * (hours * 60 + minutes);
-};
-
-/** Resolves the environment's IANA zone id, or "" when it cannot be read. */
-export function readTimeZoneId(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  } catch {
-    return "";
-  }
-}
-
-/**
- * Describes the zone the applicant is booking in. Everything degrades: an
- * unknown zone still yields a usable offset from the runtime itself, and a
- * runtime without `Intl` still yields a plain "UTC" label.
- */
-export function describeTimeZone(date: Date = new Date(), timeZone: string = readTimeZoneId()): TimeZoneDescriptor {
-  let offsetMinutes: number | null = null;
-
-  try {
-    const formatted = new Intl.DateTimeFormat("en-AU", {
-      ...(timeZone ? { timeZone } : {}),
-      timeZoneName: "longOffset",
-    }).format(date);
-    offsetMinutes = parseGmtOffset(formatted);
-  } catch {
-    offsetMinutes = null;
-  }
-
-  if (offsetMinutes === null) {
-    const local = -date.getTimezoneOffset();
-    offsetMinutes = Number.isFinite(local) ? local : 0;
-  }
-
-  const segment = timeZone ? timeZone.split("/").pop() ?? timeZone : "";
-  return {
-    timeZone,
-    label: timeZone ? timeZone.replace(/_/g, " ") : "Your device time zone",
-    shortLabel: segment ? segment.replace(/_/g, " ") : "Local",
-    offsetLabel: formatUtcOffset(offsetMinutes),
-  };
-}
-
-/** 24-hour local time, e.g. "14:32". Returns "" if the runtime cannot format it. */
-export function formatLocalTime(date: Date = new Date(), timeZone: string = readTimeZoneId()): string {
-  try {
-    return new Intl.DateTimeFormat("en-AU", {
-      ...(timeZone ? { timeZone } : {}),
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
-  } catch {
-    return "";
-  }
-}
+import type { TimeZoneDescriptor as ZoneDescriptor } from "./timeZone";
 
 /**
  * Builds the manual scheduling fallback used whenever the calendar cannot be
@@ -207,12 +132,15 @@ export function formatLocalTime(date: Date = new Date(), timeZone: string = read
 export function buildSchedulingFallbackMailto(options: {
   address: string;
   reference?: string;
-  timeZone?: TimeZoneDescriptor;
+  timeZone?: ZoneDescriptor;
+  /** A time the applicant already picked, so they do not have to describe it again. */
+  requestedTime?: string;
 }): string {
   const reference = isApplicationReference(options.reference) ? options.reference : "";
   const subject = reference
     ? `Strategic review scheduling - ${reference}`
     : "Strategic review scheduling";
+  const requested = options.requestedTime?.trim() ?? "";
   const lines = [
     "Hello Aurixa team,",
     "",
@@ -220,8 +148,7 @@ export function buildSchedulingFallbackMailto(options: {
     reference ? `Application reference: ${reference}` : "",
     options.timeZone ? `My time zone: ${options.timeZone.label} (${options.timeZone.offsetLabel})` : "",
     "",
-    "Suitable times for me are:",
-    "-",
+    ...(requested ? ["The time I would like to request:", requested] : ["Suitable times for me are:", "-"]),
   ].filter((line, index, all) => line !== "" || all[index - 1] !== "");
 
   return `mailto:${options.address}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
