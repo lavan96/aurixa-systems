@@ -7,7 +7,7 @@
  * reference travels in email and is not a credential on its own.
  */
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
 import {
   EMPTY_RESUME_DETAILS,
@@ -31,9 +31,9 @@ export type ResumeByReferenceProps = {
   onResume: (details: { applicationId: string; workEmail: string }) => Promise<ResumeFailure | null>;
   supportEmail: string;
   /**
-   * Reference carried in from the Stage 1 email's `?ref=` link. When present the
-   * form starts open with the reference filled in and the cursor in the email
-   * field, so the applicant only has to supply the second factor.
+   * Reference carried in from the Stage 1 email's `?ref=` link. When present
+   * the form starts open with the reference filled in, so the applicant only
+   * has to supply the second factor.
    */
   initialReference?: string;
 };
@@ -46,13 +46,11 @@ export function ResumeByReference({ onResume, supportEmail, initialReference = "
   const [errors, setErrors] = useState<ResumeDetailErrors>({});
   const [failure, setFailure] = useState<ResumeFailure | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const emailRef = useRef<HTMLInputElement>(null);
 
-  // Only when the applicant arrived on the link — otherwise the form opens by a
-  // deliberate click and moving focus would take it off the button they pressed.
-  useEffect(() => {
-    if (initialReference) emailRef.current?.focus();
-  }, [initialReference]);
+  // The form deliberately does not grab focus when it opens itself from a
+  // link: the page has already moved focus to the panel heading, and an
+  // applicant arriving that way needs to hear why the questionnaire is locked
+  // before being dropped into the one field they still have to fill.
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -128,7 +126,6 @@ export function ResumeByReference({ onResume, supportEmail, initialReference = "
       <label className="mt-4 block">
         <span className={LABEL_CLASS}>Work email</span>
         <input
-          ref={emailRef}
           name="workEmail"
           type="email"
           value={details.workEmail}
