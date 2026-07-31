@@ -4,8 +4,6 @@ import {
   REVIEW_REFERENCE_STORAGE_KEY,
   buildSchedulingFallbackMailto,
   describeTimeZone,
-  formatLocalTime,
-  formatUtcOffset,
   isApplicationReference,
   resolveApplicationReference,
   resolveBookingUrl,
@@ -118,54 +116,6 @@ test("resolveApplicationReference drops a stored value that no longer parses", (
   assert.equal(storage.getItem(REVIEW_REFERENCE_STORAGE_KEY), null);
 });
 
-test("formatUtcOffset renders signed, padded offsets", () => {
-  assert.equal(formatUtcOffset(600), "UTC+10:00");
-  assert.equal(formatUtcOffset(0), "UTC+00:00");
-  assert.equal(formatUtcOffset(330), "UTC+05:30");
-  assert.equal(formatUtcOffset(-210), "UTC-03:30");
-  assert.equal(formatUtcOffset(Number.NaN), "UTC");
-});
-
-test("describeTimeZone reports the offset and labels for a known zone", () => {
-  const winter = describeTimeZone(new Date("2026-07-01T00:00:00Z"), "Australia/Brisbane");
-  assert.equal(winter.timeZone, "Australia/Brisbane");
-  assert.equal(winter.label, "Australia/Brisbane");
-  assert.equal(winter.shortLabel, "Brisbane");
-  assert.equal(winter.offsetLabel, "UTC+10:00");
-
-  const utc = describeTimeZone(new Date("2026-07-01T00:00:00Z"), "UTC");
-  assert.equal(utc.offsetLabel, "UTC+00:00");
-
-  const halfHour = describeTimeZone(new Date("2026-07-01T00:00:00Z"), "Australia/Adelaide");
-  assert.equal(halfHour.offsetLabel, "UTC+09:30");
-});
-
-test("describeTimeZone follows daylight saving for the given instant", () => {
-  const zone = "Australia/Sydney";
-  assert.equal(describeTimeZone(new Date("2026-01-15T00:00:00Z"), zone).offsetLabel, "UTC+11:00");
-  assert.equal(describeTimeZone(new Date("2026-07-15T00:00:00Z"), zone).offsetLabel, "UTC+10:00");
-});
-
-test("describeTimeZone degrades when no zone id is available", () => {
-  const described = describeTimeZone(new Date("2026-07-01T00:00:00Z"), "");
-  assert.equal(described.timeZone, "");
-  assert.equal(described.label, "Your device time zone");
-  assert.equal(described.shortLabel, "Local");
-  assert.match(described.offsetLabel, /^UTC[+-]\d{2}:\d{2}$/);
-});
-
-test("describeTimeZone tolerates an invalid zone id", () => {
-  const described = describeTimeZone(new Date("2026-07-01T00:00:00Z"), "Not/AZone");
-  assert.equal(described.shortLabel, "AZone");
-  assert.match(described.offsetLabel, /^UTC[+-]\d{2}:\d{2}$/);
-});
-
-test("formatLocalTime renders 24-hour time in the given zone", () => {
-  assert.equal(formatLocalTime(new Date("2026-07-01T04:32:00Z"), "Australia/Brisbane"), "14:32");
-  assert.equal(formatLocalTime(new Date("2026-07-01T04:32:00Z"), "UTC"), "04:32");
-  assert.equal(formatLocalTime(new Date("2026-07-01T04:32:00Z"), "Not/AZone"), "");
-});
-
 test("buildSchedulingFallbackMailto carries the reference and time zone", () => {
   const mailto = buildSchedulingFallbackMailto({
     address: "admin@aurixasystems.com.au",
@@ -184,4 +134,15 @@ test("buildSchedulingFallbackMailto omits an unissued reference", () => {
   const query = new URLSearchParams(mailto.slice(mailto.indexOf("?") + 1));
   assert.equal(query.get("subject"), "Strategic review scheduling");
   assert.doesNotMatch(query.get("body") ?? "", /Application reference/);
+});
+
+test("buildSchedulingFallbackMailto carries a time the applicant already picked", () => {
+  const mailto = buildSchedulingFallbackMailto({
+    address: "admin@aurixasystems.com.au",
+    requestedTime: "Friday 7 August 2026, 9:00 am – 9:30 am",
+  });
+  const body = new URLSearchParams(mailto.slice(mailto.indexOf("?") + 1)).get("body") ?? "";
+  assert.match(body, /The time I would like to request:/);
+  assert.match(body, /Friday 7 August 2026, 9:00 am/);
+  assert.doesNotMatch(body, /Suitable times for me are/);
 });

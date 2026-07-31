@@ -22,11 +22,13 @@ interface ImportMetaEnv {
   /** Public privacy policy URL shown beside the collection notice. */
   readonly VITE_PRIVACY_POLICY_URL?: string;
   /**
-   * Stage 3 Microsoft Bookings embed URL. Must be an HTTPS Microsoft Bookings
-   * address; anything else is ignored and the page shows the manual scheduling
-   * fallback instead.
+   * Stage 3 Microsoft Bookings embed URL. Set only to replace the built-in
+   * scheduler with a Bookings embed; must be an HTTPS Microsoft Bookings
+   * address, and anything else is ignored.
    */
   readonly VITE_BOOKINGS_URL?: string;
+  /** Optional Make.com scenario mirroring Stage 3 booking requests. */
+  readonly VITE_MAKE_BOOKING_WEBHOOK_URL?: string;
 }
 
 interface ImportMeta {
