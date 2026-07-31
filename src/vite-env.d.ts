@@ -21,6 +21,12 @@ interface ImportMetaEnv {
   readonly VITE_READINESS_QUESTIONNAIRE_URL?: string;
   /** Public privacy policy URL shown beside the collection notice. */
   readonly VITE_PRIVACY_POLICY_URL?: string;
+  /**
+   * Stage 3 Microsoft Bookings embed URL. Must be an HTTPS Microsoft Bookings
+   * address; anything else is ignored and the page shows the manual scheduling
+   * fallback instead.
+   */
+  readonly VITE_BOOKINGS_URL?: string;
 }
 
 interface ImportMeta {
