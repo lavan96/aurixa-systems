@@ -31,3 +31,11 @@ verify_jwt = false
 
 [functions.storefront-plan-change]
 verify_jwt = false
+
+# Documentation for the Command Center, gated by entitlement. Reached from a
+# marketing page with no login and, for customers, from a dashboard link
+# carrying a `?h=` handoff — so authorisation is possession of that token, not a
+# Supabase JWT. The browser sends no Authorization header, so the default
+# `verify_jwt = true` would 401 every request before the function runs.
+[functions.storefront-docs]
+verify_jwt = false

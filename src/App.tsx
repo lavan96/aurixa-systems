@@ -8,6 +8,7 @@ import Solutions from "./pages/Solutions";
 import Industries from "./pages/Industries";
 import About from "./pages/About";
 import Resources from "./pages/Resources";
+import Docs from "./pages/Docs";
 import Contact from "./pages/Contact";
 import Pricing from "./pages/Pricing";
 import PricingSuccess from "./pages/PricingSuccess";
@@ -53,6 +54,7 @@ function AppShell() {
             <Route path="/pricing/card-saved" element={<CardSaved />} />
             <Route path="/about" element={<About />} />
             <Route path="/resources" element={<Resources />} />
+            <Route path="/docs" element={<Docs />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/compliance" element={<Compliance />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
