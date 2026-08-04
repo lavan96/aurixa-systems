@@ -83,12 +83,6 @@ export const TIER_FEATURES: Record<string, TierFeatures> = {
     inherits: "Launch",
     groups: [
     {
-      heading: "Main Dashboard",
-      items: [
-        { name: "Market Updates" },
-      ],
-    },
-    {
       heading: "Reports & Analysis",
       items: [
         { name: "Generated Reports", subs: ["Comparisons"] },
@@ -115,6 +109,9 @@ export const TIER_FEATURES: Record<string, TierFeatures> = {
     {
       heading: "Main Dashboard",
       items: [
+        // Market Updates is Scale-bundled; Launch and Growth buy it as an
+        // add-on. Matches Mission Control's catalogue (aurixa-catalog.ts).
+        { name: "Market Updates" },
         { name: "Commercial / Industrial" },
         { name: "Opportunity Marketplace" },
       ],
