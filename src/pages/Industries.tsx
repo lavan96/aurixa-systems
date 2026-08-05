@@ -6,7 +6,7 @@ import { IndustriesHeroVisual } from "../components/AnimatedHeroVisuals";
 
 export default function Industries() {
   return (
-    <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-screen overflow-hidden">
+    <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="industries" />
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(420px,.9fr)] gap-8 items-center mb-24">
@@ -18,7 +18,7 @@ export default function Industries() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
+            className="text-[clamp(2.4rem,12vw,3rem)] md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
           >
             <span className="block text-liquid-chrome-clean drop-shadow-md">Built for the</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Apex Players.</span>
@@ -35,7 +35,7 @@ export default function Industries() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Buyers Agents</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -50,7 +50,7 @@ export default function Industries() {
               <div className="w-full h-px bg-[#00A8B5]/20" />
            </div>
 
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Wealth Advisors</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -65,7 +65,7 @@ export default function Industries() {
               <div className="w-full h-px bg-[#C89B3C]/20" />
            </div>
 
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Enterprise Firms</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -79,7 +79,7 @@ export default function Industries() {
               </p>
               <div className="w-full h-px bg-white/20" />
            </div>
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Property Advisory Firms</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -91,7 +91,7 @@ export default function Industries() {
               <div className="w-full h-px bg-[#00A8B5]/20" />
            </div>
 
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Real Estate Agencies</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -103,7 +103,7 @@ export default function Industries() {
               <div className="w-full h-px bg-[#C89B3C]/20" />
            </div>
 
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Mortgage & Finance Businesses</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -115,7 +115,7 @@ export default function Industries() {
               <div className="w-full h-px bg-white/20" />
            </div>
 
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Investment Groups</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -127,7 +127,7 @@ export default function Industries() {
               <div className="w-full h-px bg-[#00A8B5]/20" />
            </div>
 
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Developers</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -139,7 +139,7 @@ export default function Industries() {
               <div className="w-full h-px bg-[#C89B3C]/20" />
            </div>
 
-           <div className="glass-panel p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
+           <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
               <h3 className="text-2xl font-display font-light text-white mb-4">Enterprise Property Networks</h3>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
@@ -153,7 +153,7 @@ export default function Industries() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="mt-20 glass-panel p-16 text-center shadow-2xl relative overflow-hidden border border-white/10">
+        <div className="mt-20 glass-panel p-6 sm:p-16 text-center shadow-2xl relative overflow-hidden border border-white/10">
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>

@@ -166,7 +166,7 @@ const MODULE_CATEGORIES = [
 
 export default function Resources() {
   return (
-    <div className="w-full relative pt-32 pb-32 bg-[#040B16] min-h-screen overflow-hidden">
+    <div className="w-full relative pt-32 pb-32 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="resources" />
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
         <div className="max-w-4xl mb-24 flex flex-col items-center text-center mx-auto">
@@ -176,7 +176,7 @@ export default function Resources() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
+            className="text-[clamp(2.4rem,12vw,3rem)] md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
           >
             <span className="block text-liquid-chrome drop-shadow-md">Global Sub-System</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Module Library.</span>
@@ -265,7 +265,7 @@ export default function Resources() {
            <div className="w-3 h-3 border border-[#C89B3C] rotate-45 bg-[#040B16] shadow-[0_0_10px_#C89B3C] z-10" />
         </div>
 
-        <div className="max-w-4xl mx-auto glass-panel p-16 text-center border-t-2 border-b-2 border-[#C89B3C]/50 shadow-[0_0_50px_rgba(200,155,60,0.05)] relative overflow-hidden bg-gradient-to-b from-[#0B162C]/30 to-[#040B16]/80 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto glass-panel p-6 sm:p-16 text-center border-t-2 border-b-2 border-[#C89B3C]/50 shadow-[0_0_50px_rgba(200,155,60,0.05)] relative overflow-hidden bg-gradient-to-b from-[#0B162C]/30 to-[#040B16]/80 backdrop-blur-md">
            <div className="absolute inset-0 bg-chrome-prismatic opacity-[0.02] pointer-events-none mix-blend-screen" />
            
            {/* Radar sweep background effect for the locked box */}

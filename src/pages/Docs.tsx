@@ -242,7 +242,10 @@ export default function Docs() {
   }, [loading]);
 
   return (
-    <div className="w-full relative pt-32 pb-32 bg-[#040B16] min-h-screen overflow-hidden">
+    // overflow-x-clip, not overflow-hidden: `hidden` on one axis forces the
+    // other to `auto`, which made this element a scroll container and pinned
+    // the sticky contents rail below to a box that never scrolls.
+    <div className="w-full relative pt-32 pb-32 bg-[#040B16] min-h-dvh overflow-x-clip">
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
         {/* ── Header ── */}
         <div className="max-w-4xl mb-16 flex flex-col items-center text-center mx-auto">
@@ -253,7 +256,7 @@ export default function Docs() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-5xl md:text-7xl font-display font-light tracking-tight mb-8 leading-[1.05]"
+            className="text-[clamp(2.3rem,11.5vw,3rem)] md:text-7xl font-display font-light tracking-tight mb-8 leading-[1.05]"
           >
             <span className="block text-liquid-chrome drop-shadow-md">Command Center</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Documentation.</span>
@@ -301,10 +304,13 @@ export default function Docs() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[16rem_1fr] gap-12">
+        {/* minmax(0,1fr), not 1fr: a grid track's default minimum is its
+            content, so one long unbroken string in the docs body would widen
+            the column past the page instead of wrapping inside it. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)] gap-12">
           {/* ── Contents ── */}
           <nav aria-label="Documentation contents" className="hidden lg:block">
-            <div className="sticky top-32 max-h-[calc(100vh-10rem)] overflow-y-auto pr-2">
+            <div className="sticky top-32 max-h-[calc(100dvh-10rem)] overflow-y-auto overscroll-contain pr-2">
               <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#00A8B5]/60 mb-4">
                 Contents
               </p>

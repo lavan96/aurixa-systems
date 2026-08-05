@@ -23,7 +23,7 @@ const SHOW_CORELOGIC_DATA_INTEGRATION = false;
 
 export default function Platform() {
   return (
-    <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-screen overflow-hidden">
+    <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="platform" />
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
         {/* Header */}
@@ -36,7 +36,7 @@ export default function Platform() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
+            className="text-[clamp(2.4rem,12vw,3rem)] md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
           >
             <span className="block text-liquid-chrome drop-shadow-md">The Intelligence</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Engine.</span>
@@ -57,7 +57,7 @@ export default function Platform() {
         <div className="space-y-32">
           {/* Module 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="order-2 lg:order-1 glass-panel p-12 relative overflow-hidden group">
+            <div className="order-2 lg:order-1 glass-panel p-6 sm:p-12 relative overflow-hidden group">
                <div className="absolute inset-0 bg-gradient-to-br from-[#00A8B5]/10 to-transparent opacity-50" />
                <div className="relative z-10">
                  <Cpu className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
@@ -112,7 +112,7 @@ export default function Platform() {
                 ))}
               </ul>
             </div>
-            <div className="glass-panel p-12 relative overflow-hidden group">
+            <div className="glass-panel p-6 sm:p-12 relative overflow-hidden group">
                <div className="absolute inset-0 bg-gradient-to-bl from-[#C89B3C]/10 to-transparent opacity-50" />
                <div className="relative z-10">
                  <Terminal className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
@@ -135,7 +135,7 @@ export default function Platform() {
 
         {/* Expansive Add-On Modules Grid */}
         <div className="mt-32 pt-32 border-t border-white/5 relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-radial from-[#00A8B5]/5 via-[#C89B3C]/5 to-transparent blur-[80px] pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] max-w-full bg-[radial-gradient(ellipse_at_center,rgba(0,168,181,0.05)_0%,rgba(200,155,60,0.05)_45%,transparent_70%)] blur-[80px] pointer-events-none" />
           
           <div className="text-center max-w-3xl mx-auto mb-20 relative z-10">
             <div className="flex justify-center items-center gap-3 mb-6">
@@ -152,7 +152,7 @@ export default function Platform() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10">
             
             {/* Add on 1: Borrowing Capacity (Massive Span) */}
-            <div className="md:col-span-12 lg:col-span-8 glass-panel p-10 md:p-12 group overflow-hidden border border-[#C89B3C]/20 hover:border-[#C89B3C]/60 transition-all duration-500 bg-gradient-to-br from-[#0B162C]/90 to-[#040B16] relative flex flex-col justify-between min-h-[450px]">
+            <div className="md:col-span-12 lg:col-span-8 glass-panel p-6 sm:p-10 md:p-12 group overflow-hidden border border-[#C89B3C]/20 hover:border-[#C89B3C]/60 transition-all duration-500 bg-gradient-to-br from-[#0B162C]/90 to-[#040B16] relative flex flex-col justify-between min-h-[450px]">
                <div className="absolute inset-0 bg-gradient-to-br from-[#00A8B5]/5 to-transparent pointer-events-none" />
                <div className="absolute right-0 top-0 w-2/3 h-full opacity-10 pointer-events-none grid-hex" />
                
@@ -188,7 +188,7 @@ export default function Platform() {
             </div>
 
             {/* Add on 2: Customizable Reporting (Tall Box) */}
-            <div className="md:col-span-12 lg:col-span-4 glass-panel p-10 md:p-12 group overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-500 bg-gradient-to-bl from-[#0B162C]/90 to-[#040B16] relative flex flex-col justify-between min-h-[450px]">
+            <div className="md:col-span-12 lg:col-span-4 glass-panel p-6 sm:p-10 md:p-12 group overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-500 bg-gradient-to-bl from-[#0B162C]/90 to-[#040B16] relative flex flex-col justify-between min-h-[450px]">
                <div className="relative z-10">
                  <FileText className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                  <h4 className="text-white font-display text-3xl mb-4 tracking-wide">Custom Reporting</h4>
@@ -213,7 +213,7 @@ export default function Platform() {
             </div>
 
             {/* Add on 3: White-Label Dashboards (Square/Medium Span) */}
-            <div className="md:col-span-6 lg:col-span-5 glass-panel p-10 md:p-12 group overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-500 bg-[#0B162C]/80 relative flex flex-col justify-between min-h-[450px]">
+            <div className="md:col-span-6 lg:col-span-5 glass-panel p-6 sm:p-10 md:p-12 group overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-500 bg-[#0B162C]/80 relative flex flex-col justify-between min-h-[450px]">
                <div className="relative z-10 w-full max-w-sm">
                  <LayoutDashboard className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                  <h4 className="text-white font-display text-3xl mb-4 tracking-wide shadow-black drop-shadow-lg">White-Label UI</h4>
@@ -251,7 +251,7 @@ export default function Platform() {
             </div>
 
             {/* Add on 4: Suburb Snapshots (Wide Span) */}
-            <div className="md:col-span-6 lg:col-span-7 glass-panel p-10 md:p-12 group overflow-hidden border border-[#00A8B5]/20 hover:border-[#00A8B5]/60 transition-all duration-500 bg-gradient-to-bl from-[#0B162C]/90 to-[#040B16] relative flex flex-col justify-between min-h-[450px]">
+            <div className="md:col-span-6 lg:col-span-7 glass-panel p-6 sm:p-10 md:p-12 group overflow-hidden border border-[#00A8B5]/20 hover:border-[#00A8B5]/60 transition-all duration-500 bg-gradient-to-bl from-[#0B162C]/90 to-[#040B16] relative flex flex-col justify-between min-h-[450px]">
                <div className="relative z-10 w-full max-w-sm">
                  <MapPin className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
                  <h4 className="text-white font-display text-3xl mb-4 tracking-wide shadow-black drop-shadow-lg">Suburb Snapshots</h4>
@@ -290,7 +290,7 @@ export default function Platform() {
 
             {/* Add on 5: CoreLogic Integration (Full Width Banner) */}
             {SHOW_CORELOGIC_DATA_INTEGRATION && (
-              <div className="md:col-span-12 lg:col-span-12 glass-panel p-10 md:p-12 group overflow-hidden border border-[#C89B3C]/30 hover:border-[#C89B3C]/80 transition-all duration-500 bg-[#0B162C]/90 relative flex flex-col md:flex-row items-center border-l-[6px] min-h-[350px]">
+              <div className="md:col-span-12 lg:col-span-12 glass-panel p-6 sm:p-10 md:p-12 group overflow-hidden border border-[#C89B3C]/30 hover:border-[#C89B3C]/80 transition-all duration-500 bg-[#0B162C]/90 relative flex flex-col md:flex-row items-center border-l-[6px] min-h-[350px]">
                <div className="absolute inset-0 bg-gradient-to-r from-[#00A8B5]/10 to-transparent pointer-events-none" />
                <div className="absolute right-0 top-0 w-3/4 h-full opacity-10 pointer-events-none grid-hex" />
                
@@ -377,7 +377,7 @@ export default function Platform() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="mt-40 glass-panel p-16 text-center shadow-2xl relative overflow-hidden border border-white/10">
+        <div className="mt-40 glass-panel p-6 sm:p-16 text-center shadow-2xl relative overflow-hidden border border-white/10">
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>

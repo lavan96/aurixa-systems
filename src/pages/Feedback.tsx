@@ -128,7 +128,7 @@ export default function Feedback() {
   const rewardAvailable = context?.prompt?.rewardAvailable !== false;
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#040B16] text-white">
+    <main className="relative min-h-dvh overflow-x-clip bg-[#040B16] text-white">
       <BackgroundFX />
 
       <section className="relative z-10 mx-auto max-w-3xl px-6 pb-24 pt-28 sm:pt-36">

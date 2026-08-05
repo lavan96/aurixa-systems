@@ -207,7 +207,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="w-full relative pt-32 pb-20 min-h-screen bg-[#040B16] overflow-hidden">
+    <div className="w-full relative pt-32 pb-20 min-h-dvh bg-[#040B16] overflow-hidden">
       {showHandoff && (
         <StageOneCompleteModal
           onProceed={() => navigate("/questionnaire")}
@@ -228,7 +228,7 @@ export default function Contact() {
               <span className="w-12 h-px bg-white/50" />
               <span className="text-[11px] font-bold tracking-widest uppercase text-white/50">Restricted Action</span>
             </div>
-            <h1 className="text-5xl md:text-7xl lg:text-[4.5rem] font-display font-light mb-8 tracking-[-0.02em] leading-[1.05]">
+            <h1 className="text-[clamp(2.4rem,12vw,3rem)] md:text-7xl lg:text-[4.5rem] font-display font-light mb-8 tracking-[-0.02em] leading-[1.05]">
               <span className="block text-white mb-2">The</span>
               <span className="italic text-chrome-prismatic drop-shadow-2xl">Waitlist.</span>
             </h1>
@@ -548,11 +548,14 @@ export default function Contact() {
                   </Field>
 
                   {/* Row 9 — collection notice and consent */}
-                  <details className="border border-white/10 bg-[#040B16]/60 px-4 py-3">
-                    <summary className="cursor-pointer text-[11px] uppercase tracking-[0.12em] text-[#C3CCDD] font-bold list-none flex items-center gap-2">
+                  {/* The vertical padding sits on the summary rather than the
+                      details, so the whole strip toggles the disclosure. On the
+                      details it was decoration around an 18px-tall tap target. */}
+                  <details className="border border-white/10 bg-[#040B16]/60 px-4">
+                    <summary className="cursor-pointer py-3 min-h-[44px] text-[11px] uppercase tracking-[0.12em] text-[#C3CCDD] font-bold list-none flex items-center gap-2">
                       <span className="text-[#C89B3C]" aria-hidden="true">+</span> Collection notice
                     </summary>
-                    <div className="mt-3 space-y-2 text-[13px] text-[#9CA3B8] font-light leading-relaxed">
+                    <div className="pb-3 space-y-2 text-[13px] text-[#9CA3B8] font-light leading-relaxed">
                       <p>
                         Aurixa Systems Pty Ltd collects the information in this form to assess your
                         priority-access application, to send you the Business Readiness Questionnaire and to
