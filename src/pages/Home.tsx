@@ -5,10 +5,13 @@ import { HeroBackground } from "../components/HeroBackgrounds";
 
 export default function Home() {
   return (
-    <div className="w-full relative w-full pt-20 bg-[#040B16]">
-      
-      {/* Hero Section */}
-      <section className="relative px-6 pt-24 pb-32 md:pt-40 md:pb-48 w-full flex flex-col items-center justify-center min-h-[90vh] overflow-hidden">
+    <div className="w-full relative pt-20 bg-[#040B16]">
+
+      {/* Hero Section.
+          Measured against the *small* viewport so the hero keeps its height
+          when a mobile browser's toolbars slide away, instead of growing and
+          shunting everything below it. */}
+      <section className="relative px-6 pt-24 pb-32 md:pt-40 md:pb-48 w-full flex flex-col items-center justify-center min-h-[90svh] overflow-hidden">
         <HeroBackground variant="home" />
         
         <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center text-center">
@@ -162,7 +165,20 @@ export default function Home() {
                   <div className="absolute inset-0 bg-[#00A8B5] mix-blend-color z-10 opacity-30 group-hover:opacity-10 transition-opacity" />
                   <div className="absolute inset-0 bg-[#C89B3C] mix-blend-color z-10 opacity-20 group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B162C] to-transparent z-20" />
-                  <img src={unit.img} alt={unit.name} style={{ objectPosition: unit.imagePosition || "center center" }} className={`block w-full h-full object-cover filter ${unit.id === "LYR-01" ? "brightness-[1.35] contrast-[1.15] saturate-[1.15] opacity-90 group-hover:brightness-[1.45] group-hover:contrast-[1.2] group-hover:saturate-[1.2]" : "grayscale contrast-125 opacity-70"} group-hover:scale-110 group-hover:opacity-100 transition-all duration-700`} referrerPolicy="no-referrer" />
+                  {/* These are ~2 MB stills apiece and all five sit below the
+                      fold. Deferring them keeps the hero's first paint off a
+                      10 MB critical path on a phone connection. The wrapper is
+                      `aspect-video`, so the box is already reserved and nothing
+                      reflows as each one arrives. */}
+                  <img
+                    src={unit.img}
+                    alt={unit.name}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ objectPosition: unit.imagePosition || "center center" }}
+                    className={`block w-full h-full object-cover filter ${unit.id === "LYR-01" ? "brightness-[1.35] contrast-[1.15] saturate-[1.15] opacity-90 group-hover:brightness-[1.45] group-hover:contrast-[1.2] group-hover:saturate-[1.2]" : "grayscale contrast-125 opacity-70"} group-hover:scale-110 group-hover:opacity-100 transition-all duration-700`}
+                    referrerPolicy="no-referrer"
+                  />
                   <div className="absolute top-4 right-4 z-30">
                     <span className="px-2 py-1 bg-[#000]/80 border border-white/30 text-white text-[10px] font-mono tracking-widest">{unit.id}</span>
                   </div>
@@ -227,17 +243,24 @@ export default function Home() {
 
       {/* Final CTA */}
       <section className="w-full py-40 relative overflow-hidden bg-[#040B16]">
-        <div className="absolute inset-0 bg-gradient-radial from-[#111827] to-[#040B16] z-0" />
-        <div className="absolute right-0 bottom-0 w-[800px] h-[800px] bg-gradient-radial from-[#0A192F]/10 to-transparent blur-[120px] opacity-40 pointer-events-none" />
+        {/* `bg-gradient-radial` is not a Tailwind utility — these two layers
+            emitted no background at all. Written out, they render the depth
+            the section was designed with. */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#111827_0%,#040B16_70%)] z-0" />
+        <div className="absolute right-0 bottom-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(10,25,47,0.1),transparent_70%)] blur-[120px] opacity-40 pointer-events-none" />
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
           <div className="mb-8 mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-md bg-[#040B16] p-2 shadow-[0_0_40px_rgba(200,155,60,0.3)]">
             <img
               src="/brand/aurixa-symbol.svg"
               alt="Aurixa Systems logo"
+              width={96}
+              height={96}
+              loading="lazy"
+              decoding="async"
               className="block h-full w-full object-contain object-center"
             />
           </div>
-          <h2 className="text-6xl md:text-7xl lg:text-[5rem] font-display font-light mb-8 tracking-tight leading-[1.05] text-white">
+          <h2 className="text-[clamp(2.4rem,13vw,3.75rem)] md:text-7xl lg:text-[5rem] font-display font-light mb-8 tracking-tight leading-[1.05] text-white">
             Unifying strategic intelligence <br /><span className="italic text-chrome-prismatic drop-shadow-2xl">into one platform.</span>
           </h2>
           <p className="text-xl text-[#9CA3AF] mb-12 max-w-2xl font-light leading-relaxed">

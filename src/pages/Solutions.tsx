@@ -6,7 +6,7 @@ import { SolutionsHeroVisual } from "../components/AnimatedHeroVisuals";
 
 export default function Solutions() {
   return (
-    <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-screen overflow-hidden">
+    <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="solutions" />
       <div className="max-w-7xl mx-auto px-6 w-full relative z-10">
         {/* Header */}
@@ -19,7 +19,7 @@ export default function Solutions() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
+            className="text-[clamp(2.4rem,12vw,3rem)] md:text-7xl lg:text-[5rem] font-display font-light tracking-tight mb-8 leading-[1.05]"
           >
             <span className="block text-liquid-chrome-clean drop-shadow-md">Unfair Market</span>
             <span className="text-chrome-prismatic italic drop-shadow-2xl">Dominance.</span>
@@ -42,7 +42,7 @@ export default function Solutions() {
            <div className="glass-panel p-0 relative overflow-hidden group border border-[#00A8B5]/30 hover:border-[#00A8B5]/80 transition-all duration-700 bg-[#0B162C]/50 flex flex-col md:flex-row min-h-[400px]">
              
              {/* Abstract UI Visual - Left Side */}
-             <div className="w-full md:w-5/12 bg-[#040B16] border-b md:border-b-0 md:border-r border-[#00A8B5]/20 relative overflow-hidden flex items-center justify-center p-12">
+             <div className="w-full md:w-5/12 bg-[#040B16] border-b md:border-b-0 md:border-r border-[#00A8B5]/20 relative overflow-hidden flex items-center justify-center p-6 sm:p-12">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#00A8B5]/10 to-transparent pointer-events-none" />
                 <div className="absolute inset-0 opacity-10 grid-hex pointer-events-none" />
                 
@@ -62,7 +62,7 @@ export default function Solutions() {
              </div>
 
              {/* Content Side */}
-             <div className="w-full md:w-7/12 p-12 relative flex flex-col justify-center">
+             <div className="w-full md:w-7/12 p-6 sm:p-12 relative flex flex-col justify-center">
                 <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#00A8B5]/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                 <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Precision Client <span className="italic text-[#00A8B5]">Acquisition.</span></h3>
                 <p className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl">
@@ -91,7 +91,7 @@ export default function Solutions() {
            <div className="glass-panel p-0 relative overflow-hidden group border border-[#C89B3C]/30 hover:border-[#C89B3C]/80 transition-all duration-700 bg-[#0B162C]/50 flex flex-col md:flex-row-reverse min-h-[400px]">
              
              {/* Abstract UI Visual - Right Side */}
-             <div className="w-full md:w-5/12 bg-[#040B16] border-b md:border-b-0 md:border-l border-[#C89B3C]/20 relative overflow-hidden flex items-center justify-center p-12">
+             <div className="w-full md:w-5/12 bg-[#040B16] border-b md:border-b-0 md:border-l border-[#C89B3C]/20 relative overflow-hidden flex items-center justify-center p-6 sm:p-12">
                 <div className="absolute inset-0 opacity-10 grid-hex pointer-events-none" />
                 
                 {/* Protocol Lines */}
@@ -110,7 +110,7 @@ export default function Solutions() {
              </div>
 
              {/* Content Side */}
-             <div className="w-full md:w-7/12 p-12 relative flex flex-col justify-center">
+             <div className="w-full md:w-7/12 p-6 sm:p-12 relative flex flex-col justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#C89B3C]/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                 <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Zero-Friction <span className="italic text-[#C89B3C]">Compliance.</span></h3>
                 <div className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl space-y-4">
@@ -159,7 +159,7 @@ export default function Solutions() {
              </div>
 
              {/* Content Side */}
-             <div className="w-full md:w-7/12 p-12 relative flex flex-col justify-center">
+             <div className="w-full md:w-7/12 p-6 sm:p-12 relative flex flex-col justify-center">
                 <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Hyper-Scaled <span className="italic text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">Operations.</span></h3>
                 <div className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl space-y-4">
                   <p>A single principal advisor armed with Aurixa can output the workload of a ten-person analyst team. Scale your asset under management exponentially without ballooning your payroll overhead. This is about absolute leverage.</p>
@@ -183,7 +183,7 @@ export default function Solutions() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="mt-20 glass-panel p-16 text-center shadow-2xl relative overflow-hidden border border-white/10">
+        <div className="mt-20 glass-panel p-6 sm:p-16 text-center shadow-2xl relative overflow-hidden border border-white/10">
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>

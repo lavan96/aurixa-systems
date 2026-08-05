@@ -1,4 +1,4 @@
-import React from 'react';
+import { useMemo } from 'react';
 
 type Variant = 'home' | 'platform' | 'solutions' | 'industries' | 'about' | 'resources' | 'contact';
 
@@ -6,34 +6,71 @@ interface HeroBackgroundsProps {
   variant: Variant;
 }
 
+/**
+ * One draw of a scatter field, stable for the life of the mount.
+ *
+ * `make` is deliberately outside the dependency list — re-running it is the
+ * exact behaviour this exists to stop.
+ */
+function useScatter<T>(count: number, make: (index: number) => T): T[] {
+  return useMemo(() => Array.from({ length: count }, (_, index) => make(index)), [count]);
+}
+
+/**
+ * Decorative hero fields. Two rules hold across every variant:
+ *
+ *  1. Nothing is generated during render. The scatter fields used to call
+ *     `Math.random()` inline, so every particle jumped to a new position and
+ *     restarted its animation on each re-render of the page above — and these
+ *     sit under pages that re-render on scroll, on form input, and twice more
+ *     under StrictMode. Each field is now drawn once per mount and held.
+ *  2. Keyframes live in index.css. They used to be injected as inline <style>
+ *     tags per variant, which scoped them to whichever page happened to be
+ *     mounted and left references from other pages resolving to nothing.
+ */
 export function HeroBackground({ variant }: HeroBackgroundsProps) {
+  // Hooks must run unconditionally, so every field is drawn up front. Each is
+  // a short array of plain numbers; the variants that ignore them pay nothing.
+  const dust = useScatter(50, () => ({
+    size: Math.random() * 3,
+    gold: Math.random() > 0.5,
+    left: Math.random() * 100,
+    top: Math.random() * 100,
+    duration: 10 + Math.random() * 25,
+    opacity: 0.1 + Math.random() * 0.5,
+    delay: Math.random() * 30,
+  }));
+
+  const trunks = useScatter(12, (index) => ({
+    opacity: 0.2 + Math.random() * 0.5,
+    pulseDuration: 6 + Math.random() * 4,
+    pulseDelay: index * 0.5,
+    packetDuration: 2 + Math.random() * 4,
+    packetDelay: Math.random() * 5,
+    sparkDuration: 1 + Math.random() * 3,
+    sparkDelay: Math.random() * 7,
+  }));
+
+  const cipher = useScatter(100, () => Math.random().toString(16).slice(2, 16).toUpperCase());
+
+  const archiveBlocks = useScatter(8, () => ({
+    left: 10 + Math.random() * 80,
+    top: 10 + Math.random() * 80,
+    width: 50 + Math.random() * 150,
+    height: 20 + Math.random() * 60,
+    delay: Math.random() * 4,
+  }));
+
+  const vector = useMemo(() => Math.random().toFixed(4), []);
+
   switch (variant) {
     case 'home':
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#040B16]">
-          <style dangerouslySetInnerHTML={{__html: `
-            @keyframes spin-ultra-slow { 100% { transform: rotate(360deg); } }
-            @keyframes spin-ultra-slow-reverse { 100% { transform: rotate(-360deg); } }
-            @keyframes float-up-ambient {
-              0% { transform: translateY(100px) translateX(0); opacity: 0; }
-              20% { opacity: 1; }
-              80% { opacity: 1; transform: translateY(-80vh) translateX(20px); }
-              100% { transform: translateY(-100vh) translateX(-20px); opacity: 0; }
-            }
-            @keyframes pulse-opacity {
-              0%, 100% { opacity: 0.3; }
-              50% { opacity: 0.8; }
-            }
-            @keyframes hud-scan {
-              0% { transform: translateX(-100%); }
-              100% { transform: translateX(100%); }
-            }
-          `}} />
-
           {/* LAYER 1: Deep Vignette & Structural Gradients */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#040B16_100%)] z-10" />
-          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-radial from-[#C89B3C]/5 to-transparent blur-[100px]" />
-          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-gradient-radial from-[#00A8B5]/5 to-transparent blur-[100px]" />
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(200,155,60,0.05),transparent_70%)] blur-[100px]" />
+          <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(0,168,181,0.05),transparent_70%)] blur-[100px]" />
 
           {/* LAYER 2: The Singularity Core (Volumetric Light) */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#00A8B5]/10 blur-[150px] rounded-full z-0" />
@@ -125,18 +162,18 @@ export function HeroBackground({ variant }: HeroBackgroundsProps) {
 
           {/* LAYER 7: Zero-G Data Dust */}
           <div className="absolute inset-0 z-0">
-            {[...Array(50)].map((_, i) => (
+            {dust.map((mote, i) => (
                <div key={i} className="absolute rounded-full"
                     style={{
-                      width: Math.random() * 3 + 'px',
-                      height: Math.random() * 3 + 'px',
-                      backgroundColor: Math.random() > 0.5 ? '#C89B3C' : '#00A8B5',
-                      boxShadow: `0 0 10px ${Math.random() > 0.5 ? '#C89B3C' : '#00A8B5'}`,
-                      left: Math.random() * 100 + '%',
-                      top: Math.random() * 100 + '%',
-                      animation: `float-up-ambient ${10 + Math.random() * 25}s linear infinite`,
-                      opacity: 0.1 + Math.random() * 0.5,
-                      animationDelay: `-${Math.random() * 30}s`
+                      width: `${mote.size}px`,
+                      height: `${mote.size}px`,
+                      backgroundColor: mote.gold ? '#C89B3C' : '#00A8B5',
+                      boxShadow: `0 0 10px ${mote.gold ? '#C89B3C' : '#00A8B5'}`,
+                      left: `${mote.left}%`,
+                      top: `${mote.top}%`,
+                      animation: `float-up-ambient ${mote.duration}s linear infinite`,
+                      opacity: mote.opacity,
+                      animationDelay: `-${mote.delay}s`
                     }}
                />
             ))}
@@ -175,23 +212,23 @@ export function HeroBackground({ variant }: HeroBackgroundsProps) {
 
           {/* Monolithic Server Columns / Data Trunks */}
           <div className="absolute inset-x-[-10%] top-0 h-full flex justify-around opacity-30 z-0 transform scale-110">
-            {[...Array(12)].map((_, i) => (
+            {trunks.map((trunk, i) => (
               <div key={i} className="relative w-[1px] h-full bg-gradient-to-b from-transparent via-[#00A8B5] to-transparent shadow-[0_0_20px_#00A8B5]"
                    style={{
-                     opacity: 0.2 + Math.random() * 0.5,
-                     animation: `pulse-glow ${6 + Math.random() * 4}s ease-in-out infinite alternate`,
-                     animationDelay: `${i * 0.5}s`
+                     opacity: trunk.opacity,
+                     animation: `pulse-glow ${trunk.pulseDuration}s ease-in-out infinite alternate`,
+                     animationDelay: `${trunk.pulseDelay}s`
                    }}>
                  {/* High velocity data packets */}
                  <div className="absolute top-0 left-[-1.5px] w-[4px] h-[60px] bg-[#C89B3C] rounded-full shadow-[0_0_20px_#C89B3C]"
                       style={{
-                        animation: `data-stream-down ${2 + Math.random() * 4}s linear infinite`,
-                        animationDelay: `${Math.random() * 5}s`
+                        animation: `data-stream-down ${trunk.packetDuration}s linear infinite`,
+                        animationDelay: `${trunk.packetDelay}s`
                       }} />
                  <div className="absolute top-0 left-[-1px] w-[3px] h-[30px] bg-white rounded-full shadow-[0_0_15px_white]"
                       style={{
-                        animation: `data-stream-down ${1 + Math.random() * 3}s linear infinite`,
-                        animationDelay: `${Math.random() * 7}s`
+                        animation: `data-stream-down ${trunk.sparkDuration}s linear infinite`,
+                        animationDelay: `${trunk.sparkDelay}s`
                       }} />
               </div>
             ))}
@@ -211,16 +248,6 @@ export function HeroBackground({ variant }: HeroBackgroundsProps) {
     case 'solutions':
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#040B16] perspective-[1000px]">
-          <style dangerouslySetInnerHTML={{__html: `
-            @keyframes target-lock { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.05) rotate(5deg); } }
-            @keyframes hud-scan-vertical { 0% { transform: translateY(-10vh); } 100% { transform: translateY(110vh); } }
-            @keyframes glitch-skew {
-              0%, 10% { transform: skew(0deg); } 11% { transform: skew(-10deg) translateX(-5px); } 12% { transform: skew(10deg) translateX(5px); } 13%, 100% { transform: skew(0deg); }
-            }
-            @keyframes spin-xyz { 0% { transform: rotateX(60deg) rotateY(0deg) rotateZ(0deg); } 100% { transform: rotateX(60deg) rotateY(360deg) rotateZ(360deg); } }
-            @keyframes pulse-slow { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.3; } }
-          `}} />
-
           {/* LAYER 1: Deep Global Flash & Pro Noise Mask */}
           <div className="absolute inset-0 bg-[#040B16] z-0" />
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10" />
@@ -288,7 +315,7 @@ export function HeroBackground({ variant }: HeroBackgroundsProps) {
           
           <div className="absolute bottom-12 right-12 text-[#00A8B5] font-mono text-[9px] tracking-widest text-right opacity-40">
              <div className="animate-[glitch-skew_5s_infinite]">
-               <div>SYS.VECTOR: {Math.random().toFixed(4)}</div>
+               <div>SYS.VECTOR: {vector}</div>
                <div>ALIGNMENT: LOCKED</div>
              </div>
              <div className="w-full h-[1px] bg-[#C89B3C]/30 mt-2" />
@@ -299,14 +326,6 @@ export function HeroBackground({ variant }: HeroBackgroundsProps) {
     case 'industries':
       return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 bg-[#040B16] perspective-[2000px]">
-          <style dangerouslySetInnerHTML={{__html: `
-            @keyframes marquee-massive { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-            @keyframes tunnel-rush { 0% { background-position: 0 0; } 100% { background-position: 0 200px; } }
-            @keyframes hyper-data-flow { 0% { stroke-dashoffset: 2000; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
-            @keyframes float-node { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } 100% { transform: translateY(0px) rotate(0deg); } }
-            @keyframes spin-slow-globe { 100% { transform: rotateY(360deg); } }
-          `}} />
-
           {/* LAYER 1: Deep Global Vignette & Noise */}
           <div className="absolute inset-0 bg-[#040B16] z-0" />
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-0" />
@@ -386,9 +405,9 @@ export function HeroBackground({ variant }: HeroBackgroundsProps) {
           {/* The Cipher: Raining Hex/Data */}
           <div className="absolute inset-0 opacity-[0.15] font-mono text-[8px] md:text-[10px] text-[#00A8B5] leading-none overflow-hidden flex flex-wrap" style={{ wordBreak: 'break-all' }}>
             <div className="w-full h-[200vh] animate-[scanline_20s_linear_infinite]">
-              {[...Array(100)].map((_, i) => (
+              {cipher.map((word, i) => (
                 <span key={i} className="opacity-10 hover:opacity-100 transition-opacity">
-                   {Math.random().toString(16).substr(2, 64).toUpperCase()} 
+                   {word}{' '}
                 </span>
               ))}
             </div>
@@ -408,15 +427,15 @@ export function HeroBackground({ variant }: HeroBackgroundsProps) {
           
           {/* Floating illuminated blocks */}
           <div className="absolute inset-0">
-             {[...Array(8)].map((_, i) => (
-               <div key={i} className="absolute bg-[#C89B3C]/10 border border-[#C89B3C]/30 animate-[pulse-glow_4s_ease-in-out_infinite_alternate]" 
+             {archiveBlocks.map((block, i) => (
+               <div key={i} className="absolute bg-[#C89B3C]/10 border border-[#C89B3C]/30 animate-[pulse-glow_4s_ease-in-out_infinite_alternate]"
                     style={{
-                      left: `${10 + Math.random() * 80}%`,
-                      top: `${10 + Math.random() * 80}%`,
-                      width: `${50 + Math.random() * 150}px`,
-                      height: `${20 + Math.random() * 60}px`,
-                      animationDelay: `${Math.random() * 4}s`,
-                    }} 
+                      left: `${block.left}%`,
+                      top: `${block.top}%`,
+                      width: `${block.width}px`,
+                      height: `${block.height}px`,
+                      animationDelay: `${block.delay}s`,
+                    }}
                />
              ))}
           </div>

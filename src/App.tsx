@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { MotionConfig } from "motion/react";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { ScrollToTop } from "./components/ScrollToTop";
@@ -36,7 +37,8 @@ function AppShell() {
   return (
     <>
       <ScrollToTop />
-      <svg width="0" height="0" className="absolute pointer-events-none">
+      {/* Shared gradient definition referenced by every gold-stroked icon. */}
+      <svg width="0" height="0" aria-hidden="true" className="absolute pointer-events-none">
         <defs>
           <linearGradient id="icon-gold-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop stopColor="#F5D17A" offset="0%" />
@@ -45,9 +47,12 @@ function AppShell() {
           </linearGradient>
         </defs>
       </svg>
-      <div className="min-h-screen flex flex-col bg-[#040B16] text-white overflow-x-hidden selection:bg-[#C89B3C] selection:text-white">
+      {/* `app-shell` carries the flex column, the dynamic-viewport minimum and
+          `overflow-x: clip` — see index.css for why it is not `hidden`. */}
+      <div className="app-shell relative bg-[#040B16] text-white selection:bg-[#C89B3C] selection:text-white">
+        <a className="skip-link" href="#main-content">Skip to content</a>
         {!hidesSiteChrome && <Navbar />}
-        <main className="flex-grow flex flex-col items-center">
+        <main id="main-content" tabIndex={-1} className="flex-grow flex flex-col items-center outline-none">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/platform" element={<Platform />} />
@@ -78,8 +83,14 @@ function AppShell() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppShell />
-    </BrowserRouter>
+    // index.css handles CSS animation under prefers-reduced-motion; this is
+    // the same contract for the JS-driven entrances. "user" keeps opacity
+    // fades and drops the transforms, so nothing disappears — it just stops
+    // moving for people who asked it to.
+    <MotionConfig reducedMotion="user">
+      <BrowserRouter>
+        <AppShell />
+      </BrowserRouter>
+    </MotionConfig>
   );
 }

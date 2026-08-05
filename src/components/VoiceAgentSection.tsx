@@ -327,7 +327,7 @@ export function VoiceAgentSection() {
           {CAPABILITIES.map(({ icon: Icon, title, desc, accent }) => (
             <div
               key={title}
-              className="group relative flex flex-col overflow-hidden bg-[#0B162C]/90 p-8 transition-colors duration-500 hover:bg-[#0B162C]"
+              className="group relative flex flex-col overflow-hidden bg-[#0B162C]/90 p-6 transition-colors duration-500 hover:bg-[#0B162C] sm:p-8"
             >
               <span
                 className="absolute inset-x-0 top-0 h-px scale-x-0 transition-transform duration-500 ease-out group-hover:scale-x-100"
@@ -372,7 +372,7 @@ export function VoiceAgentSection() {
           {MODES.map(({ icon: Icon, tag, title, desc, accent }) => (
             <div
               key={title}
-              className="glass-panel glass-panel-hover group relative flex flex-col overflow-hidden bg-[#0B162C]/80 p-10"
+              className="glass-panel glass-panel-hover group relative flex flex-col overflow-hidden bg-[#0B162C]/80 p-6 sm:p-10"
               style={{ borderTop: `2px solid ${accent}` }}
             >
               <div
@@ -398,7 +398,7 @@ export function VoiceAgentSection() {
         </div>
 
         {/* Configuration axes + inline CTA */}
-        <div className="mt-10 flex flex-col items-center justify-between gap-8 border border-white/10 bg-[#040B16]/60 p-8 lg:flex-row lg:gap-12">
+        <div className="mt-10 flex flex-col items-center justify-between gap-8 border border-white/10 bg-[#040B16]/60 p-6 sm:p-8 lg:flex-row lg:gap-12">
           <div className="w-full">
             <p className="mb-5 font-mono text-[10px] uppercase tracking-[0.28em] text-[#00A8B5]">
               Configured around
@@ -416,7 +416,7 @@ export function VoiceAgentSection() {
           </div>
           <Link
             to="/contact"
-            className="group inline-flex w-full shrink-0 items-center justify-center whitespace-nowrap rounded-sm border border-[#C89B3C]/40 px-6 py-4 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:border-[#C89B3C] hover:bg-[#C89B3C]/10 sm:px-10 sm:text-[11px] sm:tracking-[0.25em] lg:w-auto"
+            className="group inline-flex w-full shrink-0 items-center justify-center rounded-sm border border-[#C89B3C]/40 px-4 py-4 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white transition-all hover:border-[#C89B3C] hover:bg-[#C89B3C]/10 sm:whitespace-nowrap sm:px-10 sm:text-[11px] sm:tracking-[0.25em] lg:w-auto"
           >
             Configure Aurixa Voice
             <ArrowRight

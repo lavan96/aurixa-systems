@@ -207,7 +207,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="w-full relative pt-32 pb-20 min-h-screen bg-[#040B16] overflow-hidden">
+    <div className="w-full relative pt-32 pb-20 min-h-dvh bg-[#040B16] overflow-hidden">
       {showHandoff && (
         <StageOneCompleteModal
           onProceed={() => navigate("/questionnaire")}
@@ -228,7 +228,7 @@ export default function Contact() {
               <span className="w-12 h-px bg-white/50" />
               <span className="text-[11px] font-bold tracking-widest uppercase text-white/50">Restricted Action</span>
             </div>
-            <h1 className="text-5xl md:text-7xl lg:text-[4.5rem] font-display font-light mb-8 tracking-[-0.02em] leading-[1.05]">
+            <h1 className="text-[clamp(2.4rem,12vw,3rem)] md:text-7xl lg:text-[4.5rem] font-display font-light mb-8 tracking-[-0.02em] leading-[1.05]">
               <span className="block text-white mb-2">The</span>
               <span className="italic text-chrome-prismatic drop-shadow-2xl">Waitlist.</span>
             </h1>

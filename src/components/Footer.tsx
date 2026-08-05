@@ -3,7 +3,9 @@ import { BrandLogo } from "./BrandLogo";
 
 export function Footer() {
   return (
-    <footer className="bg-[#040B16] border-t border-[#00A8B5]/20 pt-20 pb-10 w-full mt-auto relative overflow-hidden">
+    // The bottom padding clears the home indicator on gesture-navigation
+    // phones and collapses to its old value where there is no inset.
+    <footer className="bg-[#040B16] border-t border-[#00A8B5]/20 pt-20 pb-[max(2.5rem,calc(var(--safe-bottom)+1.5rem))] w-full mt-auto relative overflow-hidden pad-safe-x">
       <div className="absolute inset-0 bg-gradient-to-t from-[#0055FF]/5 to-transparent pointer-events-none" />
       <div className="max-w-7xl mx-auto px-6 w-full flex flex-col items-center relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-20 w-full mb-16">

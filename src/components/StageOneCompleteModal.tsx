@@ -86,15 +86,6 @@ export function StageOneCompleteModal({
         aria-describedby="stage-one-complete-message"
         className="motion-safe:animate-[stage-one-modal-in_260ms_ease-out] relative w-full max-w-[560px] rounded-sm border border-[#00A8B5]/40 bg-[#0B162C] px-6 py-7 shadow-[0_28px_70px_-20px_rgba(0,0,0,0.95)] sm:px-9 sm:py-9"
       >
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `@keyframes stage-one-modal-in {
-              from { opacity: 0; transform: translateY(8px); }
-              to { opacity: 1; transform: translateY(0); }
-            }`,
-          }}
-        />
-
         {/* Restrained gold completion accent. */}
         <span
           aria-hidden="true"
