@@ -548,11 +548,14 @@ export default function Contact() {
                   </Field>
 
                   {/* Row 9 — collection notice and consent */}
-                  <details className="border border-white/10 bg-[#040B16]/60 px-4 py-3">
-                    <summary className="cursor-pointer text-[11px] uppercase tracking-[0.12em] text-[#C3CCDD] font-bold list-none flex items-center gap-2">
+                  {/* The vertical padding sits on the summary rather than the
+                      details, so the whole strip toggles the disclosure. On the
+                      details it was decoration around an 18px-tall tap target. */}
+                  <details className="border border-white/10 bg-[#040B16]/60 px-4">
+                    <summary className="cursor-pointer py-3 min-h-[44px] text-[11px] uppercase tracking-[0.12em] text-[#C3CCDD] font-bold list-none flex items-center gap-2">
                       <span className="text-[#C89B3C]" aria-hidden="true">+</span> Collection notice
                     </summary>
-                    <div className="mt-3 space-y-2 text-[13px] text-[#9CA3B8] font-light leading-relaxed">
+                    <div className="pb-3 space-y-2 text-[13px] text-[#9CA3B8] font-light leading-relaxed">
                       <p>
                         Aurixa Systems Pty Ltd collects the information in this form to assess your
                         priority-access application, to send you the Business Readiness Questionnaire and to
