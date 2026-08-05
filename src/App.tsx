@@ -14,6 +14,9 @@ import Pricing from "./pages/Pricing";
 import PricingSuccess from "./pages/PricingSuccess";
 import PricingCancel from "./pages/PricingCancel";
 import CardSaved from "./pages/CardSaved";
+// The A$1 Stripe test-fixture mirror of the price list. Deliberately unlisted,
+// like /pricing itself: reachable by direct URL only, never from navigation.
+import PricingMock from "./pages/PricingMock";
 // Stage 2 readiness questionnaire. Deliberately unlisted: reachable only via the
 // secure link issued with a Priority Access Application, never from navigation.
 import Questionnaire from "./pages/Questionnaire";
@@ -26,7 +29,9 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 
 function AppShell() {
   const { pathname } = useLocation();
-  const isPricingPage = pathname === "/pricing";
+  // Both pricing surfaces carry their own header and footing, so the site
+  // chrome is suppressed on each.
+  const hidesSiteChrome = pathname === "/pricing" || pathname === "/pricing-mock";
 
   return (
     <>
@@ -41,7 +46,7 @@ function AppShell() {
         </defs>
       </svg>
       <div className="min-h-screen flex flex-col bg-[#040B16] text-white overflow-x-hidden selection:bg-[#C89B3C] selection:text-white">
-        {!isPricingPage && <Navbar />}
+        {!hidesSiteChrome && <Navbar />}
         <main className="flex-grow flex flex-col items-center">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -52,6 +57,7 @@ function AppShell() {
             <Route path="/pricing/success" element={<PricingSuccess />} />
             <Route path="/pricing/cancel" element={<PricingCancel />} />
             <Route path="/pricing/card-saved" element={<CardSaved />} />
+            <Route path="/pricing-mock" element={<PricingMock />} />
             <Route path="/about" element={<About />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/docs" element={<Docs />} />
@@ -64,7 +70,7 @@ function AppShell() {
             <Route path="/feedback" element={<Feedback />} />
           </Routes>
         </main>
-        {!isPricingPage && <Footer />}
+        {!hidesSiteChrome && <Footer />}
       </div>
     </>
   );
