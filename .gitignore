@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local render output from scripts/render-stripe-brand-preview.py — a review
+# artefact, regenerated on demand and never shipped.
+.preview/
