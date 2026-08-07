@@ -32,13 +32,18 @@ Swapping them is accepted by the API without complaint and produces a light
 page with near-black accents — valid, and not dark mode. `aurixa-brand.test.ts`
 asserts the orientation for exactly this reason.
 
-### The invoice PDF stays light
+### Stripe's invoice PDF stays light
 
-Deliberately, and not by our choice: Stripe gives no control over the PDF's
-paper, and a dark-flooded A4 is a wasted cartridge on a document meant to be
-printed and filed. The PDF carries the identity through the logo and the brand
-colour instead — which is why the marks are built as opaque dark tiles rather
-than shipped transparent (see below).
+Not by choice: `secondary_color` is documented as not applying to invoice PDFs,
+and invoice rendering templates — the other lever — carry only the memo, the
+footer, custom fields and line-item grouping. There is no colour control. So
+Stripe's PDF carries the identity through the logo and the brand colour, and
+that is the whole of what can be done to it. It is also why the uploaded marks
+are opaque dark tiles rather than transparent art (see below).
+
+A genuinely dark tax invoice is a document Mission Control renders itself, from
+figures Stripe issued, offered **beside** Stripe's PDF rather than instead of
+it. See `aurixa-mission-control/docs/stripe-branding.md`.
 
 ## The assets
 
