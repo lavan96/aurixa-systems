@@ -69,6 +69,7 @@ export const PUBLIC_DOCS_INDEX: PublicDocsEntry[] = [
   { slug: "checklists", title: "Checklists", summary: "Repeatable process templates instantiated against clients and deals.", group: "Operations", moduleSlug: null, readMinutes: 6 },
   { slug: "game-plan", title: "Game Plan", summary: "Long-horizon client strategy — phases, milestones, KPIs and actions.", group: "Operations", moduleSlug: null, readMinutes: 8 },
   { slug: "agreements", title: "Agreements", summary: "Generating, sending and tracking agreements through to signature.", group: "Operations", moduleSlug: "agreements", readMinutes: 8 },
+  { slug: "agreement-centre", title: "Agreement Centre", summary: "Partner agreements end to end — internal review, portal issuance, execution and the executed vault.", group: "Operations", moduleSlug: "agreements", readMinutes: 9 },
   { slug: "marketing-analytics", title: "Marketing & Attribution", summary: "Lead sources, campaign performance and what actually produces clients.", group: "Operations", moduleSlug: "marketing", readMinutes: 7 },
   { slug: "automation", title: "Automation", summary: "Scheduled and triggered work that runs without anyone remembering to run it.", group: "Operations", moduleSlug: null, readMinutes: 6 },
   { slug: "commission-ledger", title: "Commission Ledger", summary: "Commission forecast, actuals, payouts and clawback tracking.", group: "Operations", moduleSlug: null, readMinutes: 5 },

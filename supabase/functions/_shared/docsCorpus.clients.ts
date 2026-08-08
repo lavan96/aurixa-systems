@@ -675,6 +675,50 @@ export const CLIENT_SECTIONS: DocsSection[] = [
     ],
   },
   {
+    slug: "agreement-centre",
+    title: "Agreement Centre",
+    summary: "Partner agreements end to end — internal review, portal issuance, execution and the executed vault.",
+    group: "Operations",
+    moduleSlug: "agreements",
+    guideSectionId: "partner-network",
+    readMinutes: 9,
+    blocks: [
+      {
+        kind: "prose",
+        text:
+          "The Agreement Centre manages the agreements between your business and its finance partners — the Strategic Property Referral Agreement (the partner refers clients to you) and the Finance Referral & Commission Agreement (you refer clients to the partner). The legal wording of both templates is locked; you configure the parties, the white-label branding and the commercial schedule, never the clauses.",
+      },
+      {
+        kind: "steps",
+        title: "The lifecycle",
+        items: [
+          "Create from a template. The direction of each agreement — who refers to whom, and who issues it — is shown before you select.",
+          "Configure the variables the template leaves open: parties, licence details, the commercial schedule, notice periods. Your organisation's details prefill from settings.",
+          "Review internally. An agreement cannot be issued until it passes validation — every field the document requires, listed with a jump link to fix it.",
+          "Issue into the Finance Partner Portal, or download it as PDF or DOCX to manage outside the platform. Both paths stay available throughout.",
+          "The partner reviews inside their portal, accepts, or lodges a structured change request against a named section — they can never edit the document itself.",
+          "Execution is a typed electronic signature: the partner signs, you counter-sign, and the fully executed master is generated and stored automatically. No manual re-upload, ever.",
+        ],
+      },
+      {
+        kind: "fields",
+        title: "What the record keeps",
+        rows: [
+          { name: "Versions", detail: "Every issued version is frozen — field values, branding and the template's content fingerprint. A reissue after a change request is a new version with a field-level diff; nothing sent externally is ever silently overwritten." },
+          { name: "Change requests", detail: "The partner's requests, the section each one names, and how each was answered." },
+          { name: "Signatures", detail: "Signatory, capacity, method and timestamp for each party, per version." },
+          { name: "Activity", detail: "Created, reviewed, issued, viewed, accepted, signed, counter-signed, executed, downloaded — the full timeline, mirrored into the tamper-evident compliance ledger." },
+        ],
+      },
+      {
+        kind: "note",
+        tone: "compliance",
+        text:
+          "Executed agreements are immutable: the master copy is written once, downloads are served from that single stored document, and every download of it is an audited access event. Varying an executed agreement means a new version through the same review-and-issue path, with the history preserved.",
+      },
+    ],
+  },
+  {
     slug: "marketing-analytics",
     title: "Marketing & Attribution",
     summary: "Lead sources, campaign performance and what actually produces clients.",
