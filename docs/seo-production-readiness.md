@@ -111,11 +111,21 @@ trusted is worse than none.
 Five of the six `ChatGPT Image Jun 5, 2026, 04_32_43 PM.png` files were **not**
 orphans — they were the homepage's five capability card images, live in
 production, their generator's filename visible in every network waterfall and
-right-click. The sixth is staged for open PR #21.
+right-click.
 
-All six are now WebP at 1024 px with descriptive names: **10.67 MB → 0.35 MB, a
-96.8% reduction.** They are resized, never cropped, because LYR-03 depends on an
-`objectPosition` of `30% 25%`. `dist/` went from roughly 13 MB to 3.4 MB.
+The five are now WebP at 1024 px with descriptive names: **9.07 MB → 0.31 MB, a
+96.6% reduction.** They are resized, never cropped, because LYR-03 depends on an
+`objectPosition` of `30% 25%`. Counting the sixth file below, which was removed
+outright, `public/brand/` sheds 10.4 MB and `dist/` goes from roughly 13 MB to
+3.4 MB.
+
+The sixth (`08_04_59`) was genuinely unreferenced. It was briefly carried
+through the rename to preserve the intent of open PR #21, which proposed it for
+the Enterprise Governance card — but that PR was investigated and closed as
+superseded: commit `c370bef` (30 Jul) imported that very asset *and* chose
+`09_23_40` for the card in the same commit, and that image is being kept. With
+nothing left pointing at it, the sixth file was dropped rather than shipped. The
+original PNG remains in git history if the decision is ever revisited.
 
 The favicon was `aurixa-symbol.svg` — 548 KB of base64 JPEG wrapped in an SVG,
 fetched on every page load to paint a 16 px tab icon. It is now a 1.6 KB PNG.
