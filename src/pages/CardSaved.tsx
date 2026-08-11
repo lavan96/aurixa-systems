@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle2, CreditCard, Loader2, AlertTriangle } from "lucide-react";
 import { fetchWalletStatus, type WalletStatus } from "../lib/billing";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 const POLL_INTERVAL_MS = 2_500;
 const POLL_MAX_MS = 60_000;
@@ -19,6 +20,7 @@ const ROLE_LABEL: Record<number, string> = {
  * the saved card (brand + last4 only — full details never leave Stripe).
  */
 export default function CardSaved() {
+  useRouteMetadata("/pricing/card-saved");
   const [params] = useSearchParams();
   const sessionId = params.get("session_id");
   const h = params.get("h");

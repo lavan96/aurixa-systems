@@ -1,8 +1,19 @@
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { MotionConfig } from "motion/react";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { ScrollToTop } from "./components/ScrollToTop";
+
+// ── Eager: every indexable route ─────────────────────────────────────────────
+// The split below is not a guess about which pages are popular — it is exactly
+// the `indexable` boundary from src/lib/routeMetadata.ts, and it has to be.
+// `scripts/prerender.ts` renders these to static HTML with react-dom/server,
+// and `renderToString` emits a Suspense fallback for a `lazy()` component
+// rather than waiting for it. A lazily-loaded indexable page would therefore
+// prerender as an empty box — the exact defect the prerender pass exists to
+// fix. Keeping them eager costs about 75 KB in the entry chunk and is the
+// price of every public page having real content in view-source.
 import Home from "./pages/Home";
 import Platform from "./pages/Platform";
 import Solutions from "./pages/Solutions";
@@ -11,24 +22,38 @@ import About from "./pages/About";
 import Resources from "./pages/Resources";
 import Docs from "./pages/Docs";
 import Contact from "./pages/Contact";
-import Pricing from "./pages/Pricing";
-import PricingSuccess from "./pages/PricingSuccess";
-import PricingCancel from "./pages/PricingCancel";
-import CardSaved from "./pages/CardSaved";
-// The A$1 Stripe test-fixture mirror of the price list. Deliberately unlisted,
-// like /pricing itself: reachable by direct URL only, never from navigation.
-import PricingMock from "./pages/PricingMock";
-// Stage 2 readiness questionnaire. Deliberately unlisted: reachable only via the
-// secure link issued with a Priority Access Application, never from navigation.
-import Questionnaire from "./pages/Questionnaire";
-// Stage 3 strategic review scheduling. Deliberately unlisted from public navigation.
-import ScheduleStrategicReview from "./pages/ScheduleStrategicReview";
-import Feedback from "./pages/Feedback";
 import Compliance from "./pages/Compliance";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
+// The catch-all. Renders inside the normal chrome and asks not to be indexed.
+import NotFound from "./pages/NotFound";
 
-function AppShell() {
+// ── Lazy: every unlisted route ───────────────────────────────────────────────
+// None of these is reachable from navigation or search, and together they are
+// the bulk of the application: Pricing and Questionnaire alone are ~4,000
+// lines. Anyone reading the home page was downloading all of it. They are
+// prerendered as a shell, which is all a token-gated page should ever expose.
+const Pricing = lazy(() => import("./pages/Pricing"));
+const PricingSuccess = lazy(() => import("./pages/PricingSuccess"));
+const PricingCancel = lazy(() => import("./pages/PricingCancel"));
+const CardSaved = lazy(() => import("./pages/CardSaved"));
+// The A$1 Stripe test-fixture mirror of the price list.
+const PricingMock = lazy(() => import("./pages/PricingMock"));
+// Stage 2 readiness questionnaire, reached only via a secure single-use link.
+const Questionnaire = lazy(() => import("./pages/Questionnaire"));
+// Stage 3 strategic review scheduling.
+const ScheduleStrategicReview = lazy(() => import("./pages/ScheduleStrategicReview"));
+const Feedback = lazy(() => import("./pages/Feedback"));
+
+/**
+ * Everything inside the router.
+ *
+ * Exported so `src/entry-server.tsx` can mount it under a `StaticRouter` for
+ * the prerender pass; the browser entry below mounts the same tree under
+ * `BrowserRouter`. Both wrap it in the same `MotionConfig`, so the static HTML
+ * and the live app cannot disagree about reduced-motion behaviour.
+ */
+export function AppShell() {
   const { pathname } = useLocation();
   // Both pricing surfaces carry their own header and footing, so the site
   // chrome is suppressed on each.
@@ -53,6 +78,13 @@ function AppShell() {
         <a className="skip-link" href="#main-content">Skip to content</a>
         {!hidesSiteChrome && <Navbar />}
         <main id="main-content" tabIndex={-1} className="flex-grow flex flex-col items-center outline-none">
+          {/* The fallback is a sized, empty block rather than a spinner. Every
+              lazy route below is either unlisted or reached deliberately, so
+              the chunk arrives in a few hundred milliseconds on any real
+              connection — a spinner would flash and be gone. What matters is
+              that the footer does not jump up the page while it loads, which
+              the min-height prevents. */}
+          <Suspense fallback={<div className="min-h-[70svh] w-full" aria-busy="true" />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/platform" element={<Platform />} />
@@ -73,7 +105,9 @@ function AppShell() {
             <Route path="/questionnaire" element={<Questionnaire />} />
             <Route path="/schedule-strategic-review" element={<ScheduleStrategicReview />} />
             <Route path="/feedback" element={<Feedback />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </main>
         {!hidesSiteChrome && <Footer />}
       </div>

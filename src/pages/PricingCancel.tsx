@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { XCircle } from "lucide-react";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 /**
  * /pricing/cancel — checkout abandoned (user-attributed pricing workflow,
@@ -7,6 +8,7 @@ import { XCircle } from "lucide-react";
  * the way to retry is back through the command center's purchase CTA.
  */
 export default function PricingCancel() {
+  useRouteMetadata("/pricing/cancel");
   const [params] = useSearchParams();
   const h = params.get("h");
   const uid = params.get("uid");

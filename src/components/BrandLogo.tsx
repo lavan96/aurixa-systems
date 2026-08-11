@@ -26,8 +26,13 @@ export function BrandLogo({ className, imageClassName, compact = false, priority
         className
       ].filter(Boolean).join(" ")}
     >
+      {/* 720x228 WebP with alpha, built by scripts/build-share-assets.py. This
+          was the 401 KB build source served straight to browsers — in the
+          header and the footer, on every page — to paint a mark that never
+          renders wider than 354 CSS px. The source now lives outside public/
+          and is not deployed at all. */}
       <img
-        src="/brand/aurixa-systems-logo-source.jpg"
+        src="/brand/aurixa-lockup.webp"
         alt="Aurixa Systems"
         width={compact ? 480 : 560}
         height={compact ? 160 : 187}

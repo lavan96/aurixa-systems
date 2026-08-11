@@ -1,0 +1,45 @@
+# https://www.aurixasystems.com.au/robots.txt
+#
+# Search engines and AI assistants are welcome on the public site. Aurixa sells
+# governed AI systems; being answerable *by* an assistant is positioning, not
+# leakage. The agents below are named explicitly rather than left to the
+# wildcard so the intent is legible to a human reading this file.
+#
+# ── Why the unlisted routes are not listed here ───────────────────────────────
+#
+# Several routes must never be indexed: /pricing-mock drives A$1 fixtures
+# against the LIVE Stripe account, /questionnaire and /schedule-strategic-review
+# are reached only by token, and the /pricing/* receipts carry a handoff token
+# in the URL. They are NOT disallowed below, deliberately, for two reasons:
+#
+#   1. Disallow and noindex defeat each other. A disallowed URL is never
+#      fetched, so the crawler never sees the `X-Robots-Tag: noindex` header
+#      that vercel.json serves for those paths — and a URL discovered through a
+#      link can still be indexed, listed without a description. Guaranteed
+#      de-indexing requires permitting the crawl and serving noindex.
+#
+#   2. This file is world-readable. Naming /pricing-mock here would publish the
+#      address of the page that charges real cards to anyone who types
+#      /robots.txt. Nothing on the site links to it; that is worth keeping.
+#
+# The noindex headers in vercel.json are what actually keeps those pages out of
+# an index. See src/lib/routeMetadata.ts for the single list both are built from.
+
+User-agent: *
+Allow: /
+
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-User
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Amazonbot
+User-agent: meta-externalagent
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://www.aurixasystems.com.au/sitemap.xml

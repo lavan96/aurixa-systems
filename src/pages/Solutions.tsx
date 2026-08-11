@@ -3,8 +3,10 @@ import { ArrowRight, Target, Crosshair, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
 import { SolutionsHeroVisual } from "../components/AnimatedHeroVisuals";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 export default function Solutions() {
+  useRouteMetadata("/solutions");
   return (
     <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="solutions" />
@@ -64,7 +66,7 @@ export default function Solutions() {
              {/* Content Side */}
              <div className="w-full md:w-7/12 p-6 sm:p-12 relative flex flex-col justify-center">
                 <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#00A8B5]/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Precision Client <span className="italic text-[#00A8B5]">Acquisition.</span></h3>
+                <h2 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Precision Client <span className="italic text-[#00A8B5]">Acquisition.</span></h2>
                 <p className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl">
                   Stop losing prospects to competitors with glossier but hollow presentations. By deploying Aurixa's mathematically air-tight serviceability models in your initial consultation, trust is established instantly. Competitors attempting to sell on intuition will look primitive by comparison. Operational efficiency reduces administrative workload, eliminates fragmented systems, accelerates internal processes, and radically improves team productivity with connected operational tools.
                 </p>
@@ -112,7 +114,7 @@ export default function Solutions() {
              {/* Content Side */}
              <div className="w-full md:w-7/12 p-6 sm:p-12 relative flex flex-col justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#C89B3C]/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Zero-Friction <span className="italic text-[#C89B3C]">Compliance.</span></h3>
+                <h2 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Zero-Friction <span className="italic text-[#C89B3C]">Compliance.</span></h2>
                 <div className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl space-y-4">
                   <p>
                     Protect your firm against regulatory blowback. The Aurixa engine mathematically prevents advisors from recommending investment strategies that breach APRA buffers or exceed the absolute ceiling of the client’s real-world borrowing capacity.
@@ -160,7 +162,7 @@ export default function Solutions() {
 
              {/* Content Side */}
              <div className="w-full md:w-7/12 p-6 sm:p-12 relative flex flex-col justify-center">
-                <h3 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Hyper-Scaled <span className="italic text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">Operations.</span></h3>
+                <h2 className="text-4xl md:text-5xl font-display font-light text-white mb-6 relative z-10 tracking-tight">Hyper-Scaled <span className="italic text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]">Operations.</span></h2>
                 <div className="text-[#9CA3B8] font-light leading-relaxed mb-8 text-lg relative z-10 max-w-xl space-y-4">
                   <p>A single principal advisor armed with Aurixa can output the workload of a ten-person analyst team. Scale your asset under management exponentially without ballooning your payroll overhead. This is about absolute leverage.</p>
                   <p>Enterprise positioning modernises business operations and delivers institutional-grade intelligence, creating competitive differentiation and strengthening brand authority in the market.</p>
@@ -187,7 +189,7 @@ export default function Solutions() {
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>
-            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Secure Priority Integration</h3>
+            <h2 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Secure Priority Integration</h2>
             <div className="text-[#9CA3B8] mb-12 max-w-3xl mx-auto text-lg leading-relaxed font-light space-y-6">
               <p>Access to Aurixa’s deployment cycle is limited to preserve delivery quality, architectural focus, and partner success.</p>
               <p>Businesses accepted into the next integration cycle will gain early access to unified operational intelligence built for property, finance, and wealth creation.</p>

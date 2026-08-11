@@ -102,10 +102,7 @@ import { submitReadinessQuestionnaireWithMirrors } from "../lib/readinessSubmiss
 import { ResumeByReference } from "../components/questionnaire/ResumeByReference";
 import { readReferenceFromUrl, type ResumeFailure } from "../lib/questionnaireResume";
 import { ORGANISATION_TYPE_OPTIONS, VOLUME_OPTIONS, maskEmail } from "../lib/waitlist";
-
-const PAGE_TITLE = "Business Readiness Questionnaire | Aurixa Systems";
-const PAGE_DESCRIPTION =
-  "Secure Stage 2 readiness questionnaire for Aurixa Systems Priority Access applicants. Accessible by invitation only.";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 const AUTOSAVE_RETRY_MS = 4000;
@@ -169,27 +166,10 @@ export default function Questionnaire() {
   const accessModeRef = useRef("Secure link (token)");
 
   // ── Page metadata. Scoped to this page only; restored on unmount so no other
-  // route's title, description or robots behaviour changes. ─────────────────
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = PAGE_TITLE;
-
-    const robots = document.createElement("meta");
-    robots.setAttribute("name", "robots");
-    robots.setAttribute("content", "noindex, nofollow");
-    document.head.appendChild(robots);
-
-    const description = document.createElement("meta");
-    description.setAttribute("name", "description");
-    description.setAttribute("content", PAGE_DESCRIPTION);
-    document.head.appendChild(description);
-
-    return () => {
-      document.title = previousTitle;
-      robots.remove();
-      description.remove();
-    };
-  }, []);
+  // route's title, description or robots behaviour changes. The `noindex,
+  // nofollow` directive comes from this route being `indexable: false` in the
+  // registry — the same field that keeps it out of the sitemap. ─────────────
+  useRouteMetadata("/questionnaire");
 
   // ── Secure access: exchange the opaque token for an authorised session, then
   // strip the raw token from the visible URL. ───────────────────────────────

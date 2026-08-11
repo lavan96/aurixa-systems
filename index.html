@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-AU">
   <head>
     <meta charset="UTF-8" />
     <!--
@@ -14,7 +14,56 @@
     />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#040B16" />
-    <link rel="icon" type="image/svg+xml" href="/brand/aurixa-symbol.svg" />
+
+    <!--
+      The favicon was /brand/aurixa-symbol.svg: 535 KB, being a base64 JPEG
+      wrapped in an SVG, fetched on every page load to paint a 16px tab icon.
+      Nothing about it was vector, so it has been deleted outright rather than
+      demoted. Both raster icons come from scripts/build-share-assets.py.
+    -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
+
+    <!--
+      The SITEWIDE default, and the template every prerendered page is built
+      from. `scripts/prerender.ts` rewrites the title, description, canonical
+      and og:/twitter: pairs below per route at build time, so the file actually
+      served for /platform carries /platform's card — which matters because no
+      link-preview scraper executes JavaScript. `usePageMetadata` then keeps
+      them correct across client-side navigation, where there is no new
+      document to serve.
+
+      Anything reaching this file unmodified (a dev server, a route added
+      without a registry entry) still gets a complete, correct sitewide card
+      rather than a bare URL.
+    -->
+    <meta
+      name="description"
+      content="Aurixa Systems builds governed AI operating systems for Australian property, finance and advisory firms — client intelligence, financial modelling, voice agents and compliance oversight in one controlled platform."
+    />
+    <link rel="canonical" href="https://www.aurixasystems.com.au/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Aurixa Systems" />
+    <meta property="og:locale" content="en_AU" />
+    <meta property="og:title" content="Aurixa Systems" />
+    <meta
+      property="og:description"
+      content="Aurixa Systems builds governed AI operating systems for Australian property, finance and advisory firms — client intelligence, financial modelling, voice agents and compliance oversight in one controlled platform."
+    />
+    <meta property="og:url" content="https://www.aurixasystems.com.au/" />
+    <meta property="og:image" content="https://www.aurixasystems.com.au/brand/og-default.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Aurixa Systems" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Aurixa Systems" />
+    <meta
+      name="twitter:description"
+      content="Aurixa Systems builds governed AI operating systems for Australian property, finance and advisory firms — client intelligence, financial modelling, voice agents and compliance oversight in one controlled platform."
+    />
+    <meta name="twitter:image" content="https://www.aurixasystems.com.au/brand/og-default.png" />
 
     <!--
       Fonts are linked here rather than @import-ed from the stylesheet so the
@@ -30,6 +79,49 @@
     />
 
     <title>Aurixa Systems</title>
+
+    <!--
+      Structured data. Static rather than injected, because JS-injected JSON-LD
+      is picked up inconsistently and it costs nothing to put it in the bytes.
+
+      Deliberately no Product or Offer markup: /pricing is unlisted and carries
+      a noindex header, so publishing machine-readable prices here would leak
+      exactly what that route is kept quiet about.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.aurixasystems.com.au/#organization",
+            "name": "Aurixa Systems",
+            "legalName": "Aurixa Systems Pty Ltd",
+            "url": "https://www.aurixasystems.com.au/",
+            "logo": "https://www.aurixasystems.com.au/brand/og-default.png",
+            "description": "Aurixa Systems builds governed AI operating systems for Australian property, finance and advisory firms — client intelligence, financial modelling, voice agents and compliance oversight in one controlled platform.",
+            "identifier": { "@type": "PropertyValue", "propertyID": "ABN", "value": "49 695 868 243" },
+            "address": { "@type": "PostalAddress", "addressRegion": "New South Wales", "addressCountry": "AU" },
+            "areaServed": { "@type": "Country", "name": "Australia" },
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "sales",
+              "url": "https://www.aurixasystems.com.au/contact",
+              "areaServed": "AU",
+              "availableLanguage": "en"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.aurixasystems.com.au/#website",
+            "url": "https://www.aurixasystems.com.au/",
+            "name": "Aurixa Systems",
+            "inLanguage": "en-AU",
+            "publisher": { "@id": "https://www.aurixasystems.com.au/#organization" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

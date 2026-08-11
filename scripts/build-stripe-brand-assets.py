@@ -9,8 +9,8 @@ Both must be PNG or JPG, at least 128x128, and under 512 KB. Those limits are
 asserted at the end of this script rather than trusted, because Stripe rejects
 an oversized file at upload time with a message that does not name the file.
 
-Everything is derived from `public/brand/aurixa-systems-logo-source.jpg` — which
-is, despite the extension, a PNG carrying a real alpha channel. That matters:
+Everything is derived from `brand-source/aurixa-lockup-source.png`, a PNG carrying a real alpha
+channel and deliberately kept outside `public/` so it is never served. That matters:
 the mark is gold artwork on transparency, not gold on white, so it can be
 composited onto the brand's own ground rather than knocked out of a white one.
 
@@ -37,8 +37,11 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE = ROOT / "public" / "brand" / "aurixa-systems-logo-source.jpg"
-OUT_DIR = ROOT / "public" / "brand" / "stripe"
+SOURCE = ROOT / "brand-source" / "aurixa-lockup-source.png"
+# NOT under public/. These are uploaded to Stripe from disk by
+# apply-stripe-branding.mjs; nothing fetches them over HTTP, so serving them
+# only added 814 KB to every deploy.
+OUT_DIR = ROOT / "brand-source" / "stripe"
 
 # --- Brand ground -----------------------------------------------------------
 # --color-base-950 and --color-base-900 from src/index.css. The glow is the

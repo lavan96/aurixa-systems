@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 const MODULE_CATEGORIES = [
   {
@@ -165,6 +166,7 @@ const MODULE_CATEGORIES = [
 ];
 
 export default function Resources() {
+  useRouteMetadata("/resources");
   return (
     <div className="w-full relative pt-32 pb-32 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="resources" />
@@ -210,7 +212,7 @@ export default function Resources() {
                        <span className="text-[#00A8B5]/50 font-mono text-[10px] tracking-[0.3em]">SEC_{category.id}</span>
                        <div className="h-[1px] w-8 bg-[#C89B3C]/40" />
                     </div>
-                    <h3 className="text-xl text-white tracking-widest uppercase font-light">{category.title}</h3>
+                    <h2 className="text-xl text-white tracking-widest uppercase font-light">{category.title}</h2>
                   </div>
                   <div className="hidden sm:block text-right">
                     <p className="text-[10px] font-mono text-[#00A8B5]/60 max-w-[150px] leading-relaxed uppercase opacity-60">
@@ -280,7 +282,7 @@ export default function Resources() {
                 <Lock className="w-8 h-8 relative z-10" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
              </div>
              
-             <h3 className="text-3xl font-display font-light text-white mb-6 tracking-wide drop-shadow-md">RESTRICTED ARCHIVES</h3>
+             <h2 className="text-3xl font-display font-light text-white mb-6 tracking-wide drop-shadow-md">RESTRICTED ARCHIVES</h2>
              <p className="text-[#00A8B5]/80 font-mono text-[11px] leading-relaxed mb-10 max-w-xl uppercase tracking-widest text-center">
                Live deployment demonstrations and proprietary operational blueprints are walled off from general traffic. Access requires an authorized partner protocol link. Explore the ecosystem to access structured operational intelligence, automation systems, reporting infrastructure, and enterprise support.
              </p>

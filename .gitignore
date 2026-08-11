@@ -10,3 +10,9 @@ coverage/
 # Local render output from scripts/render-stripe-brand-preview.py — a review
 # artefact, regenerated on demand and never shipped.
 .preview/
+
+# Bytecode from the Pillow asset scripts in scripts/.
+__pycache__/
+
+# The SSR bundle built for scripts/prerender.ts; an artifact, like dist/.
+dist-ssr/

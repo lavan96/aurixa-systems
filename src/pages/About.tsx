@@ -3,8 +3,10 @@ import { ArrowRight, Hexagon, ShieldAlert, Network, Lock, Crosshair, Fingerprint
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
 import { AboutHeroVisual } from "../components/AnimatedHeroVisuals";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 export default function About() {
+  useRouteMetadata("/about");
   return (
     <div className="w-full relative pt-32 pb-32 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="about" />
