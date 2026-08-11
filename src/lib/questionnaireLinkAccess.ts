@@ -57,6 +57,30 @@ export function hasQuestionnaireLinkSession(now = Date.now()): boolean {
 /**
  * Accepts a locally authorised dynamic link only when `token` and `expires`
  * are supplied together. Token-only links are left to backend authorisation.
+ *
+ * ⚠ **This is not an authorisation boundary, and cannot be made into one.**
+ *
+ * All it establishes is that the token is *shaped* like a token — 16+ URL-safe
+ * characters — and that `expires` is a future date. There is no signature, no
+ * HMAC and no network call, so `?token=aaaaaaaaaaaaaaaa&expires=2030-01-01`
+ * opens the form to anyone who types it. Nothing here can do better: a secret
+ * capable of verifying the token would have to ship to the browser, at which
+ * point it is not a secret.
+ *
+ * What limits the damage, and what does not:
+ *
+ *   • Read side is safe. `openAccessSession()` returns an empty prefill, so a
+ *     forged link discloses no applicant data and cannot be used to probe
+ *     whether an application exists.
+ *   • Write side is not. A forged session can still submit, so the real control
+ *     has to live where a secret can: the Stage 2 Make scenario rejecting a
+ *     submission whose `accessTokenPresented` it did not issue, or the
+ *     `readiness-questionnaire` service being deployed so `authorise` can run.
+ *     Neither exists yet — see docs/readiness-questionnaire-stage-2.md.
+ *
+ * The submission carries `accessTokenPresented` and `accessVerified: false` so
+ * the pipeline downstream has both the means to check and an honest record that
+ * nothing has checked yet.
  */
 export function resolveQuestionnaireLink(url: URL, now = Date.now()): QuestionnaireLinkAccess {
   const tokens = url.searchParams.getAll("token");

@@ -77,6 +77,29 @@ export type ReadinessSubmissionPayload = {
   responseVersion: number;
   submittedAt: string;
   accessMode: StageTwoAccessMode;
+  /**
+   * The `token` value the browser was shown, verbatim, or "" when the applicant
+   * arrived some other way.
+   *
+   * It is forwarded so the Make scenario can check it against the tokens it
+   * issued. Until now the token never left the browser, which meant nothing
+   * downstream could tell a genuine link from a fabricated one — see
+   * `accessVerified` below.
+   */
+  accessTokenPresented: string;
+  /**
+   * Whether anything actually *verified* the token, as opposed to checking its
+   * shape. Currently always `false`, and that is the honest value:
+   * `resolveQuestionnaireLink` matches a regex and an expiry date with no
+   * signature and no network call, and the Stage 2 service that would do the
+   * real check is not deployed.
+   *
+   * Kept as an explicit field rather than left implicit so the operations
+   * record stops asserting something the code cannot support. When the Make
+   * scenario or a deployed service starts validating `accessTokenPresented`,
+   * this becomes the flag that says so.
+   */
+  accessVerified: boolean;
   applicant: ReadinessPrefill;
   fields: ReadinessSubmissionFields;
   answers: StoredAnswer[];
@@ -111,6 +134,8 @@ type SubmitReadinessInput = {
   responseVersion: number;
   prefill: ReadinessPrefill;
   accessMode?: StageTwoAccessMode | string;
+  /** The raw `token` query value the browser accepted, for downstream checking. */
+  accessTokenPresented?: string;
   /** Test seam; production always uses the browser fetch implementation. */
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
@@ -171,7 +196,13 @@ export function buildReadinessSubmissionPayload(input: Omit<SubmitReadinessInput
     source: SUBMISSION_SOURCE,
     page: SUBMISSION_PAGE,
     submittedAt,
+    // `accessMode` deliberately keeps its existing values and its existing
+    // default: it feeds an Airtable single-select, and an option that field has
+    // never seen can fail the write. The honesty lives in the two new fields
+    // beside it, which Make ignores until somebody maps them.
     accessMode: (input.accessMode as StageTwoAccessMode) ?? "Secure link (token)",
+    accessTokenPresented: input.accessTokenPresented ?? "",
+    accessVerified: false,
     applicant: { ...input.prefill },
     fields: buildFields(reviewSections),
     reviewSections,

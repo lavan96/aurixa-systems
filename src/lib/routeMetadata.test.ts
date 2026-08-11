@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { test } from "node:test";
 import {
   DEFAULT_DESCRIPTION,
@@ -313,6 +313,53 @@ test("prerendered pages carry their own title and canonical", async (t) => {
       `${entry.path} robots directive does not match indexable=${entry.indexable}`,
     );
   }
+});
+
+/**
+ * The one that keeps live payment links out of the browser.
+ *
+ * `mockCatalog.ts` hard-codes 41 Payment Links against the LIVE Stripe account
+ * at A$1 apiece, plus the account id. Those shipped in a lazy chunk that anyone
+ * could fetch: `noindex` is a directive for documents, not assets, and the entry
+ * chunk served on `/` names every lazy chunk file, so the route path never had
+ * to be guessed. Publicly discoverable low-value live payment links are a
+ * standard card-testing target.
+ *
+ * `VITE_ENABLE_PRICING_MOCK` now decides whether any of it is built at all. This
+ * asserts the outcome against `dist/` rather than trusting Rollup to have
+ * eliminated the branch — the failure mode is silent and expensive.
+ *
+ * Scoped deliberately to the mock catalogue's own literals: the 22 live
+ * full-price links in `addonPurchaseLinks.ts` are product functionality and are
+ * meant to ship, so a blanket "no buy.stripe.com in dist" check would be wrong.
+ */
+test("the A$1 fixture links never reach a production bundle", async (t) => {
+  const dist = new URL("../../dist/assets/", import.meta.url);
+  if (!existsSync(dist)) return t.skip("no dist/ — run npm run build first");
+  if (process.env.VITE_ENABLE_PRICING_MOCK === "true") {
+    return t.skip("built with the mock catalogue deliberately enabled");
+  }
+
+  const { MOCK_CATALOGUE, MOCK_STRIPE_ACCOUNT } = await import("./pricing/mockCatalog.ts");
+  const bundles = (await readdir(dist)).filter((f) => f.endsWith(".js"));
+  assert.ok(bundles.length > 0, "no JS emitted — did the build run?");
+
+  const combined = (
+    await Promise.all(bundles.map((f) => readFile(new URL(f, dist), "utf8")))
+  ).join("\n");
+
+  const leaked = MOCK_CATALOGUE.map((item) => item.url).filter((url) =>
+    combined.includes(url),
+  );
+  assert.deepEqual(
+    leaked.map((u) => u.replace(/(buy\.stripe\.com\/\w{4}).*/, "$1…")),
+    [],
+    "mock Payment Links against the live Stripe account are in the shipped bundle",
+  );
+  assert.ok(
+    !combined.includes(MOCK_STRIPE_ACCOUNT),
+    `the live Stripe account id ${MOCK_STRIPE_ACCOUNT.slice(0, 9)}… is in the shipped bundle`,
+  );
 });
 
 /** The inverse mistake: a header rule that quietly de-indexes a public page. */

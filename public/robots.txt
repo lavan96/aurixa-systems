@@ -41,5 +41,15 @@ User-agent: Amazonbot
 User-agent: meta-externalagent
 User-agent: CCBot
 Allow: /
+# Every page is prerendered, so the served HTML is already the whole page and
+# an agent that skips the bundles loses nothing. What it stops ingesting is the
+# application's internals — the webhook endpoints and price tables that live in
+# the JavaScript rather than the copy. Search engines are not asked to skip
+# them, because Google reads assets to check a page is not cloaking.
+#
+# Advisory only, and worth being clear about: this asks, it does not enforce.
+# It is not what keeps anything sensitive out of the bundle — VITE_ENABLE_PRICING_MOCK
+# is, by never building it. This is intent stated on top of that.
+Disallow: /assets/
 
 Sitemap: https://www.aurixasystems.com.au/sitemap.xml

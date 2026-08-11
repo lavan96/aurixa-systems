@@ -217,6 +217,111 @@ token-carrying query strings (`?t=`, `?session_id=&h=`), which still resolve.
 A catch-all rewrite would silently restore the soft 404, so
 `routeMetadata.test.ts` fails if one reappears.
 
+## Gated routes: what `noindex` does and does not do
+
+A follow-up pass asked whether the eight unlisted routes are actually
+*protected*, not merely undiscoverable. The discoverability half checks out —
+verified on production: `X-Robots-Tag: noindex, nofollow` on all eight and on
+none of the eleven public routes, the same directive in each gated page's
+prerendered HTML, nothing gated in `sitemap.xml`, `llms.txt` or `robots.txt`.
+
+The protection half turned up two things `noindex` has no bearing on.
+
+### The mock catalogue was public, and `noindex` was irrelevant to that
+
+`/pricing-mock` was correctly marked `noindex` and prerendered as a clean shell.
+None of that mattered. Its **JavaScript chunk is a static asset**: fetched
+anonymously from production it returned `HTTP 200` and 24 KB containing **41
+live `buy.stripe.com` Payment Links, 42 price ids and the live Stripe account
+id**. Robots directives apply to documents, not assets. Route obscurity bought
+nothing either — the entry chunk served on `/` hard-codes every lazy chunk
+filename, so the path never had to be guessed.
+
+The risk is not the A$41 someone could hand over. Low-value live payment links
+that anyone can find are a standard card-testing target, and card testing brings
+chargebacks and account review.
+
+Fixed by not building it: `VITE_ENABLE_PRICING_MOCK` (see `.env.example`) is set
+only on preview/staging, and with it unset Rollup eliminates the module
+entirely. The `lazy()` call has to be inside the conditional, not just the
+`<Route>` — a dynamic `import()` at module scope is a chunk boundary and gets
+emitted even when the route using it is dead code.
+
+`routeMetadata.test.ts` asserts the outcome against `dist/` rather than trusting
+tree-shaking, scoped to the mock catalogue's own literals: the 22 live
+full-price links in `addonPurchaseLinks.ts` are product functionality and are
+meant to ship, so a blanket check would be wrong.
+
+> Worth a decision separately: `/pricing` tells visitors module pricing is
+> shared on request, while its chunk carries all 22 module links and their exact
+> amounts. That is not a leak — it is how the add-on purchase flow works — but
+> the page's claim and the bundle disagree, and someone should pick which is
+> meant to be true.
+
+### `/questionnaire` has no working authorisation
+
+Covered in full in `docs/readiness-questionnaire-stage-2.md`. In short: the
+dynamic-link gate accepts any `?token=<16+ chars>&expires=<future date>` on a
+regex shape check with no signature and no network call, and the Stage 2 service
+that would verify properly has never been deployed. No data leaks — prefill
+comes back empty — but a forged session can submit into the Business Readiness
+pipeline.
+
+It cannot be fixed in the browser, so what changed here is honesty and
+capability, not protection: the submission now carries `accessTokenPresented`
+so the Make scenario **can** validate, and `accessVerified: false` so the
+operations record stops implying something was checked. The real fix is
+server-side and outside this repo.
+
+### Asking AI crawlers to skip the bundles
+
+`robots.txt` now carries `Disallow: /assets/` in the named AI-crawler group, and
+`vercel.json` sets `X-Robots-Tag: noindex` on `/assets/(.*)`.
+
+This is newly safe *because* of prerendering: the served HTML is already the
+whole page, so an agent that skips the bundles loses no content. Search engines
+are deliberately not asked to skip them — Google reads assets to confirm a page
+is not cloaking.
+
+Being clear about what this is: robots.txt asks, it does not enforce. It is not
+what keeps anything sensitive out of the bundle. Not building it is.
+
+## Submitting the sitemap
+
+The sitemap is valid XML with 11 `<loc>` entries, and every URL in it returns
+200 — checked individually against production.
+
+### IndexNow — automated
+
+`npm run submit-indexnow` (`scripts/submit-indexnow.ts`) POSTs the indexable URL
+list to `https://api.indexnow.org/indexnow`, which **Bing, Yandex, Seznam and
+Naver share** — one submission reaches all of them. Ownership is proved by the
+key file at `public/<key>.txt`; the script verifies that file is live before
+submitting, because a 403 from the endpoint otherwise just means the deploy has
+not landed.
+
+It is deliberately not wired into `postbuild`: re-submitting an unchanged URL
+list on every deploy is how a host gets throttled. Run it when the public pages
+actually change. `--dry` prints the payload without sending it.
+
+### Google Search Console — manual, and it has to be
+
+**Google cannot be automated from here.** The sitemap ping endpoint was retired
+and returns 404 (I called it), and the Search Console API requires OAuth against
+a property a human has verified. This is a one-off, roughly two-minute job for
+someone with account access:
+
+1. **Verify ownership — prefer the DNS TXT method.** It covers the apex and
+   every subdomain at once and survives a change of host, neither of which is
+   true of the HTML-tag method. (If the tag method is used instead, the token
+   goes in `index.html` and `scripts/prerender.ts` copies it to all 20 pages
+   automatically — no per-page work.)
+2. Add the property as a **Domain** property, not URL-prefix, so `www` and the
+   apex are one property rather than two sets of numbers.
+3. **Sitemaps → enter `sitemap.xml` → Submit.**
+4. Spot-check with URL Inspection: `/` should show the prerendered content, and
+   `/questionnaire` should report *Excluded by 'noindex' tag*.
+
 ## Code splitting
 
 The entry chunk was 936 KB and Vite warned about it on every build. Two changes:

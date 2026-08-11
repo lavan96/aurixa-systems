@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": "tsx --test \"src/**/*.test.ts\" \"api/**/*.test.ts\""
+    "test": "tsx --test \"src/**/*.test.ts\" \"api/**/*.test.ts\"",
+    "submit-indexnow": "tsx scripts/submit-indexnow.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
