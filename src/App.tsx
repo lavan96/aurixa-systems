@@ -37,13 +37,35 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const PricingSuccess = lazy(() => import("./pages/PricingSuccess"));
 const PricingCancel = lazy(() => import("./pages/PricingCancel"));
 const CardSaved = lazy(() => import("./pages/CardSaved"));
-// The A$1 Stripe test-fixture mirror of the price list.
-const PricingMock = lazy(() => import("./pages/PricingMock"));
 // Stage 2 readiness questionnaire, reached only via a secure single-use link.
 const Questionnaire = lazy(() => import("./pages/Questionnaire"));
 // Stage 3 strategic review scheduling.
 const ScheduleStrategicReview = lazy(() => import("./pages/ScheduleStrategicReview"));
 const Feedback = lazy(() => import("./pages/Feedback"));
+
+/**
+ * The A$1 Stripe test-fixture mirror of the price list — built only when the
+ * flag is set, which it is not in production.
+ *
+ * `src/lib/pricing/mockCatalog.ts` hard-codes 41 Payment Links against the
+ * **live** Stripe account, 42 price ids, and the account id itself. Marking the
+ * route `noindex` did nothing about that: a JavaScript chunk is a static asset,
+ * robots directives do not apply to it, and the entry chunk served on `/` names
+ * every lazy chunk file, so the path never had to be guessed. Anyone could
+ * fetch it. Low-value live payment links, publicly discoverable, are a standard
+ * card-testing target — and card testing brings chargebacks and account review.
+ *
+ * The `lazy()` call has to sit inside the conditional rather than the `<Route>`
+ * alone: a dynamic `import()` at module scope is a chunk boundary, and Rollup
+ * emits the chunk even when the route using it is dead code. Written this way,
+ * `import.meta.env` is substituted at build time and the whole branch — import
+ * included — is eliminated. `routeMetadata.test.ts` proves it against `dist/`
+ * rather than trusting it.
+ */
+const ENABLE_PRICING_MOCK = import.meta.env.VITE_ENABLE_PRICING_MOCK === "true";
+const PricingMock = ENABLE_PRICING_MOCK
+  ? lazy(() => import("./pages/PricingMock"))
+  : null;
 
 /**
  * Everything inside the router.
@@ -94,7 +116,11 @@ export function AppShell() {
             <Route path="/pricing/success" element={<PricingSuccess />} />
             <Route path="/pricing/cancel" element={<PricingCancel />} />
             <Route path="/pricing/card-saved" element={<CardSaved />} />
-            <Route path="/pricing-mock" element={<PricingMock />} />
+            {/* The literal path stays in the source unconditionally so the
+                registry drift test, which greps this file as text, still sees
+                it. With the flag off the route is never mounted, so the path
+                falls through to NotFound. */}
+            {PricingMock && <Route path="/pricing-mock" element={<PricingMock />} />}
             <Route path="/about" element={<About />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/docs" element={<Docs />} />

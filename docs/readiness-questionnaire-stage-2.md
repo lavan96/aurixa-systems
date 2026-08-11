@@ -182,6 +182,52 @@ share one message so the page cannot be used to test whether an application or
 email exists. Expired links, already-completed questionnaires and service
 failures each get their own state.
 
+> ### ⚠ That paragraph describes the *server* path, which is not deployed
+>
+> The above holds for `authorise` — the token exchanged with the
+> `readiness-questionnaire` edge function. **That function has never been
+> deployed** (see the table at the top of this document; confirmed against the
+> project's live function list). So it is not what runs.
+>
+> What runs is the *dynamic link* path in
+> `src/lib/questionnaireLinkAccess.ts`. When a link carries `token` **and**
+> `expires`, access is granted on a **regex shape check and a date comparison**
+> — no signature, no HMAC, no network call. In practice:
+>
+> ```
+> /questionnaire?token=aaaaaaaaaaaaaaaa&expires=2030-01-01
+> ```
+>
+> opens the full form to anyone who types it. This is not a devtools bypass; it
+> is a hand-typed URL.
+>
+> **No data is disclosed.** `openAccessSession()` returns an empty prefill, so a
+> forged link exposes no applicant PII and still cannot be used to probe whether
+> an application exists — that half of the paragraph above is accurate.
+>
+> **The exposure is write-side.** A forged session can complete the form and
+> reach the Stage 2 Make webhook, injecting responses into the Business
+> Readiness pipeline.
+>
+> This cannot be fixed in the browser. A secret able to verify the token would
+> have to ship to the browser, at which point it is not a secret. Two things
+> have been done in the meantime, and neither is a fix:
+>
+> - the submission now carries `accessTokenPresented` (the raw token) so the
+>   Make scenario **can** validate it, and `accessVerified: false` so the
+>   operations record stops implying something was checked;
+> - `resolveQuestionnaireLink` carries a comment saying plainly what it is.
+>
+> **The actual fix is one of two things, both outside this repo:**
+>
+> 1. the Stage 2 Make scenario rejects any submission whose
+>    `accessTokenPresented` it did not issue; or
+> 2. `readiness-questionnaire` is deployed and the client switches to
+>    `authorise` — which also requires Make to call the `issue` action, or every
+>    link already in an applicant's inbox stops working.
+>
+> Until one of those lands, treat Stage 2 submissions as unauthenticated input.
+
 A development-only preview (`/questionnaire?preview=1`) is guarded by
 `import.meta.env.DEV`; Vite removes the branch and its fixture from production
 builds (verified by grepping `dist/`). The fixture contains no real data.

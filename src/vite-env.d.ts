@@ -27,6 +27,13 @@ interface ImportMetaEnv {
    * address, and anything else is ignored.
    */
   readonly VITE_BOOKINGS_URL?: string;
+  /**
+   * Builds /pricing-mock and its A$1 fixture catalogue into the bundle. Set to
+   * "true" ONLY on a preview or staging environment — the catalogue hard-codes
+   * live Stripe Payment Links, and with the flag unset the whole module is
+   * eliminated from the build rather than merely hidden behind a route.
+   */
+  readonly VITE_ENABLE_PRICING_MOCK?: string;
 }
 
 interface ImportMeta {

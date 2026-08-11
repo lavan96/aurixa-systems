@@ -164,6 +164,13 @@ export default function Questionnaire() {
   const linkAccessRef = useRef(false);
   /** Matches the Airtable "Stage 2 Access Method" options. */
   const accessModeRef = useRef("Secure link (token)");
+  /**
+   * The `token` the browser was shown, kept so it can travel with the
+   * submission. Nothing here can verify it — see the note on
+   * `resolveQuestionnaireLink` — so forwarding it is what gives the Make
+   * scenario the option to.
+   */
+  const presentedTokenRef = useRef("");
 
   // ── Page metadata. Scoped to this page only; restored on unmount so no other
   // route's title, description or robots behaviour changes. The `noindex,
@@ -304,6 +311,9 @@ export default function Questionnaire() {
       url.searchParams.delete("reference");
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     }
+
+    // Captured before the parameters are stripped from the address bar below.
+    presentedTokenRef.current = url.searchParams.get("token") ?? "";
 
     const linkAccess = resolveQuestionnaireLink(url);
 
@@ -498,6 +508,7 @@ export default function Questionnaire() {
       responseVersion: payload.responseVersion,
       prefill: session.prefill,
       accessMode: accessModeRef.current,
+      accessTokenPresented: presentedTokenRef.current,
     });
 
     setIsSubmitting(false);
