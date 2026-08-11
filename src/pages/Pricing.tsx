@@ -45,6 +45,7 @@ import {
   type ResolvedHandoff,
   type ResolvedIdentity,
 } from "../lib/billing";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 /**
  * /pricing — THE customer-facing pricing page, migrated wholesale from
@@ -275,6 +276,7 @@ const faqNumbers = new Map(
 );
 
 export default function Pricing() {
+  useRouteMetadata("/pricing");
   const [params] = useSearchParams();
   const h = params.get("h");
   const uid = params.get("uid");

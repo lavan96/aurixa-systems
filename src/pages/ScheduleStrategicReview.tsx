@@ -15,6 +15,7 @@ import {
 } from "../lib/strategicReviewBooking";
 import { describeTimeZone, formatLocalTime, isValidTimeZone, readTimeZoneId, type TimeZoneDescriptor } from "../lib/timeZone";
 import { verifyStrategicReviewAccess } from "../lib/strategicReviewAccessClient";
+import { useRouteMetadata } from "../lib/pageMetadata";
 import type { AccessDecision, AccessFailure } from "../lib/strategicReviewAccess";
 
 /**
@@ -509,14 +510,11 @@ export default function ScheduleStrategicReview() {
     return () => { clearInterval(interval); document.removeEventListener("visibilitychange", refresh); };
   }, []);
 
+  // Stage 3 is reached from the Stage 2 completion screen, never from search.
+  // `indexable: false` in the registry is what emits `noindex, nofollow` here.
+  useRouteMetadata("/schedule-strategic-review");
+
   useEffect(() => {
-    const previousTitle = document.title;
-    document.title = "Schedule Your Strategic Review | Aurixa Systems";
-    const robots = document.createElement("meta"); robots.name = "robots"; robots.content = "noindex, nofollow"; document.head.appendChild(robots);
-    const description = document.createElement("meta");
-    description.name = "description";
-    description.content = "Stage 03 of the Aurixa Systems application: select a time for your strategic review with the Aurixa team.";
-    document.head.appendChild(description);
     const elements = [...document.querySelectorAll<HTMLElement>("[data-reveal]")];
     const observer = REVEAL_SUPPORTED
       ? new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add("is-visible"); observer?.unobserve(entry.target); } }), { threshold: 0.12 })
@@ -524,7 +522,7 @@ export default function ScheduleStrategicReview() {
     elements.forEach((element) => observer?.observe(element));
     const onVisibility = () => document.documentElement.classList.toggle("review-page-paused", document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
-    return () => { document.title = previousTitle; robots.remove(); description.remove(); observer?.disconnect(); document.removeEventListener("visibilitychange", onVisibility); document.documentElement.classList.remove("review-page-paused"); };
+    return () => { observer?.disconnect(); document.removeEventListener("visibilitychange", onVisibility); document.documentElement.classList.remove("review-page-paused"); };
   }, []);
 
   const zone = useMemo(() => describeTimeZone(new Date(tick), timeZone), [tick, timeZone]);

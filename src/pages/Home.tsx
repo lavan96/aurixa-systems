@@ -2,8 +2,10 @@ import { motion } from "motion/react";
 import { ArrowRight, BarChart3, Database, ShieldCheck, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 export default function Home() {
+  useRouteMetadata("/");
   return (
     <div className="w-full relative pt-20 bg-[#040B16]">
 
@@ -65,19 +67,19 @@ export default function Home() {
       <section className="w-full py-12 border-y border-white/5 bg-[#0B162C]">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-white/10 text-center">
           <div className="px-4">
-            <h4 className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">Zero</h4>
+            <p className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">Zero</p>
             <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">Operational Bottlenecks</p>
           </div>
           <div className="px-4">
-            <h4 className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">10yr</h4>
+            <p className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">10yr</p>
             <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">Financial Modelling</p>
           </div>
           <div className="px-4">
-            <h4 className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">100%</h4>
+            <p className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">100%</p>
             <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">White-Labeled Delivery</p>
           </div>
           <div className="px-4">
-            <h4 className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">SOC 2</h4>
+            <p className="text-4xl md:text-5xl font-display font-extrabold text-liquid-chrome mb-2 tracking-tight">SOC 2</p>
             <p className="text-[11px] uppercase tracking-widest text-[#9CA3AF] font-semibold">Enterprise Security</p>
           </div>
         </div>
@@ -124,7 +126,7 @@ export default function Home() {
                 name: "Operational Intelligence",
                 spec: "Workflow & Oversight",
                 desc: "Unify operations. Reduce complexity. Centralise control.\n\nBuilt to help property and finance businesses operate with less friction and more control. Aurixa streamlines business processes, centralises platform management, and creates one unified environment for clearer, more efficient operations.",
-                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2004_32_43%20PM.png",
+                img: "/brand/layer-01-operational-intelligence.webp",
                 imagePosition: "center center"
               },
               {
@@ -132,7 +134,7 @@ export default function Home() {
                 name: "Strategic Intelligence",
                 spec: "Analytical Systems",
                 desc: "Deliver faster, more structured client intelligence through governed analytical systems. Includes property analysis, market intelligence, and automated insight generation.",
-                img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2005_17_23%20PM.png",
+                img: "/brand/layer-02-strategic-intelligence.webp",
                 imagePosition: "center center"
               },
               {
@@ -140,7 +142,7 @@ export default function Home() {
                 name: "Financial Modelling",
                 spec: "Strategic Forecasts",
                 desc: "Provide scalable financial intelligence and long-term strategic modelling capabilities. Encompasses borrowing capacity, 10-year cash flow, and scenario modelling.",
-                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2005_42_10%20PM.png",
+                img: "/brand/layer-03-financial-modelling.webp",
                 imagePosition: "30% 25%"
               },
               {
@@ -148,7 +150,7 @@ export default function Home() {
                 name: "Client Growth Ecosystem",
                 spec: "Engagement Infrastructure",
                 desc: "Build better client journeys with connected engagement infrastructure. Aurixa brings CRM workflows, communication systems, reporting delivery, and lifecycle management into one structured ecosystem designed to support scalable growth across real estate, finance, and wealth creation.",
-                img: "/brand/ChatGPT%20Image%20Jun%205,%202026,%2006_11_24%20PM.png",
+                img: "/brand/layer-04-client-growth-ecosystem.webp",
                 imagePosition: "center center"
               },
               {
@@ -156,7 +158,7 @@ export default function Home() {
                 name: "Enterprise Governance",
                 spec: "Administration & Oversight",
                 desc: "Maintain operational control as your business scales. Systems administration, permissions, oversight, governance, and complete operational visibility.",
-                img: "/brand/ChatGPT%20Image%20Jun%205%2C%202026%2C%2009_23_40%20PM.png",
+                img: "/brand/layer-05-enterprise-governance.webp",
                 imagePosition: "center center"
               }
             ].map((unit, i) => (
@@ -165,9 +167,10 @@ export default function Home() {
                   <div className="absolute inset-0 bg-[#00A8B5] mix-blend-color z-10 opacity-30 group-hover:opacity-10 transition-opacity" />
                   <div className="absolute inset-0 bg-[#C89B3C] mix-blend-color z-10 opacity-20 group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B162C] to-transparent z-20" />
-                  {/* These are ~2 MB stills apiece and all five sit below the
-                      fold. Deferring them keeps the hero's first paint off a
-                      10 MB critical path on a phone connection. The wrapper is
+                  {/* All five sit below the fold, so they stay deferred even
+                      now that they are ~60 KB WebP rather than ~2 MB PNG (the
+                      set was 10.7 MB; see scripts/build-share-assets.py's
+                      sibling conversion in the SEO pass). The wrapper is
                       `aspect-video`, so the box is already reserved and nothing
                       reflows as each one arrives. */}
                   <img

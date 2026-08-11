@@ -28,6 +28,7 @@ import {
   type DocsBlock,
   type DocsPayload,
 } from "../lib/docs/docsClient";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 /** The public index, rendered as locked sections, before the server answers. */
 function indexAsSections(index: PublicDocsEntry[]): DeliveredSection[] {
@@ -185,6 +186,7 @@ function LockedBody({ section, identified }: { section: DeliveredSection; identi
 }
 
 export default function Docs() {
+  useRouteMetadata("/docs");
   const [params] = useSearchParams();
   const handoffParam = params.get("h");
   const [payload, setPayload] = useState<DocsPayload | null>(null);

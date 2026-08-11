@@ -24,6 +24,9 @@ import Questionnaire from "./pages/Questionnaire";
 // Stage 3 strategic review scheduling. Deliberately unlisted from public navigation.
 import ScheduleStrategicReview from "./pages/ScheduleStrategicReview";
 import Feedback from "./pages/Feedback";
+// The catch-all. Renders inside the normal chrome and asks not to be indexed;
+// see the note in NotFound.tsx about why the HTTP status is still 200.
+import NotFound from "./pages/NotFound";
 import Compliance from "./pages/Compliance";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
@@ -73,6 +76,7 @@ function AppShell() {
             <Route path="/questionnaire" element={<Questionnaire />} />
             <Route path="/schedule-strategic-review" element={<ScheduleStrategicReview />} />
             <Route path="/feedback" element={<Feedback />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         {!hidesSiteChrome && <Footer />}

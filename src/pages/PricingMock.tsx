@@ -26,6 +26,7 @@ import {
   formatAud,
   type MockLineItem,
 } from "../lib/pricing/mockCatalog";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 /**
  * /pricing-mock — the A$1 mirror of the price list, for end-to-end Stripe
@@ -205,6 +206,7 @@ function Section({
 const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
 
 export default function PricingMock() {
+  useRouteMetadata("/pricing-mock");
   const [query, setQuery] = useState("");
 
   // Filtering is worth having at forty-one items: the common task is "find the

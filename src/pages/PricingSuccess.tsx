@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import { fetchSessionReceipt, formatMoney, type SessionReceipt } from "../lib/billing";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 const POLL_INTERVAL_MS = 2_500;
 const POLL_MAX_MS = 60_000;
@@ -19,6 +20,7 @@ const MODE_LABEL: Record<string, string> = {
  * offers the validated way back into the purchaser's command center.
  */
 export default function PricingSuccess() {
+  useRouteMetadata("/pricing/success");
   const [params] = useSearchParams();
   const sessionId = params.get("session_id");
   const h = params.get("h");

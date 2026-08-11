@@ -17,11 +17,13 @@ import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
 import { VoiceAgentSection } from "../components/VoiceAgentSection";
 import { AnimatedGearSystem } from "../components/AnimatedGearSystem";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 // Temporarily hidden from the public Platform page. Set to true to restore.
 const SHOW_CORELOGIC_DATA_INTEGRATION = false;
 
 export default function Platform() {
+  useRouteMetadata("/platform");
   return (
     <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="platform" />
@@ -61,7 +63,7 @@ export default function Platform() {
                <div className="absolute inset-0 bg-gradient-to-br from-[#00A8B5]/10 to-transparent opacity-50" />
                <div className="relative z-10">
                  <Cpu className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-                 <h3 className="text-2xl font-display font-light text-white mb-4">Algorithmic Processing</h3>
+                 <h2 className="text-2xl font-display font-light text-white mb-4">Algorithmic Processing</h2>
                  <p className="text-gray-400 font-light text-sm leading-relaxed mb-8">
                    The core engine ingests thousands of data points instantaneously. We bypass manual entry friction by directly parsing documents and intercepting live data streams. Turn complex data into clear, usable business intelligence.
                  </p>
@@ -116,7 +118,7 @@ export default function Platform() {
                <div className="absolute inset-0 bg-gradient-to-bl from-[#C89B3C]/10 to-transparent opacity-50" />
                <div className="relative z-10">
                  <Terminal className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-                 <h3 className="text-2xl font-display font-light text-white mb-4">Automated Brief Generation</h3>
+                 <h2 className="text-2xl font-display font-light text-white mb-4">Automated Brief Generation</h2>
                  <p className="text-gray-400 font-light text-sm leading-relaxed mb-8">
                    Client presentations are generated silently in the background, fully formatted, mathematically verified, and branded to your exact specifications. Information is processed, analysed, and formulated into strategic recommendations automatically.
                  </p>
@@ -158,7 +160,7 @@ export default function Platform() {
                
                <div className="relative z-10 w-full max-w-xl">
                  <Calculator className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-                 <h4 className="text-white font-display text-3xl md:text-4xl mb-4 tracking-wide drop-shadow-md">Borrowing Capacity Matrix</h4>
+                 <h3 className="text-white font-display text-3xl md:text-4xl mb-4 tracking-wide drop-shadow-md">Borrowing Capacity Matrix</h3>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed mb-8">
                    Deploy high-speed borrowing capacity calculations against live, multi-lender parameters. Eliminate human error from your fundamental qualification phase and adjust strictly to real-time APRA buffers instantaneously. Layer 03 financial modelling infrastructure provides scalable financial intelligence and long-term strategic modelling capabilities directly for high-value clients.
                  </p>
@@ -191,7 +193,7 @@ export default function Platform() {
             <div className="md:col-span-12 lg:col-span-4 glass-panel p-6 sm:p-10 md:p-12 group overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-500 bg-gradient-to-bl from-[#0B162C]/90 to-[#040B16] relative flex flex-col justify-between min-h-[450px]">
                <div className="relative z-10">
                  <FileText className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-                 <h4 className="text-white font-display text-3xl mb-4 tracking-wide">Custom Reporting</h4>
+                 <h3 className="text-white font-display text-3xl mb-4 tracking-wide">Custom Reporting</h3>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed mb-8">
                    Generate comprehensive, multi-page financial strategy briefs in seconds. Configurable mechanisms strict on white-labeling rules perfectly mirror your brand. Model borrowing capacity, 10-year cash flow forecasts, depreciation integration, scenario modelling, and portfolio growth analysis.
                  </p>
@@ -216,7 +218,7 @@ export default function Platform() {
             <div className="md:col-span-6 lg:col-span-5 glass-panel p-6 sm:p-10 md:p-12 group overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-500 bg-[#0B162C]/80 relative flex flex-col justify-between min-h-[450px]">
                <div className="relative z-10 w-full max-w-sm">
                  <LayoutDashboard className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-                 <h4 className="text-white font-display text-3xl mb-4 tracking-wide shadow-black drop-shadow-lg">White-Label UI</h4>
+                 <h3 className="text-white font-display text-3xl mb-4 tracking-wide shadow-black drop-shadow-lg">White-Label UI</h3>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed text-shadow-sm">
                    Deploy customized interior and exterior environments projecting absolute authority. Total camouflage under your firm's branding guidelines. Layer 04 client growth and engagement ecosystem consolidates CRM workflows, client engagement, communication systems, reporting delivery, and lifecycle management.
                  </p>
@@ -254,7 +256,7 @@ export default function Platform() {
             <div className="md:col-span-6 lg:col-span-7 glass-panel p-6 sm:p-10 md:p-12 group overflow-hidden border border-[#00A8B5]/20 hover:border-[#00A8B5]/60 transition-all duration-500 bg-gradient-to-bl from-[#0B162C]/90 to-[#040B16] relative flex flex-col justify-between min-h-[450px]">
                <div className="relative z-10 w-full max-w-sm">
                  <MapPin className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-                 <h4 className="text-white font-display text-3xl mb-4 tracking-wide shadow-black drop-shadow-lg">Suburb Snapshots</h4>
+                 <h3 className="text-white font-display text-3xl mb-4 tracking-wide shadow-black drop-shadow-lg">Suburb Snapshots</h3>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed">
                    Instantly generate hyper-detailed macro market intelligence. Capture granular demographic, zoning, and historical growth snapshots mathematically validating investments. Governed analytical systems keep property analysis, market intelligence, and automated insight generation connected.
                  </p>
@@ -301,7 +303,7 @@ export default function Platform() {
                         <span className="w-1.5 h-1.5 bg-[#00A8B5] rounded-full animate-pulse" /> Live Link Active
                      </span>
                  </div>
-                 <h4 className="text-white font-display text-4xl mb-6 tracking-wide drop-shadow-md">CoreLogic Data Integration</h4>
+                 <h3 className="text-white font-display text-4xl mb-6 tracking-wide drop-shadow-md">CoreLogic Data Integration</h3>
                  <p className="text-[#9CA3B8] font-light text-base leading-relaxed">
                    Bring trusted property data into the centre of your operations. Aurixa connects CoreLogic insights directly into your workflow, helping real estate and finance businesses reduce manual searching, improve data accuracy, and make faster decisions across sales, investment, finance, and portfolio operations.
                  </p>
@@ -358,19 +360,19 @@ export default function Platform() {
             <div className="p-8 border border-white/5 bg-[#0B162C] relative overflow-hidden group">
               <div className="absolute inset-0 transition-opacity opacity-0 group-hover:opacity-100 bg-gradient-to-b from-[#00A8B5]/5 to-transparent pointer-events-none" />
               <Network className="w-8 h-8 mb-6" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h4 className="text-white font-display text-xl mb-4">Neural Integration</h4>
+              <h3 className="text-white font-display text-xl mb-4">Neural Integration</h3>
               <p className="text-gray-500 font-light text-sm">Hooks directly into HubSpot, Salesforce, and bespoke database architectures to form a seamless bi-directional data flow. Integrated client ecosystems consolidate communication, delivery, and lifecycle touchpoints.</p>
             </div>
             <div className="p-8 border border-white/5 bg-[#0B162C] relative overflow-hidden group">
               <div className="absolute inset-0 transition-opacity opacity-0 group-hover:opacity-100 bg-gradient-to-b from-[#C89B3C]/5 to-transparent pointer-events-none" />
               <ShieldCheck className="w-8 h-8 mb-6" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h4 className="text-white font-display text-xl mb-4">Absolute Compliance</h4>
+              <h3 className="text-white font-display text-xl mb-4">Absolute Compliance</h3>
               <p className="text-gray-500 font-light text-sm">Mathematics govern everything. Calculations are permanently anchored to federal compliance and regulatory buffer mandates. Role-based permissions, data governance, and oversight mechanisms protect your brand and enforce compliance.</p>
             </div>
             <div className="p-8 border border-white/5 bg-[#0B162C] relative overflow-hidden group">
               <div className="absolute inset-0 transition-opacity opacity-0 group-hover:opacity-100 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
               <Zap className="w-8 h-8 mb-6" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h4 className="text-white font-display text-xl mb-4">Asymmetrical Speed</h4>
+              <h3 className="text-white font-display text-xl mb-4">Asymmetrical Speed</h3>
               <p className="text-gray-500 font-light text-sm">What takes standard advisory firms hours of compilation requires mere seconds of compute time using the Aurixa core. Systems administration, team oversight, and operational visibility keep enterprise execution controlled.</p>
             </div>
           </div>
@@ -381,7 +383,7 @@ export default function Platform() {
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>
-            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Secure <span className="italic text-chrome-prismatic">Priority Integration</span></h3>
+            <h2 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Secure <span className="italic text-chrome-prismatic">Priority Integration</span></h2>
             <div className="text-[#9CA3B8] mb-12 max-w-2xl mx-auto text-lg leading-relaxed font-light">
               <p>Access to Aurixa’s deployment cycle is limited to preserve delivery quality, architectural focus, and partner success.</p>
               <p>Businesses accepted into the next integration cycle will gain early access to unified operational intelligence built for property, finance, and wealth creation.</p>

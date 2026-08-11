@@ -39,6 +39,7 @@ import {
   resolveIntakeBadge,
   validateWaitlistForm,
 } from "../lib/waitlist";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 const MAKE_WAITLIST_WEBHOOK_URL = "https://hook.eu2.make.com/589rb23xwbgovfj3iuemtcuxm75cccut";
 
@@ -58,6 +59,7 @@ const FIELD_ORDER: WaitlistFieldError[] = [
 ];
 
 export default function Contact() {
+  useRouteMetadata("/contact");
   const [values, setValues] = useState<WaitlistFormValues>(EMPTY_WAITLIST_FORM);
   const [errors, setErrors] = useState<Partial<Record<WaitlistFieldError, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -251,7 +253,7 @@ export default function Contact() {
           >
             <div className="flex items-center gap-2 mb-4 text-white">
               <ShieldAlert className="w-5 h-5 " style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="font-display font-semibold text-xl tracking-wide uppercase">Operational Freeze</h3>
+              <h2 className="font-display font-semibold text-xl tracking-wide uppercase">Operational Freeze</h2>
             </div>
             <p className="text-gray-400 font-light text-sm leading-relaxed mb-4">
               "To maintain extreme architectural fidelity for our Tier-1 partners, we limit new integrations. We do not accept capital for queue priority. Allocation is earned by proving your firm has the systemic capability to dominate your sector once armed with our software. Submit your credentials meticulously. Each review cycle is calibrated around transaction volume, market stance, and alignment with Aurixa Systems' strategic objectives."

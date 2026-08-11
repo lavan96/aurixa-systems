@@ -3,6 +3,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnimatedGovernanceSystem } from "../components/AnimatedGovernanceSystem";
 import { HeroBackground } from "../components/HeroBackgrounds";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 const frameworkLayers = [
   ["01", "Infrastructure Protection", "Established infrastructure, encrypted data handling and controlled access supporting the secure operation of the Aurixa environment."],
@@ -133,6 +134,7 @@ function ComplianceConvergenceCTA() {
 }
 
 export default function Compliance() {
+  useRouteMetadata("/compliance");
   return <MotionConfig reducedMotion="user"><main className="compliance-page">
     <section aria-labelledby="compliance-heading" className="compliance-hero">
       <HeroBackground variant="platform" /><div className="compliance-hero__wash" aria-hidden="true" />

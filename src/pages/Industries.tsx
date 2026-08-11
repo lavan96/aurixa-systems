@@ -3,8 +3,10 @@ import { ArrowRight, Briefcase, Landmark, UserCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { HeroBackground } from "../components/HeroBackgrounds";
 import { IndustriesHeroVisual } from "../components/AnimatedHeroVisuals";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 export default function Industries() {
+  useRouteMetadata("/industries");
   return (
     <div className="w-full relative pt-32 pb-20 bg-[#040B16] min-h-dvh overflow-hidden">
       <HeroBackground variant="industries" />
@@ -37,7 +39,7 @@ export default function Industries() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Buyers Agents</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Buyers Agents</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Prove your value instantly. Instead of telling a client a property is a good investment, generate a 10-year cash flow analysis that proves it mathematically before the competition can even run a CMA.
                 <br />
@@ -52,7 +54,7 @@ export default function Industries() {
 
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Wealth Advisors</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Wealth Advisors</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Integrate property into your wider wealth strategies without the compliance risk. Sync our matrices directly with your CRM and stop guessing on borrowing capacities.
                 <br />
@@ -67,7 +69,7 @@ export default function Industries() {
 
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Enterprise Firms</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Enterprise Firms</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Standardize output across 50+ brokers effortlessly. Ensure every presentation that leaves your office carries the same elite, mathematically air-tight Aurixa seal of approval, white-labeled to your brand.
                 <br />
@@ -81,7 +83,7 @@ export default function Industries() {
            </div>
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Property Advisory Firms</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Property Advisory Firms</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Pain Point: Fragmented systems trying to combine macro-economic data, client financials, and property research.
                 <br />
@@ -93,7 +95,7 @@ export default function Industries() {
 
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Real Estate Agencies</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Real Estate Agencies</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Pain Point: Commoditised brand positioning against competitors and failure to deliver strategic ongoing value directly to property investors.
                 <br />
@@ -105,7 +107,7 @@ export default function Industries() {
 
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Mortgage & Finance Businesses</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Mortgage & Finance Businesses</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Pain Point: Isolating the loan process from the property strategy and losing clients post-settlement due to a lack of ongoing advisory touchpoints.
                 <br />
@@ -117,7 +119,7 @@ export default function Industries() {
 
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#00A8B5] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <UserCheck className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Investment Groups</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Investment Groups</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Pain Point: Slow deployment of capital due to inefficient asset qualification and disjointed multi-office communication and reporting lines.
                 <br />
@@ -129,7 +131,7 @@ export default function Industries() {
 
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-[#C89B3C] hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Landmark className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Developers</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Developers</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Pain Point: Inability to project individual lot yields for potential buyers and selling purely on price rather than long-term strategic value to the investor.
                 <br />
@@ -141,7 +143,7 @@ export default function Industries() {
 
            <div className="glass-panel p-6 sm:p-10 flex flex-col items-start text-left border-t-4 border-white hover:-translate-y-2 transition-transform duration-500 bg-[#0B162C]">
               <Briefcase className="w-12 h-12 mb-8" style={{ stroke: "url(#icon-gold-gradient)", strokeWidth: 1.5 }}/>
-              <h3 className="text-2xl font-display font-light text-white mb-4">Enterprise Property Networks</h3>
+              <h2 className="text-2xl font-display font-light text-white mb-4">Enterprise Property Networks</h2>
               <p className="text-[#9CA3B8] font-light leading-relaxed text-sm mb-6 flex-grow">
                 Pain Point: Scaling operations involves exponential headcount while maintaining consistency and quality control across a massive geographic footprint.
                 <br />
@@ -157,7 +159,7 @@ export default function Industries() {
           <div className="absolute inset-0 bg-chrome-prismatic opacity-10 pointer-events-none" />
           <div className="relative z-10 flex flex-col items-center">
             <span className="px-4 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-[#C89B3C] border border-[#C89B3C]/30 mb-8 rounded-sm">Allocation Restricted</span>
-            <h3 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Ready To Scale With Control.</h3>
+            <h2 className="text-4xl md:text-6xl font-display font-light tracking-tight mb-8 text-white">Ready To Scale With Control.</h2>
             <p className="text-[#9CA3B8] mb-12 max-w-2xl mx-auto text-lg leading-relaxed font-light">
               Aurixa is built for property and finance businesses that have outgrown manual processes, disconnected platforms, and reactive operations.
               <br />

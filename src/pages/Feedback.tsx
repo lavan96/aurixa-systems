@@ -9,6 +9,7 @@ import {
   type FeedbackContext,
   type FeedbackReceipt,
 } from "../lib/billing";
+import { useRouteMetadata } from "../lib/pageMetadata";
 
 /**
  * /feedback — the customer-facing feedback form.
@@ -32,6 +33,7 @@ import {
 const RATING_LABELS = ["Poor", "Fair", "Good", "Very good", "Excellent"];
 
 export default function Feedback() {
+  useRouteMetadata("/feedback");
   const [params] = useSearchParams();
   const h = params.get("h");
   const uid = params.get("uid");

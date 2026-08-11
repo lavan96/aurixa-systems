@@ -1,7 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { HeroBackground } from "../HeroBackgrounds";
+import { useRouteMetadata } from "../../lib/pageMetadata";
 import type { LegalDocumentKind, LegalSectionDefinition } from "../../lib/legal";
 import { LegalDocumentMeta } from "./LegalDocumentMeta";
 import { LegalHeroVisual } from "./LegalHeroVisual";
@@ -11,13 +12,12 @@ import { LegalSection } from "./LegalSection";
 import { LegalChapterHeader } from "./LegalChapterHeader";
 import { LEGAL_CHAPTERS, LEGAL_THEMES } from "./legalChapters";
 
-type Props = { kind: LegalDocumentKind; eyebrow: string; title: string; introduction: string; summary: ReactNode; summaryTitle?: string; caption: string; sections: LegalSectionDefinition[]; pageTitle: string; description: string; related: { label: string; to: string }[] };
+type Props = { kind: LegalDocumentKind; eyebrow: string; title: string; introduction: string; summary: ReactNode; summaryTitle?: string; caption: string; sections: LegalSectionDefinition[]; related: { label: string; to: string }[] };
 export function LegalDocumentLayout(props: Props) {
-  useEffect(() => {
-    const priorTitle = document.title; const existing = document.querySelector<HTMLMetaElement>('meta[name="description"]'); const prior = existing?.content;
-    document.title = props.pageTitle; const meta = existing ?? document.head.appendChild(document.createElement("meta")); meta.setAttribute("name", "description"); meta.setAttribute("content", props.description);
-    return () => { document.title = priorTitle; if (prior !== undefined) meta.content = prior; else meta.remove(); };
-  }, [props.pageTitle, props.description]);
+  // Title and description used to be props duplicated at each call site. Both
+  // legal routes are in the route registry, so the path is enough — and the
+  // sitemap, the canonical tag and the tab title can no longer disagree.
+  useRouteMetadata(useLocation().pathname);
   useEffect(() => {
     let frame = 0;
     const updateProgress = () => {
