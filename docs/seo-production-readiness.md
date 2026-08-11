@@ -246,15 +246,30 @@ It adds roughly a second. No browser is involved — prerendering uses
 `react-dom/server`, not a headless Chromium — so CI needs nothing installed
 that it did not already have.
 
-**`X-Robots-Tag` headers cannot be verified locally.** They come from
-`vercel.json` and only exist on a real deployment. The `noindex` is also baked
-into each unlisted page's served HTML, so the directive is present either way,
-but the header should still be checked once on the preview:
+**`X-Robots-Tag` headers could not be verified before merge.** They come from
+`vercel.json`, so they only exist on a real deployment — and the PR's preview
+deployment is behind Vercel Deployment Protection, where every path answers
+`302` to `vercel.com/sso-api` with Vercel's own blanket
+`X-Robots-Tag: noindex` attached to the auth gate. Nothing about the site's own
+headers is observable through it. (Worth knowing before someone reads a preview
+response as evidence: the auth gate's header says `noindex`, while the rule in
+`vercel.json` says `noindex, nofollow` — the value is how you tell them apart.)
+
+Run this against production after the first deploy, or against a preview with
+protection bypassed:
 
 ```bash
 curl -sI $BASE/questionnaire | grep -i x-robots-tag   # expect noindex, nofollow
 curl -sI $BASE/platform      | grep -i x-robots-tag   # expect nothing
 ```
+
+The risk of shipping this unverified is low but not zero, and it is bounded:
+`routeMetadata.test.ts` checks every unlisted path against the header rules'
+own regexes, and — the part that actually matters — every unlisted page now
+carries `<meta name="robots" content="noindex, nofollow">` in its prerendered
+HTML. If the header rule were wrong, the directive would still be in the served
+bytes of every page that needs it. The header is the belt; the meta tag is the
+braces.
 
 ## Verification
 
