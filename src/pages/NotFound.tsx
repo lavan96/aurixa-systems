@@ -9,13 +9,18 @@ import { usePageMetadata } from "../lib/pageMetadata";
  * `App.tsx` rendered empty — navigation and footer present, nothing between
  * them. It read as a broken page rather than a missing one.
  *
- * **This does not produce an HTTP 404.** `vercel.json` rewrites every unmatched
- * path to `index.html`, so the status was already 200 before the bundle ran, and
- * an SPA cannot revise it. The `noindex` below is what stops a search engine
- * treating that soft 404 as a real page worth keeping. A genuine 404 status
- * needs the rewrite narrowed to an allowlist and a static `404.html` — that
- * belongs with prerendering, where it can be verified against a preview deploy
- * before it can break a live URL.
+ * There are two ways to reach a missing page, and they are served differently:
+ *
+ *   • **A direct hit or a refresh** never reaches this component. Every real
+ *     route is a prerendered file on disk, so Vercel's filesystem check misses
+ *     and serves `dist/404.html` with a genuine **HTTP 404** — the same markup
+ *     as below, rendered at build time by `scripts/prerender.ts`.
+ *   • **A client-side navigation** to a bad `to=` never touches the network, so
+ *     there is no response whose status could be set. This component is what
+ *     renders then, and it is the only case that needs it.
+ *
+ * The `noindex` matters for the second case and is belt-and-braces for the
+ * first, which already carries the directive in its served bytes.
  */
 export default function NotFound() {
   const { pathname } = useLocation();

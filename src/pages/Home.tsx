@@ -253,8 +253,11 @@ export default function Home() {
         <div className="absolute right-0 bottom-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(10,25,47,0.1),transparent_70%)] blur-[120px] opacity-40 pointer-events-none" />
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
           <div className="mb-8 mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-md bg-[#040B16] p-2 shadow-[0_0_40px_rgba(200,155,60,0.3)]">
+            {/* 192px WebP, not the old aurixa-symbol.svg — which was 535 KB,
+                being a base64 JPEG in an SVG wrapper, fetched to fill a 96px
+                square. Nothing about it was ever vector. */}
             <img
-              src="/brand/aurixa-symbol.svg"
+              src="/brand/aurixa-symbol-192.webp"
               alt="Aurixa Systems logo"
               width={96}
               height={96}

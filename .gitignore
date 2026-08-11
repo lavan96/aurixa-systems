@@ -13,3 +13,6 @@ coverage/
 
 # Bytecode from the Pillow asset scripts in scripts/.
 __pycache__/
+
+# The SSR bundle built for scripts/prerender.ts; an artifact, like dist/.
+dist-ssr/

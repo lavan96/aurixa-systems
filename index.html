@@ -16,22 +16,26 @@
     <meta name="theme-color" content="#040B16" />
 
     <!--
-      The 32px PNG rather than /brand/aurixa-symbol.svg, which is 548 KB — an
-      SVG wrapping a base64 JPEG — and was being fetched on every page load
-      purely to paint a 16px tab icon. Both raster icons come from
-      scripts/build-share-assets.py.
+      The favicon was /brand/aurixa-symbol.svg: 535 KB, being a base64 JPEG
+      wrapped in an SVG, fetched on every page load to paint a 16px tab icon.
+      Nothing about it was vector, so it has been deleted outright rather than
+      demoted. Both raster icons come from scripts/build-share-assets.py.
     -->
     <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
 
     <!--
-      Everything below is the SITEWIDE default. `usePageMetadata` overwrites
-      title, description, canonical and the og:/twitter: pairs per route once
-      React mounts — but this site is client-rendered, so the served HTML is all
-      a link-preview scraper ever sees. Slack, LinkedIn, X, WhatsApp and iMessage
-      do not execute JavaScript. These static tags are therefore the card that
-      every share of every URL actually renders until prerendering lands.
-      Googlebot does render JS, so the per-route overrides do reach search.
+      The SITEWIDE default, and the template every prerendered page is built
+      from. `scripts/prerender.ts` rewrites the title, description, canonical
+      and og:/twitter: pairs below per route at build time, so the file actually
+      served for /platform carries /platform's card — which matters because no
+      link-preview scraper executes JavaScript. `usePageMetadata` then keeps
+      them correct across client-side navigation, where there is no new
+      document to serve.
+
+      Anything reaching this file unmodified (a dev server, a route added
+      without a registry entry) still gets a complete, correct sitewide card
+      rather than a bare URL.
     -->
     <meta
       name="description"
@@ -78,7 +82,7 @@
 
     <!--
       Structured data. Static rather than injected, because JS-injected JSON-LD
-      is picked up inconsistently and this site serves an empty root div.
+      is picked up inconsistently and it costs nothing to put it in the bytes.
 
       Deliberately no Product or Offer markup: /pricing is unlisted and carries
       a noindex header, so publishing machine-readable prices here would leak

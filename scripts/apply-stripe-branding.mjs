@@ -42,8 +42,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // Mirrors aurixa-mission-control/src/lib/brand/aurixa-brand.ts.
 const BRANDING = { primary_color: "#C89B3C", secondary_color: "#040B16" };
 const ASSETS = {
-  icon: "public/brand/stripe/aurixa-stripe-icon-dark-512.png",
-  logo: "public/brand/stripe/aurixa-stripe-logo-dark.png",
+  icon: "brand-source/stripe/aurixa-stripe-icon-dark-512.png",
+  logo: "brand-source/stripe/aurixa-stripe-logo-dark.png",
 };
 const MAX_BYTES = 512 * 1024;
 const MIN_EDGE = 128;

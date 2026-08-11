@@ -9,15 +9,17 @@ browser tab does on every share and every page load:
 LinkedIn, Slack, WhatsApp or iMessage rendered as a bare URL. None of the
 existing brand assets works as one: the Stripe logo tile is 1600x604 (2.65:1,
 so it letterboxes or centre-crops against Open Graph's 1.91:1), the Stripe icon
-is square (which downgrades the card to a small thumbnail), and
-`aurixa-symbol.svg` is an SVG — no unfurler accepts SVG for `og:image`.
+is square (which downgrades the card to a small thumbnail), and the old
+`aurixa-symbol.svg` was an SVG — no unfurler accepts SVG for `og:image`.
 
-**The favicon was 548 KB.** `public/brand/aurixa-symbol.svg` is an SVG wrapper
-around a base64-encoded JPEG, and it was the tab icon, so every page load paid
-for it. A 32x32 PNG is about two kilobytes.
+**The favicon was 535 KB.** `aurixa-symbol.svg` was an SVG wrapper around a
+base64-encoded JPEG, and it was the tab icon, so every page load paid for it.
+A 32x32 PNG is about two kilobytes. It has since been deleted outright: it was
+also being used to fill a 96px square on the home page, which a 19 KB WebP does
+better.
 
-Everything derives from `public/brand/aurixa-systems-logo-source.jpg` — which,
-despite the extension, is a PNG with a real alpha channel — and reuses the
+Everything derives from `brand-source/aurixa-lockup-source.png` — a PNG with a real
+alpha channel, kept OUT of `public/` so the 401 KB original is never served — and reuses the
 ground, glow and placement helpers from `build-stripe-brand-assets.py` so the
 two sets cannot drift apart. Same reasoning as that script for putting the mark
 on an opaque dark ground rather than shipping transparency: we do not control
@@ -46,7 +48,7 @@ assert _spec and _spec.loader
 brand = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(brand)
 
-SOURCE = ROOT / "public" / "brand" / "aurixa-systems-logo-source.jpg"
+SOURCE = ROOT / "brand-source" / "aurixa-lockup-source.png"
 BRAND_DIR = ROOT / "public" / "brand"
 
 # Open Graph's canonical size. 1.91:1 — the ratio Facebook, LinkedIn, Slack and
@@ -59,6 +61,16 @@ OG_MAX_BYTES = 1024 * 1024
 # iOS home-screen icon. 180x180 is the largest any current device asks for.
 APPLE_TOUCH = 180
 FAVICON = 32
+
+# On-page display sizes, each 2x its largest CSS box and no larger.
+#
+# BrandLogo's widest box is 560x112 (`h-28 w-[560px]`), but the image is
+# `object-contain` and the lockup is ~3.16:1, so height is the binding
+# constraint: it actually paints at 354x112, not 560 wide. 2x of that is 708.
+# Sizing to the declared 560 would have shipped 60% more pixels than any
+# display can use. The Home symbol sits in a 96px square.
+LOCKUP_WIDTH = 720
+SYMBOL_PX = 192
 
 
 def main() -> int:
@@ -95,9 +107,35 @@ def main() -> int:
         icon.convert("RGB").save(path, "PNG", optimize=True)
         written.append(path)
 
+    # --- On-page display assets ---------------------------------------------
+    # These DO keep their alpha: unlike the share assets, we control the surface
+    # they land on (the site's own #040B16 ground), so the mark composites
+    # against it instead of carrying its own tile.
+    #
+    # Both replace assets that were absurdly oversized for their display box.
+    # The lockup was a 401 KB source image rendered at most 560px wide, in the
+    # header AND the footer, on every page. The symbol was a 535 KB "SVG" —
+    # actually a base64 JPEG in an SVG wrapper — painted into a 96px square.
+    transparent: list[Path] = []
+
+    lockup_w = LOCKUP_WIDTH
+    lockup_h = round(lockup.height * lockup_w / lockup.width)
+    path = BRAND_DIR / "aurixa-lockup.webp"
+    lockup.resize((lockup_w, lockup_h), Image.LANCZOS).save(
+        path, "WEBP", quality=88, method=6
+    )
+    transparent.append(path)
+
+    path = BRAND_DIR / "aurixa-symbol-192.webp"
+    sym = Image.new("RGBA", (SYMBOL_PX, SYMBOL_PX), (0, 0, 0, 0))
+    art, at, _ = brand.place(symbol, (SYMBOL_PX, SYMBOL_PX), 1.0)
+    sym.alpha_composite(art, at)
+    sym.save(path, "WEBP", quality=90, method=6)
+    transparent.append(path)
+
     # --- Assert the constraints rather than trusting them --------------------
     failures = []
-    for path in written:
+    for path in written + transparent:
         img = Image.open(path)
         size = path.stat().st_size
         print(f"  {path.relative_to(ROOT)}  {img.size[0]}x{img.size[1]}  {size / 1024:.1f} KB")
@@ -106,14 +144,21 @@ def main() -> int:
                 failures.append(f"{path.name}: {img.size} is not {OG_SIZE[0]}x{OG_SIZE[1]}")
             if size > OG_MAX_BYTES:
                 failures.append(f"{path.name}: {size / 1024:.0f} KB is over the 1 MB share limit")
-        if img.mode == "RGBA":
-            failures.append(f"{path.name}: still carries an alpha channel")
+        if path in written and img.mode == "RGBA":
+            failures.append(f"{path.name}: share asset still carries an alpha channel")
+        if path in transparent and img.mode != "RGBA":
+            failures.append(f"{path.name}: display asset lost its alpha channel")
+        # Nothing built here has any business being large. The whole point is
+        # that the originals were 401 KB and 535 KB for these two slots.
+        if path in transparent and size > 80 * 1024:
+            failures.append(f"{path.name}: {size / 1024:.0f} KB is too heavy for an on-page mark")
 
     if failures:
         for f in failures:
             print(f"FAIL {f}", file=sys.stderr)
         return 1
-    print("\nShare assets built: 1200x630 OG card, 180px apple-touch icon, 32px favicon.")
+    print("\nShare assets: 1200x630 OG card, 180px apple-touch icon, 32px favicon.")
+    print("Display assets: transparent lockup and symbol, sized for their boxes.")
     return 0
 
 

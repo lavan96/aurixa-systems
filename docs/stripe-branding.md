@@ -51,8 +51,8 @@ it. See `aurixa-mission-control/docs/stripe-branding.md`.
 python3 scripts/build-stripe-brand-assets.py
 ```
 
-Writes four PNGs to `public/brand/stripe/`, all derived from the single source
-of truth `public/brand/aurixa-systems-logo-source.jpg` — which, despite the
+Writes four PNGs to `brand-source/stripe/`, all derived from the single source
+of truth `brand-source/aurixa-lockup-source.png` — which, despite the
 extension, is a **PNG with a real alpha channel**. That matters: the mark is
 gold artwork on transparency, so it can be composited onto the brand's own
 ground rather than knocked out of a white one.

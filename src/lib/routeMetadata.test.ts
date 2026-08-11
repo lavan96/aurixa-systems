@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import {
@@ -208,6 +209,108 @@ test("every unlisted route is covered by a noindex header in vercel.json", async
     assert.ok(
       noindexSources.some((pattern) => pattern.test(path)),
       `${path} has no X-Robots-Tag: noindex rule in vercel.json`,
+    );
+  }
+});
+
+/**
+ * The one that keeps the 404 real.
+ *
+ * `scripts/prerender.ts` writes a file for every route, so Vercel's filesystem
+ * check answers all of them and anything else falls through to `dist/404.html`
+ * with a genuine 404 status. A catch-all rewrite would put that back the way it
+ * was: every unknown URL answering 200 with the app shell, which search engines
+ * treat as a soft 404 and index as a real page.
+ *
+ * If a rewrite is ever genuinely needed, it must be an allowlist — never
+ * `/(.*)`.
+ */
+test("vercel.json has no catch-all rewrite masking the 404", async () => {
+  const config = JSON.parse(
+    await readFile(new URL("../../vercel.json", import.meta.url), "utf8"),
+  ) as { rewrites?: { source: string; destination: string }[] };
+
+  const catchAll = (config.rewrites ?? []).filter((rule) =>
+    /^\/\(\.\*\)$|^\/\*$|^\/\(\.\+\)$/.test(rule.source),
+  );
+  assert.deepEqual(
+    catchAll,
+    [],
+    "a catch-all rewrite makes every unknown URL answer 200 — prerendering exists so it does not have to",
+  );
+});
+
+/**
+ * Every route must end up on disk, because without the rewrite an un-prerendered
+ * route is a hard 404 in production rather than a soft one. Skipped when there
+ * is no build to inspect, so `npm test` still runs on a clean checkout.
+ */
+test("every route is prerendered to a file", async (t) => {
+  const dist = new URL("../../dist/", import.meta.url);
+  if (!existsSync(dist)) return t.skip("no dist/ — run npm run build first");
+
+  for (const entry of ROUTE_METADATA) {
+    const file =
+      entry.path === "/"
+        ? new URL("index.html", dist)
+        : new URL(`${entry.path.replace(/^\//, "")}/index.html`, dist);
+    assert.ok(existsSync(file), `${entry.path} was not prerendered`);
+  }
+  assert.ok(existsSync(new URL("404.html", dist)), "404.html was not written");
+});
+
+/**
+ * The prerender pass is only worth having if the indexable pages come out with
+ * real markup. They do that by being imported eagerly in `App.tsx`; a `lazy()`
+ * import makes `renderToString` emit a Suspense fallback instead, which looks
+ * fine locally and ships an empty page to every crawler.
+ */
+test("indexable routes prerender with real content, not a shell", async (t) => {
+  const dist = new URL("../../dist/", import.meta.url);
+  if (!existsSync(dist)) return t.skip("no dist/ — run npm run build first");
+
+  for (const entry of indexableRoutes()) {
+    const file =
+      entry.path === "/"
+        ? new URL("index.html", dist)
+        : new URL(`${entry.path.replace(/^\//, "")}/index.html`, dist);
+    const html = await readFile(file, "utf8");
+    const body = html.split('<div id="root">')[1] ?? "";
+    assert.ok(
+      /<h1[\s>]/.test(body),
+      `${entry.path} prerendered with no <h1> — is it lazy() in App.tsx?`,
+    );
+    assert.ok(
+      body.length > 5000,
+      `${entry.path} prerendered only ${body.length} bytes of markup`,
+    );
+  }
+});
+
+/** Each prerendered page must carry its own metadata, not the shell's. */
+test("prerendered pages carry their own title and canonical", async (t) => {
+  const dist = new URL("../../dist/", import.meta.url);
+  if (!existsSync(dist)) return t.skip("no dist/ — run npm run build first");
+
+  for (const entry of ROUTE_METADATA) {
+    const file =
+      entry.path === "/"
+        ? new URL("index.html", dist)
+        : new URL(`${entry.path.replace(/^\//, "")}/index.html`, dist);
+    const html = await readFile(file, "utf8");
+    const head = html.split('<div id="root">')[0];
+
+    assert.ok(
+      head.includes(`<link rel="canonical" href="${absoluteUrl(entry.path)}" />`),
+      `${entry.path} has the wrong canonical`,
+    );
+    // Entity-escaped, so compare on the escaped form the writer produces.
+    const escaped = entry.title.replace(/&/g, "&amp;");
+    assert.ok(head.includes(`<title>${escaped}</title>`), `${entry.path} has the wrong <title>`);
+    assert.equal(
+      /<meta name="robots" content="noindex, nofollow"/.test(head),
+      !entry.indexable,
+      `${entry.path} robots directive does not match indexable=${entry.indexable}`,
     );
   }
 });
