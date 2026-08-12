@@ -42,6 +42,9 @@ const Questionnaire = lazy(() => import("./pages/Questionnaire"));
 // Stage 3 strategic review scheduling.
 const ScheduleStrategicReview = lazy(() => import("./pages/ScheduleStrategicReview"));
 const Feedback = lazy(() => import("./pages/Feedback"));
+// Support Portal, reached from a customer dashboard with workspace context in
+// the URL (or directly, with the workspace ID typed in).
+const SupportPortal = lazy(() => import("./pages/SupportPortal"));
 
 /**
  * The A$1 Stripe test-fixture mirror of the price list — built only when the
@@ -131,6 +134,7 @@ export function AppShell() {
             <Route path="/questionnaire" element={<Questionnaire />} />
             <Route path="/schedule-strategic-review" element={<ScheduleStrategicReview />} />
             <Route path="/feedback" element={<Feedback />} />
+            <Route path="/support" element={<SupportPortal />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

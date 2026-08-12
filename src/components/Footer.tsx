@@ -50,6 +50,7 @@ export function Footer() {
               <li><Link to="/resources" className="hover:text-white transition-colors">Intelligence Hub</Link></li>
               <li><Link to="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
               <li><Link to="/compliance" className="hover:text-white transition-colors">Compliance</Link></li>
+              <li><Link to="/support" className="hover:text-white transition-colors">Support</Link></li>
               <li><Link to="/contact" className="hover:text-white transition-colors">Join Waitlist</Link></li>
               <li><Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link to="/terms-and-conditions" className="hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
