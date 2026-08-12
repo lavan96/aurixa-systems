@@ -144,6 +144,54 @@ async function sha256Hex(value: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// ── Ingest authentication ────────────────────────────────────────────────────
+
+let cachedIngestKey: string | null | undefined;
+
+/**
+ * Resolve the Mission Control ingest key. Preference order: the
+ * SUPPORT_INGEST_SECRET function secret, then the vault-backed
+ * public.support_ingest_key() RPC (service-role only — see the
+ * support_ingest_key migration). Cached for the life of the instance; a
+ * missing key does not block the ticket — Mission Control rate-limits and
+ * marks unverified submissions itself.
+ */
+async function resolveIngestKey(): Promise<string | null> {
+  if (cachedIngestKey !== undefined) return cachedIngestKey;
+  const fromEnv = Deno.env.get("SUPPORT_INGEST_SECRET");
+  if (fromEnv) {
+    cachedIngestKey = fromEnv;
+    return fromEnv;
+  }
+  try {
+    const db = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data, error } = await db.rpc("support_ingest_key");
+    if (error) throw error;
+    cachedIngestKey = typeof data === "string" && data.length > 0 ? data : null;
+  } catch (error) {
+    console.error("support-ticket: ingest key lookup failed", error);
+    cachedIngestKey = null;
+  }
+  return cachedIngestKey;
+}
+
+/** HMAC-SHA256 hex of `body` under `key` — Mission Control's x-support-signature scheme. */
+async function hmacHex(key: string, body: string): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(body));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /**
  * IP throttle backed by `support_ticket_requests` (service role only; RLS with
  * no policies). The attempt is recorded BEFORE the forward so a failing
@@ -239,17 +287,25 @@ Deno.serve(async (req) => {
     "content-type": "application/json",
     accept: "application/json",
   };
-  const ingestSecret = Deno.env.get("SUPPORT_INGEST_SECRET");
-  if (ingestSecret) headers["x-aurixa-support-secret"] = ingestSecret;
+  // Sign the exact bytes we send. Mission Control verifies x-support-signature
+  // against the support-portal intake source's HMAC secret when one is set;
+  // the shared-secret header is kept so deployments still on that auth mode
+  // keep working. Same key either way.
+  const bodyText = JSON.stringify(parsed.payload);
+  const ingestKey = await resolveIngestKey();
+  if (ingestKey) {
+    headers["x-support-signature"] = `sha256=${await hmacHex(ingestKey, bodyText)}`;
+    headers["x-aurixa-support-secret"] = ingestKey;
+  }
 
-  // Not proxyToMc: this leg carries the ingest secret and a no-store response,
+  // Not proxyToMc: this leg carries the ingest auth and a no-store response,
   // neither of which the generic helper does. Status and body are relayed as
   // Mission Control produced them (201 receipt, 400 fields, 429 retry-after).
   try {
     const res = await fetch(`${MC_URL}${MC_TICKETS_PATH}`, {
       method: "POST",
       headers,
-      body: JSON.stringify(parsed.payload),
+      body: bodyText,
     });
     const text = await res.text();
     return new Response(text, {
