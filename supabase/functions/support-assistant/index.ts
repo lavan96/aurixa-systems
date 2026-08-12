@@ -592,21 +592,29 @@ async function handleReindex(req: Request, body: Record<string, unknown>): Promi
     return json({ ok: false, error: "embedding_model_unavailable" }, 503);
   }
 
+  // Embedding 180 chunks in one invocation blows the per-request CPU
+  // budget (observed: WORKER_RESOURCE_LIMIT after ~12 embeds on a cold
+  // instance). The work is sliceable instead: callers pass limit/offset
+  // over the pending list and fan out, each slice inside its own budget.
+  // Progress is durable per row, so any partial pass still advances.
   const force = body.force === true;
+  const limit = Math.min(Math.max(Number(body.limit) || 24, 1), 60);
+  const offset = Math.max(Number(body.offset) || 0, 0);
+
   const { data: rows, error } = await client
     .from("support_kb_chunks")
     .select("id, content, section_title, title, content_hash, embedded_hash")
     .order("id");
   if (error) return json({ ok: false, error: error.message }, 500);
 
+  const pending = (rows ?? []).filter(
+    (row) => force || !row.embedded_hash || row.embedded_hash !== row.content_hash,
+  );
+  const slice = pending.slice(offset, offset + limit);
+
   let embedded = 0;
-  let skipped = 0;
   const failures: string[] = [];
-  for (const row of rows ?? []) {
-    if (!force && row.embedded_hash && row.embedded_hash === row.content_hash) {
-      skipped++;
-      continue;
-    }
+  for (const row of slice) {
     const vector = await embed(`${row.section_title} ${row.title}\n${row.content}`);
     if (!vector) {
       failures.push(row.id);
@@ -624,14 +632,45 @@ async function handleReindex(req: Request, body: Record<string, unknown>): Promi
     else embedded++;
   }
 
-  return json({ ok: true, total: rows?.length ?? 0, embedded, skipped, failures });
+  return json({
+    ok: true,
+    total: rows?.length ?? 0,
+    pending: pending.length,
+    processed: slice.length,
+    embedded,
+    failures,
+    remaining: Math.max(0, pending.length - offset - slice.length),
+  });
 }
 
-async function handleEval(req: Request): Promise<Response> {
+async function handleEval(req: Request, body: Record<string, unknown>): Promise<Response> {
   const client = db();
   if (!(await isAdminCall(client, req))) return json({ ok: false, error: "forbidden" }, 403);
 
-  const cases = golden.cases as Array<{ id: string; question: string; expected: string[] }>;
+  const allCases = golden.cases as Array<{ id: string; question: string; expected: string[] }>;
+
+  // Same CPU-budget escape hatch as reindex: {from,to} runs a case range and
+  // returns raw per-case ranks WITHOUT writing a scorecard — only a full run
+  // is a comparable regression point.
+  const from = Math.max(Number(body.from) || 0, 0);
+  const to = Math.min(Number(body.to) || allCases.length, allCases.length);
+  if (from > 0 || to < allCases.length) {
+    const results: Array<Record<string, unknown>> = [];
+    for (const c of allCases.slice(from, to)) {
+      const r = await retrieve(client, c.question);
+      const rank = r.hits.findIndex((h) => c.expected.includes(h.section_id)) + 1;
+      results.push({
+        case: c.id,
+        rank: rank || null,
+        used_embedding: r.usedEmbedding,
+        ms: r.embedMs + r.retrieveMs,
+        got: r.hits.slice(0, 3).map((h) => h.id),
+      });
+    }
+    return json({ ok: true, partial: true, from, to, results });
+  }
+
+  const cases = allCases;
   let hit1 = 0;
   let hit3 = 0;
   let hit6 = 0;
@@ -718,7 +757,7 @@ Deno.serve(async (req) => {
       case "reindex":
         return await handleReindex(req, body);
       case "eval":
-        return await handleEval(req);
+        return await handleEval(req, body);
       default:
         return json({ ok: false, error: "invalid_request" }, 400);
     }
