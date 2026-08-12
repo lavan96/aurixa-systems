@@ -39,3 +39,10 @@ verify_jwt = false
 # `verify_jwt = true` would 401 every request before the function runs.
 [functions.storefront-docs]
 verify_jwt = false
+
+# Support Portal ticket intake. Reached from a customer dashboard link or the
+# public /support page with no login, so the browser sends no Authorization
+# header — the default `verify_jwt = true` would 401 every ticket before the
+# function runs. Abuse is bounded by the IP throttle inside the function.
+[functions.support-ticket]
+verify_jwt = false

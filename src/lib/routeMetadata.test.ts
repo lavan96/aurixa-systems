@@ -72,6 +72,7 @@ test("the deliberately unlisted routes stay unlisted", () => {
     "/pricing/success",
     "/questionnaire",
     "/schedule-strategic-review",
+    "/support",
   ]);
 });
 

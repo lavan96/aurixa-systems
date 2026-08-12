@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "headers": [
     {
-      "source": "/(pricing|pricing-mock|questionnaire|schedule-strategic-review|feedback)",
+      "source": "/(pricing|pricing-mock|questionnaire|schedule-strategic-review|feedback|support)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     },
     {

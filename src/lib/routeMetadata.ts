@@ -206,6 +206,16 @@ export const ROUTE_METADATA: RouteMetadata[] = [
     description: "Tell the Aurixa Systems team how the platform is working for you.",
     indexable: false,
   },
+  {
+    // Support Portal. Arrived at from a customer dashboard with workspace
+    // context in the query string, so an indexed copy would only ever be the
+    // empty form — and the context-bearing URLs have no business in a SERP.
+    path: "/support",
+    title: "Support Portal | Aurixa Systems",
+    description:
+      "Raise a support ticket with the Aurixa Systems team. Tickets go straight to Mission Control, are classified by severity, and eligible issues are remediated automatically.",
+    indexable: false,
+  },
 ];
 
 const BY_PATH = new Map(ROUTE_METADATA.map((entry) => [entry.path, entry]));
