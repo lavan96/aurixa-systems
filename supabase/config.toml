@@ -46,3 +46,10 @@ verify_jwt = false
 # function runs. Abuse is bounded by the IP throttle inside the function.
 [functions.support-ticket]
 verify_jwt = false
+
+# The Support Portal's screening assistant (RAG over the NPC dashboard User
+# Guide). Same public-form situation as support-ticket: no login, no
+# Authorization header. Its own IP throttle bounds abuse, and the reindex/eval
+# admin actions are gated by the x-support-admin-key header inside the function.
+[functions.support-assistant]
+verify_jwt = false
