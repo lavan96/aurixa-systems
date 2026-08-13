@@ -144,6 +144,15 @@ export const ROUTE_METADATA: RouteMetadata[] = [
     changefreq: "yearly",
     priority: 0.4,
   },
+  {
+    path: "/status",
+    title: "System Status | Aurixa Systems",
+    description:
+      "Live health of the upstream services Aurixa Systems is built on, shown by provider role rather than by vendor, with 30 days of history per service. Auto-refreshes every minute.",
+    indexable: true,
+    changefreq: "daily",
+    priority: 0.5,
+  },
 
   // ── Unlisted from here down. Reachable by direct URL or by token only. ─────
 

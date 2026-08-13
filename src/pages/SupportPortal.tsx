@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState, type ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2, LifeBuoy, Loader2 } from "lucide-react";
 import {
   Dropdown,
@@ -177,15 +177,26 @@ export default function SupportPortal() {
                 />
               </Panel>
               {step === "screen" && (
-                <p className="mt-6 text-center">
-                  <button
-                    type="button"
-                    onClick={handleSkip}
-                    className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#94A3B8] underline decoration-white/25 underline-offset-4 transition-colors hover:text-white"
-                  >
-                    Skip — raise a ticket directly
-                  </button>
-                </p>
+                <div className="mt-6 space-y-3 text-center">
+                  <p>
+                    <button
+                      type="button"
+                      onClick={handleSkip}
+                      className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#94A3B8] underline decoration-white/25 underline-offset-4 transition-colors hover:text-white"
+                    >
+                      Skip — raise a ticket directly
+                    </button>
+                  </p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#94A3B8]/70">
+                    Seeing an outage?{" "}
+                    <Link
+                      to="/status"
+                      className="text-[#94A3B8] underline decoration-white/25 underline-offset-4 transition-colors hover:text-white"
+                    >
+                      System status ↗
+                    </Link>
+                  </p>
+                </div>
               )}
             </div>
 
