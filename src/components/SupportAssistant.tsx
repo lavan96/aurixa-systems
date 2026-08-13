@@ -146,12 +146,12 @@ export default function SupportAssistant({
 
   const handleSolved = () => {
     if (!lastAnswer) return;
-    sendAssistantFeedback(true, lastAnswer.mode ?? "model");
+    sendAssistantFeedback(true, lastAnswer.mode ?? "model", context);
     setSolved(true);
   };
 
   const handleNotSolved = () => {
-    if (lastAnswer) sendAssistantFeedback(false, lastAnswer.mode ?? "model");
+    if (lastAnswer) sendAssistantFeedback(false, lastAnswer.mode ?? "model", context);
     escalateFromConversation();
   };
 

@@ -27,7 +27,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { CORS, json } from "../_shared/mc.ts";
+import { CORS, json, MC_URL } from "../_shared/mc.ts";
 import golden from "../_shared/support-golden.json" with { type: "json" };
 
 const MAX_BODY_BYTES = 32 * 1024;
@@ -455,7 +455,10 @@ async function handleAsk(req: Request, body: Record<string, unknown>): Promise<R
       retrieved: sections.map((s) => s.id),
       escalated: true,
       total_ms: Date.now() - started,
+      workspace_id: str(context.workspace_id, 120) || null,
+      user_external_id: str(context.user_id, 120) || null,
     });
+    trackActivity(context, message, "escalate", true, incidentReason, Date.now() - started);
     return json({
       ok: true,
       mode: "escalate",
@@ -493,7 +496,10 @@ async function handleAsk(req: Request, body: Record<string, unknown>): Promise<R
       embed_ms: embedMs,
       retrieve_ms: retrieveMs,
       total_ms: Date.now() - started,
+      workspace_id: str(context.workspace_id, 120) || null,
+      user_external_id: str(context.user_id, 120) || null,
     });
+    trackActivity(context, message, "no_match", false, null, Date.now() - started);
     return json({
       ok: true,
       mode: "no_match",
@@ -551,7 +557,10 @@ async function handleAsk(req: Request, body: Record<string, unknown>): Promise<R
     retrieve_ms: retrieveMs,
     generate_ms: generateMs,
     total_ms: Date.now() - started,
+    workspace_id: str(context.workspace_id, 120) || null,
+    user_external_id: str(context.user_id, 120) || null,
   });
+  trackActivity(context, message, mode, escalate, escalateReason, Date.now() - started);
 
   return json({
     ok: true,
@@ -572,6 +581,82 @@ function extractiveAnswer(hits: KbHit[]): string {
     `${excerpt}${top.content.length > ANSWER_SNIPPET_CHARS ? "…" : ""}\n\n` +
     `The linked sections below go into full detail. If this doesn't cover it, raise a ticket and we'll take it from there.`
   );
+}
+
+/**
+ * Trackability: every ask (answered, refused, or escalated) is forwarded to
+ * Mission Control's assistant-activity feed with the workspace and user ids
+ * the portal carried over from the dashboard, signed with the same ingest
+ * key as tickets. Fire-and-forget behind waitUntil — a slow or unpublished
+ * Mission Control must never add latency to (or break) an answer.
+ */
+function forwardActivity(payload: Record<string, unknown>) {
+  const task = (async () => {
+    try {
+      const key = await resolveIngestKeyForAuth();
+      const body = JSON.stringify(payload);
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+        accept: "application/json",
+      };
+      if (key) {
+        headers["x-support-signature"] = `sha256=${await hmacHex(key, body)}`;
+        headers["x-aurixa-support-secret"] = key;
+      }
+      const res = await fetch(`${MC_URL}/api/public/support/assistant-activity`, {
+        method: "POST",
+        headers,
+        body,
+      });
+      if (!res.ok) {
+        console.error("support-assistant: activity forward returned", res.status);
+      }
+    } catch (error) {
+      console.error("support-assistant: activity forward failed", error);
+    }
+  })();
+  try {
+    // deno-lint-ignore no-explicit-any
+    (globalThis as any).EdgeRuntime?.waitUntil?.(task);
+  } catch {
+    // No waitUntil in this runtime — the promise still runs detached.
+  }
+}
+
+let cachedAuthKey: string | null | undefined;
+
+/** The ticket-ingest signing key (vault `support_ingest_key`), cached per instance. */
+async function resolveIngestKeyForAuth(): Promise<string | null> {
+  if (cachedAuthKey !== undefined) return cachedAuthKey;
+  try {
+    const { data } = await db().rpc("support_ingest_key");
+    cachedAuthKey = typeof data === "string" && data.length > 0 ? data : null;
+  } catch {
+    cachedAuthKey = null;
+  }
+  return cachedAuthKey;
+}
+
+function trackActivity(
+  context: Record<string, unknown>,
+  message: string,
+  mode: string,
+  escalated: boolean,
+  escalateReason: string | null,
+  latencyMs: number,
+) {
+  forwardActivity({
+    version: 1,
+    workspace_id: str(context.workspace_id, 120) || null,
+    user_id: str(context.user_id, 120) || null,
+    question: message.slice(0, 500),
+    mode,
+    escalated,
+    escalate_reason: escalateReason,
+    latency_ms: latencyMs,
+    source: str(context.source, 40) || null,
+    asked_at: new Date().toISOString(),
+  });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -598,10 +683,13 @@ async function handleFeedback(req: Request, body: Record<string, unknown>): Prom
   ]);
   if (limited) return limited;
 
+  const context = (body.context ?? {}) as Record<string, unknown>;
   await log(client, {
     kind: "feedback",
     helped: body.helped === true,
     mode: str(body.mode, 20) || null,
+    workspace_id: str(context.workspace_id, 120) || null,
+    user_external_id: str(context.user_id, 120) || null,
   });
   return json({ ok: true });
 }
