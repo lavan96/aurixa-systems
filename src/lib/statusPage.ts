@@ -3,13 +3,19 @@
  *
  * The status page reports the health of the upstream services Aurixa
  * depends on WITHOUT naming them: each provider appears only as its role
- * ("Backend Platform Provider", never the vendor). All vendor polling
- * happens server-side in the status-summary edge function; this module
- * holds what both sides share — the normalized status vocabulary, severity
- * ordering, overall-state computation, display copy, and the daily history
- * rollup — so the page and the function cannot drift, and so the
- * anonymity rule is testable (see statusPage.test.ts, which asserts no
- * vendor name ever appears in public-facing copy).
+ * ("Backend platform", never the vendor). All vendor polling happens
+ * server-side in the status-summary edge function; this module holds what
+ * both sides share — the normalized status vocabulary, severity ordering,
+ * overall-state computation, display copy, the daily history rollup, and
+ * the payload normalizer — so the page and the function cannot drift, and
+ * so the anonymity rule is testable (see statusPage.test.ts, which asserts
+ * no vendor name ever appears in public-facing copy).
+ *
+ * The server deliberately sends NO display copy — only component keys and
+ * normalized statuses. `normalizeSummaryPayload` below joins those keys
+ * back to the roster. That join is load-bearing: the first deploy skipped
+ * it and every live row rendered as a generic "Upstream service", which is
+ * exactly the failure the regression test now pins.
  */
 
 export const COMPONENT_STATUSES = [
@@ -50,9 +56,9 @@ export const STATUS_LABELS: Record<ComponentStatus, string> = {
 export const OVERALL_LABELS: Record<ComponentStatus, string> = {
   operational: "All systems operational",
   maintenance: "Planned maintenance in progress",
-  degraded: "Degraded performance on an upstream service",
-  partial_outage: "Partial upstream outage",
-  major_outage: "Major upstream outage",
+  degraded: "Degraded performance at one of our providers",
+  partial_outage: "Partial outage at one of our providers",
+  major_outage: "Major outage at one of our providers",
   unknown: "Status temporarily unavailable",
 };
 
@@ -60,9 +66,15 @@ export type StatusComponent = {
   key: string;
   label: string;
   description: string;
+  /** Aurixa features a problem here can touch — roster copy, never server data. */
+  affects: readonly string[];
   status: ComponentStatus;
   status_label: string;
   checked_at: string | null;
+  /** Percent of readable checks that were healthy in the observed window, or null. */
+  uptime: number | null;
+  /** First observation in the reporting window (ISO), or null. */
+  since: string | null;
   history: Array<{ date: string; status: ComponentStatus }>;
 };
 
@@ -116,46 +128,122 @@ export function rollupDaily(
  * The public component roster. Keys and copy are the ONLY provider-related
  * strings that ever reach a browser; the vendor registry (real endpoints)
  * lives server-side in a service-role-only table. Order here is display
- * order.
+ * order. Descriptions say what each role does FOR AURIXA and what an
+ * incident there can touch — role-based, but never interchangeable.
  */
 export const STATUS_COMPONENT_ROSTER: Array<{
   key: string;
   label: string;
   description: string;
+  affects: readonly string[];
 }> = [
   {
     key: "backend",
-    label: "Backend Platform Provider",
-    description: "Databases, authentication and application APIs",
+    label: "Backend platform",
+    description:
+      "Runs our databases, sign-in and application APIs. An incident here can affect logging in, loading dashboards and saving changes.",
+    affects: ["Sign-in", "Dashboards", "Data & APIs"],
   },
   {
     key: "security_delivery",
-    label: "Cloud Security & Delivery Provider",
-    description: "Edge network, traffic protection and content delivery",
+    label: "Edge security & delivery",
+    description:
+      "Sits in front of every request we serve — DNS, traffic protection and content delivery. An incident here can make our sites slow or unreachable.",
+    affects: ["Site reachability", "Load times"],
   },
   {
     key: "web_hosting",
-    label: "Web Hosting Provider",
-    description: "Website hosting and deployments",
+    label: "Web hosting",
+    description:
+      "Serves this website and the customer-facing portals. An incident here can stop pages loading.",
+    affects: ["Website", "Customer portals"],
   },
   {
     key: "dev_platform",
-    label: "Development Platform Provider",
-    description: "Code delivery and release automation",
+    label: "Code & release pipeline",
+    description:
+      "Hosts our source code and powers releases. An incident here can delay fixes and updates, but never touches the running product.",
+    affects: ["Release cadence only"],
   },
   {
     key: "ai_models",
-    label: "AI Model Provider",
-    description: "Model inference behind AI-assisted features",
+    label: "AI models",
+    description:
+      "Runs the models behind AI features such as the Support Portal's screening assistant. An incident here can make AI answers slow or unavailable while everything else keeps working.",
+    affects: ["Support assistant", "AI features"],
   },
   {
     key: "payments",
-    label: "Payments Provider",
-    description: "Billing and card processing",
+    label: "Payments",
+    description:
+      "Processes card payments and subscription billing. An incident here can affect checkout and plan changes; active services keep running.",
+    affects: ["Checkout", "Billing"],
   },
   {
     key: "email_delivery",
-    label: "Email Delivery Provider",
-    description: "Transactional email delivery",
+    label: "Email delivery",
+    description:
+      "Sends our transactional email — receipts, invitations and notifications.",
+    affects: ["Email notifications"],
   },
 ];
+
+/** Shown only for a payload key the roster does not know. */
+export const FALLBACK_COMPONENT_LABEL = "Monitored service";
+
+/**
+ * Turn the status-summary endpoint's JSON into a display-ready summary.
+ *
+ * The payload carries keys, statuses, timestamps and history — never copy.
+ * Labels, descriptions and affected-features chips are joined from the
+ * roster HERE, by key. Anything malformed degrades field-by-field (bad
+ * status → "unknown", bad history rows dropped) and a payload that is not
+ * a summary at all returns `{ ok: false }`.
+ */
+export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: false } {
+  if (typeof body !== "object" || body === null) return { ok: false };
+  const record = body as Record<string, unknown>;
+  if (record.ok !== true || !Array.isArray(record.components)) return { ok: false };
+
+  const components: StatusComponent[] = [];
+  for (const raw of record.components as Array<unknown>) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const item = raw as Record<string, unknown>;
+    const key = typeof item.key === "string" ? item.key : "";
+    const roster = STATUS_COMPONENT_ROSTER.find((entry) => entry.key === key);
+    const status: ComponentStatus = isComponentStatus(item.status) ? item.status : "unknown";
+    const history = Array.isArray(item.history)
+      ? (item.history as Array<Record<string, unknown>>)
+          .filter((h) => typeof h === "object" && h !== null && typeof h.date === "string")
+          .map((h) => ({
+            date: h.date as string,
+            status: (isComponentStatus(h.status) ? h.status : "unknown") as ComponentStatus,
+          }))
+      : [];
+    components.push({
+      key,
+      label: roster?.label ?? FALLBACK_COMPONENT_LABEL,
+      description: roster?.description ?? "",
+      affects: roster?.affects ?? [],
+      status,
+      status_label: STATUS_LABELS[status],
+      checked_at: typeof item.checked_at === "string" ? item.checked_at : null,
+      uptime:
+        typeof item.uptime === "number" && Number.isFinite(item.uptime)
+          ? Math.min(100, Math.max(0, item.uptime))
+          : null,
+      since: typeof item.since === "string" ? item.since : null,
+      history,
+    });
+  }
+
+  const overall: ComponentStatus = isComponentStatus(record.overall) ? record.overall : "unknown";
+  return {
+    ok: true,
+    overall,
+    overall_label: OVERALL_LABELS[overall],
+    checked_at: typeof record.checked_at === "string" ? record.checked_at : null,
+    stale: record.stale === true,
+    components,
+  };
+}

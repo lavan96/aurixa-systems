@@ -243,10 +243,23 @@ async function buildSummary(client: ReturnType<typeof db>) {
       .slice(-HISTORY_DAYS)
       .map(([date, status]) => ({ date, status }));
 
+    // Observed uptime over the window: share of READABLE checks that were
+    // healthy. `unknown` rows are excluded from the denominator — a status
+    // API we could not read says nothing about whether they were up — and
+    // maintenance counts as healthy.
+    const readable = list.filter((row) => row.status !== "unknown");
+    const healthy = readable.filter(
+      (row) => row.status === "operational" || row.status === "maintenance",
+    );
+    const uptime =
+      readable.length > 0 ? Math.round((healthy.length / readable.length) * 1000) / 10 : null;
+
     return {
       key: p.component_key,
       status: (latest?.status ?? "unknown") as Status,
       checked_at: latest?.checked_at ?? null,
+      uptime,
+      since: list[0]?.checked_at ?? null,
       history,
     };
   });
@@ -267,6 +280,7 @@ async function buildSummary(client: ReturnType<typeof db>) {
     ok: true,
     overall,
     checked_at: newest,
+    generated_at: new Date().toISOString(),
     stale: newest !== null && Date.now() - Date.parse(newest) > STALE_AFTER_MS,
     components,
     newestMs: newest ? Date.parse(newest) : null,

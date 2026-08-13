@@ -99,6 +99,19 @@ const STATUS_STYLES: Record<ComponentStatus, StatusStyle> = {
   },
 };
 
+/** "13 Aug" — for monitoring-since captions. */
+function formatDay(date: string): string {
+  const parsed = new Date(date.length === 10 ? `${date}T00:00:00Z` : date);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" });
+}
+
+/** 99.966 → "99.9%", 100 → "100%". */
+function formatUptime(uptime: number): string {
+  const rounded = Math.round(uptime * 10) / 10;
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
+}
+
 /** "42 seconds ago" — for the "Last checked" line under the banner. */
 function relativeTime(iso: string): string {
   const then = Date.parse(iso);
@@ -142,13 +155,17 @@ function HistoryBars({
 }) {
   const entries = history.slice(-HISTORY_DAYS);
   const padding = Math.max(0, HISTORY_DAYS - entries.length);
+  // A young ledger is not missing data — say when monitoring began instead
+  // of showing a wall of grey that reads as broken.
+  const leftCaption =
+    padding > 0 && entries.length > 0 ? `Monitoring since ${formatDay(entries[0].date)}` : "30 days";
   return (
     <div className="w-fit max-w-full">
       <div className="flex flex-nowrap items-center gap-1" aria-label={`${label} 30 day history`}>
         {Array.from({ length: padding }, (_, index) => (
           <span
             key={`pad-${index}`}
-            title="No data"
+            title="Before monitoring began"
             className="h-8 w-1.5 rounded-sm bg-white/[0.06]"
           />
         ))}
@@ -160,10 +177,29 @@ function HistoryBars({
           />
         ))}
       </div>
-      <div className="mt-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
-        <span>30 days</span>
+      <div className="mt-2 flex items-center justify-between gap-4 font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+        <span>{leftCaption}</span>
         <span>Today</span>
       </div>
+    </div>
+  );
+}
+
+function AffectsChips({ affects }: { affects: readonly string[] }) {
+  if (affects.length === 0) return null;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+        Can affect
+      </span>
+      {affects.map((feature) => (
+        <span
+          key={feature}
+          className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[11px] text-[#94A3B8]"
+        >
+          {feature}
+        </span>
+      ))}
     </div>
   );
 }
@@ -175,11 +211,28 @@ function ComponentRow({ component }: { component: StatusComponent }) {
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-white">{component.label}</h3>
           <p className="mt-1 text-sm leading-relaxed text-[#94A3B8]">{component.description}</p>
+          <AffectsChips affects={component.affects} />
         </div>
-        <StatusPill status={component.status} label={component.status_label} />
+        <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+          <StatusPill status={component.status} label={component.status_label} />
+          {component.checked_at && (
+            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[#94A3B8]/60">
+              checked <time dateTime={component.checked_at}>{relativeTime(component.checked_at)}</time>
+            </p>
+          )}
+        </div>
       </div>
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <HistoryBars label={component.label} history={component.history} />
+        {component.uptime !== null && (
+          <p
+            className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#94A3B8]/70"
+            title="Share of readable checks reporting a healthy state"
+          >
+            {formatUptime(component.uptime)} of checks healthy
+            {component.since ? ` since ${formatDay(component.since)}` : ""}
+          </p>
+        )}
       </div>
     </li>
   );
@@ -202,6 +255,7 @@ function SkeletonRows() {
             <div className="min-w-0">
               <h3 className="text-base font-semibold text-white">{component.label}</h3>
               <p className="mt-1 text-sm leading-relaxed text-[#94A3B8]">{component.description}</p>
+              <AffectsChips affects={component.affects} />
             </div>
             <span className="h-7 w-32 shrink-0 animate-pulse rounded-full bg-white/10" />
           </div>
@@ -242,8 +296,9 @@ function OverallBanner({ summary }: { summary: StatusSummary }) {
               <time dateTime={summary.checked_at}>{relativeTime(summary.checked_at)}</time>
             </p>
           )}
-          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
-            Auto-refreshes every 60s
+          <p className="mt-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[#94A3B8]/60 sm:justify-end">
+            <span aria-hidden="true" className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4ADE80]" />
+            Live &middot; polled every 5 min &middot; page refreshes every 60s
           </p>
           {summary.stale && (
             <p className="mt-1 animate-pulse text-xs text-[#94A3B8]/80">
@@ -323,8 +378,10 @@ export default function Status() {
             System <span className="font-display italic text-[#C89B3C]">status</span>.
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-balance text-sm leading-relaxed text-[#94A3B8] md:text-base">
-            Live health of the upstream services Aurixa Systems is built on. Providers are shown
-            by role; incidents on their side can affect features on ours.
+            The live health of every service Aurixa Systems runs on, polled directly from each
+            provider&rsquo;s official status feed every five minutes. Providers are shown by role
+            rather than by name — each card says what it does for us and which features an
+            incident there can touch.
           </p>
         </div>
 
@@ -343,11 +400,11 @@ export default function Status() {
                     <div className="flex items-center gap-4">
                       <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 animate-pulse rounded-full bg-white/20" />
                       <p className="text-xl font-semibold tracking-[-0.015em] text-white md:text-2xl">
-                        Checking upstream services&hellip;
+                        Fetching live status&hellip;
                       </p>
                     </div>
                     <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#94A3B8]/60 sm:text-right">
-                      Auto-refreshes every 60s
+                      Live &middot; polled every 5 min
                     </p>
                   </div>
                 </section>
@@ -356,7 +413,7 @@ export default function Status() {
               )}
 
               <h2 className="mt-12 font-mono text-[10px] uppercase tracking-[0.35em] text-[#94A3B8]">
-                Upstream services
+                Service health
               </h2>
               <div className="mt-4">
                 {summary === null ? (
@@ -380,9 +437,10 @@ export default function Status() {
             >
               Something broken for you specifically? &rarr; Raise a support ticket
             </Link>
-            <p className="text-xs leading-relaxed text-[#94A3B8]/70">
-              Statuses are polled server-side every few minutes from our providers&rsquo; official
-              status feeds.
+            <p className="max-w-lg text-xs leading-relaxed text-[#94A3B8]/70">
+              Every state on this page is live: our servers poll each provider&rsquo;s official
+              status feed every five minutes and keep the history you see here. Nothing is
+              entered by hand, and nothing is cached for more than a minute.
             </p>
           </div>
         </div>

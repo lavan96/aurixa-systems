@@ -39,7 +39,20 @@ browser GET /functions/v1/status-summary      ← no auth; 120/15min IP throttle
 The page (`src/pages/Status.tsx`) fetches on mount and every 60s via
 `src/lib/statusPageClient.ts`, keeps the last good summary through transient
 fetch failures, and prerenders a roster-labelled skeleton so the static HTML
-is never empty. Vendor endpoints are only ever contacted server-side; a page
+is never empty.
+
+**The payload carries keys, never copy.** The server response is
+`{ key, status, checked_at, uptime, since, history }` per component;
+labels, descriptions and the affected-features chips are joined from
+`STATUS_COMPONENT_ROSTER` client-side by `normalizeSummaryPayload`. That
+join is load-bearing and has already bitten once: the first deploy skipped
+it, so the prerendered skeleton showed real labels and then the live data
+replaced every row with the generic fallback ("Upstream service" seven
+times). A regression test now pins the join, and a second test pins that
+roster labels stay distinct roles rather than one repeated template.
+`uptime` is the share of *readable* checks reporting healthy (operational or
+maintenance) over the 30-day window — `unknown` polls are excluded from the
+denominator, consistent with "unreadable is not evidence of an outage". Vendor endpoints are only ever contacted server-side; a page
 load never triggers a vendor call. If the cache is older than 30 minutes the
 GET path runs one bounded inline refresh first, so the page recovers even if
 cron stalls.
