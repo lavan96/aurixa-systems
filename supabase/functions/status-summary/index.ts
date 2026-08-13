@@ -366,6 +366,105 @@ async function refreshAll(client: ReturnType<typeof db>): Promise<{ polled: numb
   return { polled: results.length, wrote };
 }
 
+// ── Capability areas: vendor sub-component name → our closed vocabulary ──
+//
+// Providers list the sub-components an incident hit ("R2", "Codespaces",
+// "Speed Insights", "us-west-2"). Those names identify their vendor
+// instantly, so they are NEVER passed through: each is matched against the
+// rules below and reduced to one of our own slugs, and anything that does
+// not match is DROPPED. Less detail is the correct trade against a leak.
+// The client holds the display labels for these slugs and drops any slug it
+// does not know, so a change here cannot put new words on the page.
+
+const AREA_RULES: Array<[RegExp, string]> = [
+  // Ordered: the first match wins, so specific patterns precede generic.
+  [/\bapi\b|gateway.*api|rest|graphql|endpoint/i, "api"],
+  [/database|postgres|\bsql\b|\bdb\b/i, "database"],
+  [/auth|identity|login|sign-?in|\bsso\b|session/i, "auth"],
+  [/storage|bucket|blob|object store|\br2\b|\bs3\b/i, "storage"],
+  [/realtime|websocket|pub\/?sub|streaming/i, "realtime"],
+  [/function|worker|compute|sandbox|codespace|runner|container|lambda/i, "compute"],
+  [/build|deploy|\bci\b|pipeline|release|actions|git integration/i, "builds"],
+  [/repositor|pull request|issues|source|packages|registry|\bgit\b/i, "source"],
+  [/model|inference|completion|copilot|assistant/i, "models"],
+  [/firewall|\bwaf\b|zero trust|\bddos\b|bot management|protection|security/i, "security"],
+  [/\bdns\b|resolver|domain/i, "dns"],
+  [/analytics|logs?\b|metrics|observability|insights|drains|telemetry/i, "observability"],
+  [/webhook|events?\b|queue|notification/i, "webhooks"],
+  [/email|smtp|\bmail\b/i, "email"],
+  [/payment|checkout|billing|invoice|\bcard\b/i, "payments"],
+  [/search|index/i, "search"],
+  [/dashboard|console|portal|admin|management/i, "console"],
+  [/support|ticket/i, "support"],
+  // Point-of-presence entries: "Foshan, China - (FUO)" and similar.
+  [/^[^,]+,\s*[^-]+-\s*\(\w{3}\)/, "edge_locations"],
+  // Cloud region codes: us-west-2, ap-northeast-1.
+  [/^[a-z]{2}-[a-z]+-\d+$/i, "regional_infra"],
+  // Generic network wording, last so it cannot swallow the specific rules.
+  [/network|edge|\bcdn\b|cache|delivery|routing|pages/i, "network"],
+];
+
+/** Map vendor sub-component names to our slugs, deduped; unmatched dropped. */
+function mapAreas(components: unknown): string[] {
+  if (!Array.isArray(components)) return [];
+  const slugs = new Set<string>();
+  for (const entry of components) {
+    const name = typeof (entry as Record<string, unknown>)?.name === "string"
+      ? ((entry as Record<string, unknown>).name as string)
+      : null;
+    if (!name) continue;
+    for (const [pattern, slug] of AREA_RULES) {
+      if (pattern.test(name)) {
+        slugs.add(slug);
+        break;
+      }
+    }
+  }
+  return [...slugs].sort();
+}
+
+/** Statuspage lifecycle stages, in the order they occur. */
+const LIFECYCLE_STAGES = ["investigating", "identified", "monitoring", "resolved"] as const;
+
+/**
+ * Reduce a vendor's `incident_updates` to a stage timeline: the FIRST
+ * timestamp at which each stage was reached, plus how many updates the
+ * provider posted. Update bodies are prose about the vendor and are never
+ * read.
+ */
+function parseLifecycle(updates: unknown): {
+  lifecycle: Array<{ stage: string; at: string }>;
+  update_count: number;
+  identified_at: string | null;
+  monitoring_at: string | null;
+} {
+  if (!Array.isArray(updates)) {
+    return { lifecycle: [], update_count: 0, identified_at: null, monitoring_at: null };
+  }
+  const firstAt = new Map<string, string>();
+  let count = 0;
+  for (const raw of updates) {
+    const update = raw as Record<string, unknown>;
+    const stage = typeof update?.status === "string" ? update.status.toLowerCase() : null;
+    const at = typeof update?.created_at === "string" ? update.created_at : null;
+    if (!at) continue;
+    count++;
+    if (!stage || !(LIFECYCLE_STAGES as readonly string[]).includes(stage)) continue;
+    const existing = firstAt.get(stage);
+    if (!existing || at < existing) firstAt.set(stage, at);
+  }
+  const lifecycle = LIFECYCLE_STAGES.filter((s) => firstAt.has(s)).map((stage) => ({
+    stage,
+    at: firstAt.get(stage)!,
+  }));
+  return {
+    lifecycle,
+    update_count: count,
+    identified_at: firstAt.get("identified") ?? null,
+    monitoring_at: firstAt.get("monitoring") ?? null,
+  };
+}
+
 // ── History backfill from published incident feeds ──────────────────────
 
 /** Statuspage impact → our vocabulary. `none` carries no status signal. */
@@ -479,13 +578,21 @@ async function backfillAll(
 
       const vendorId = typeof incident.id === "string" && incident.id.length > 0 ? incident.id : null;
       if (vendorId && endMs >= windowStartMs) {
+        const { lifecycle, update_count, identified_at, monitoring_at } =
+          parseLifecycle(incident.incident_updates);
         windowRows.push({
           component_key: p.component_key,
           source: "vendor_feed",
+          kind: "incident",
           vendor_ref: vendorId,
           worst_status: status,
           started_at: new Date(startMs).toISOString(),
           ended_at: resolvedRaw ? new Date(Date.parse(resolvedRaw)).toISOString() : null,
+          areas: mapAreas(incident.components),
+          lifecycle,
+          update_count,
+          identified_at,
+          monitoring_at,
           updated_at: new Date().toISOString(),
         });
       }
@@ -532,12 +639,19 @@ async function backfillAll(
       }
       daysWritten += rows.length;
     }
-    if (windowRows.length > 0) {
+    // Scheduled maintenance is a separate feed and a different thing:
+    // planned work, announced ahead of time, which the page reports as
+    // upcoming rather than as an outage. Entirely optional — a vendor
+    // without the feed (or serving non-JSON) simply contributes none.
+    const maintRows = await fetchScheduledMaintenance(p.component_key, feedUrl);
+    const allWindows = [...windowRows, ...maintRows];
+
+    if (allWindows.length > 0) {
       const { error: winErr } = await client
         .from("status_incidents")
-        .upsert(windowRows, { onConflict: "component_key,vendor_ref" });
+        .upsert(allWindows, { onConflict: "component_key,vendor_ref" });
       if (winErr) console.error("status-summary: incident upsert failed", p.component_key, winErr.message);
-      else incidentsWritten += windowRows.length;
+      else incidentsWritten += allWindows.length;
     }
     vendors++;
   }
@@ -545,15 +659,115 @@ async function backfillAll(
   return { vendors, days_written: daysWritten, incidents_written: incidentsWritten, skipped };
 }
 
+/**
+ * Pull the vendor's scheduled-maintenance feed and return upsertable rows.
+ * Only windows inside the reporting window matter (recent past for the day
+ * drilldown, and anything still ahead of us for the upcoming list).
+ */
+async function fetchScheduledMaintenance(
+  componentKey: string,
+  incidentsUrl: string,
+): Promise<Array<Record<string, unknown>>> {
+  const url = incidentsUrl.replace(/incidents\.json$/, "scheduled-maintenances.json");
+  if (url === incidentsUrl) return [];
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), BACKFILL_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { headers: { accept: "application/json" }, signal: controller.signal });
+    if (!res.ok) return [];
+    const text = await res.text();
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      // One vendor serves an empty body here; that is not an error.
+      return [];
+    }
+    const list = Array.isArray(body?.scheduled_maintenances)
+      ? (body.scheduled_maintenances as Array<Record<string, unknown>>)
+      : [];
+    const floorMs = Date.now() - BACKFILL_DAYS * DAY_MS;
+    const rows: Array<Record<string, unknown>> = [];
+    for (const m of list) {
+      const id = typeof m.id === "string" ? m.id : null;
+      const startRaw = typeof m.scheduled_for === "string" ? m.scheduled_for : null;
+      if (!id || !startRaw) continue;
+      const startMs = Date.parse(startRaw);
+      if (Number.isNaN(startMs) || startMs < floorMs) continue;
+      const untilRaw = typeof m.scheduled_until === "string" ? m.scheduled_until : null;
+      const { lifecycle, update_count } = parseLifecycle(m.incident_updates);
+      // A completed window is closed; a scheduled or in-progress one is not.
+      const completed = typeof m.status === "string" && m.status.toLowerCase() === "completed";
+      rows.push({
+        component_key: componentKey,
+        source: "vendor_feed",
+        kind: "maintenance",
+        vendor_ref: `maint:${id}`,
+        worst_status: "maintenance",
+        started_at: new Date(startMs).toISOString(),
+        ended_at: completed && untilRaw ? new Date(Date.parse(untilRaw)).toISOString() : null,
+        scheduled_until: untilRaw ? new Date(Date.parse(untilRaw)).toISOString() : null,
+        areas: mapAreas(m.components),
+        lifecycle,
+        update_count,
+        updated_at: new Date().toISOString(),
+      });
+    }
+    return rows;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ── Public summary ───────────────────────────────────────────────────────
 
 type IncidentRow = {
   component_key: string;
   source: "vendor_feed" | "observed";
+  kind: "incident" | "maintenance";
   worst_status: Status;
   started_at: string;
   ended_at: string | null;
+  scheduled_until: string | null;
+  areas: string[] | null;
+  lifecycle: Array<{ stage: string; at: string }> | null;
+  update_count: number | null;
+  identified_at: string | null;
+  monitoring_at: string | null;
 };
+
+const INCIDENT_COLUMNS =
+  "component_key, source, kind, worst_status, started_at, ended_at, scheduled_until, areas, lifecycle, update_count, identified_at, monitoring_at";
+
+/** Collapse overlapping [start, end] windows so shared downtime is counted
+ * once, however many sources reported it. */
+function mergeIntervals(intervals: Array<[number, number]>): Array<[number, number]> {
+  const sorted = intervals.filter(([s, e]) => e > s).sort((a, b) => a[0] - b[0]);
+  const merged: Array<[number, number]> = [];
+  for (const [start, end] of sorted) {
+    const last = merged[merged.length - 1];
+    if (last && start <= last[1]) last[1] = Math.max(last[1], end);
+    else merged.push([start, end]);
+  }
+  return merged;
+}
+
+/** Drop observed runs that a vendor-published window already covers: the
+ * provider's own record of an incident supersedes our inference of it. */
+function dedupeWindows(windows: IncidentRow[]): IncidentRow[] {
+  const vendor = windows.filter((w) => w.source === "vendor_feed");
+  return windows.filter((w) => {
+    if (w.source === "vendor_feed") return true;
+    const wStart = Date.parse(w.started_at);
+    const wEnd = w.ended_at ? Date.parse(w.ended_at) : Date.now();
+    return !vendor.some((v) => {
+      const vEnd = v.ended_at ? Date.parse(v.ended_at) : Date.now();
+      return Date.parse(v.started_at) <= wEnd && vEnd >= wStart;
+    });
+  });
+}
 
 async function buildSummary(client: ReturnType<typeof db>) {
   // Latest polls (48h window is plenty: the cron runs every 5 minutes, and
@@ -602,13 +816,14 @@ async function buildSummary(client: ReturnType<typeof db>) {
     recentByComponent.set(row.component_key, list);
   }
 
-  // Incident windows for the jumbotron: everything open, plus everything
-  // that ended inside the resolved window.
-  const resolvedFloor = new Date(Date.now() - RESOLVED_WINDOW_MS).toISOString();
+  // Every window touching the reporting period: the jumbotron reads the
+  // open and recently-closed ones, the per-component stats read all of them.
+  const statsFloor = new Date(Date.now() - HISTORY_DAYS * DAY_MS).toISOString();
+  const resolvedFloorMs = Date.now() - RESOLVED_WINDOW_MS;
   const { data: incidentRows } = await client
     .from("status_incidents")
-    .select("component_key, source, worst_status, started_at, ended_at")
-    .or(`ended_at.is.null,ended_at.gte.${resolvedFloor}`);
+    .select(INCIDENT_COLUMNS)
+    .or(`ended_at.is.null,ended_at.gte.${statsFloor}`);
   const incidentsByComponent = new Map<string, IncidentRow[]>();
   for (const row of (incidentRows ?? []) as IncidentRow[]) {
     const list = incidentsByComponent.get(row.component_key) ?? [];
@@ -616,14 +831,9 @@ async function buildSummary(client: ReturnType<typeof db>) {
     incidentsByComponent.set(row.component_key, list);
   }
 
-  const active: Array<{ key: string; status: Status; started_at: string | null; confirmed: boolean }> = [];
-  const resolved: Array<{
-    key: string;
-    worst_status: Status;
-    started_at: string | null;
-    ended_at: string;
-    source: string;
-  }> = [];
+  const active: Array<Record<string, unknown>> = [];
+  const resolved: Array<Record<string, unknown>> = [];
+  const maintenance: Array<Record<string, unknown>> = [];
 
   const components = ((providers ?? []) as Array<{ component_key: string }>).map((p) => {
     const recent = recentByComponent.get(p.component_key) ?? [];
@@ -652,43 +862,85 @@ async function buildSummary(client: ReturnType<typeof db>) {
     const uptime = total > 0 ? Math.round((healthy / total) * 1000) / 10 : null;
     const firstObservedDay = observed.map((d) => d.day).sort()[0] ?? null;
 
-    // Incident block entries for this component.
+    // ── Incident block + 30-day statistics for this component ───────────
     const windows = incidentsByComponent.get(p.component_key) ?? [];
+    const unplanned = dedupeWindows(windows.filter((w) => w.kind !== "maintenance"));
     const currentStatus = (latest?.status ?? "unknown") as Status;
+
     if (isIssue(currentStatus)) {
-      const vendorOpen = windows
-        .filter((w) => w.source === "vendor_feed" && w.ended_at === null)
-        .sort((a, b) => (a.started_at < b.started_at ? -1 : 1))[0];
-      const observedOpen = windows
-        .filter((w) => w.source === "observed" && w.ended_at === null)
-        .sort((a, b) => (a.started_at < b.started_at ? -1 : 1))[0];
+      const open = unplanned
+        .filter((w) => w.ended_at === null)
+        .sort((a, b) => (a.started_at < b.started_at ? -1 : 1));
+      const vendorOpen = open.find((w) => w.source === "vendor_feed");
+      const chosen = vendorOpen ?? open[0];
+      const stage = chosen?.lifecycle?.length
+        ? chosen.lifecycle[chosen.lifecycle.length - 1].stage
+        : null;
       active.push({
         key: p.component_key,
         status: currentStatus,
-        started_at: vendorOpen?.started_at ?? observedOpen?.started_at ?? null,
+        started_at: chosen?.started_at ?? null,
         confirmed: vendorOpen !== undefined,
+        areas: chosen?.areas ?? [],
+        stage,
+        update_count: chosen?.update_count ?? 0,
+        identified_at: chosen?.identified_at ?? null,
       });
     }
-    const vendorWindows = windows.filter((w) => w.source === "vendor_feed");
-    for (const w of windows) {
+
+    for (const w of unplanned) {
       if (w.ended_at === null) continue;
-      // Skip observed runs that a vendor-published window already covers.
-      if (w.source === "observed") {
-        const covered = vendorWindows.some((v) => {
-          const vEnd = v.ended_at ? Date.parse(v.ended_at) : Date.now();
-          return Date.parse(v.started_at) <= Date.parse(w.ended_at!) &&
-            vEnd >= Date.parse(w.started_at);
-        });
-        if (covered) continue;
-      }
+      if (Date.parse(w.ended_at) < resolvedFloorMs) continue;
       resolved.push({
         key: p.component_key,
         worst_status: w.worst_status,
         started_at: w.started_at,
         ended_at: w.ended_at,
         source: w.source,
+        areas: w.areas ?? [],
+        update_count: w.update_count ?? 0,
+        time_to_identify_minutes: w.identified_at
+          ? Math.max(0, Math.round((Date.parse(w.identified_at) - Date.parse(w.started_at)) / 60_000))
+          : null,
       });
     }
+
+    // Planned work still ahead of us (or running right now).
+    for (const w of windows) {
+      if (w.kind !== "maintenance") continue;
+      const until = w.scheduled_until ? Date.parse(w.scheduled_until) : null;
+      if (w.ended_at !== null) continue;
+      if (until !== null && until < Date.now()) continue;
+      maintenance.push({
+        key: p.component_key,
+        starts_at: w.started_at,
+        ends_at: w.scheduled_until,
+        areas: w.areas ?? [],
+        in_progress: Date.parse(w.started_at) <= Date.now(),
+      });
+    }
+
+    // 30-day statistics, from the deduped unplanned windows clipped to the
+    // window: how often, how long in total, and how quickly resolved.
+    const windowFloorMs = Date.now() - HISTORY_DAYS * DAY_MS;
+    const clipped = unplanned
+      .map((w) => {
+        const start = Math.max(Date.parse(w.started_at), windowFloorMs);
+        const end = Math.min(w.ended_at ? Date.parse(w.ended_at) : Date.now(), Date.now());
+        return [start, end] as [number, number];
+      })
+      .filter(([s, e]) => e > s);
+    const disruptionMs = mergeIntervals(clipped).reduce((sum, [s, e]) => sum + (e - s), 0);
+    const closed = unplanned.filter(
+      (w) => w.ended_at !== null && Date.parse(w.ended_at) >= windowFloorMs,
+    );
+    const mttrMinutes = closed.length
+      ? Math.round(
+          closed.reduce((sum, w) => sum + (Date.parse(w.ended_at!) - Date.parse(w.started_at)), 0) /
+            closed.length / 60_000,
+        )
+      : null;
+    const daysWithIssues = history.filter((h) => isIssue(h.status)).length;
 
     return {
       key: p.component_key,
@@ -697,10 +949,18 @@ async function buildSummary(client: ReturnType<typeof db>) {
       uptime,
       since: firstObservedDay ? `${firstObservedDay}T00:00:00Z` : null,
       history,
+      stats: {
+        incidents_30d: unplanned.filter((w) => Date.parse(w.started_at) >= windowFloorMs || w.ended_at === null).length,
+        disruption_minutes_30d: Math.round(disruptionMs / 60_000),
+        mttr_minutes: mttrMinutes,
+        days_with_issues_30d: daysWithIssues,
+        days_recorded: history.length,
+      },
     };
   });
 
-  resolved.sort((a, b) => (a.ended_at > b.ended_at ? -1 : 1));
+  resolved.sort((a, b) => ((a.ended_at as string) > (b.ended_at as string) ? -1 : 1));
+  maintenance.sort((a, b) => ((a.starts_at as string) < (b.starts_at as string) ? -1 : 1));
 
   const known = components.map((c) => c.status).filter((s) => s !== "unknown");
   const overall: Status =
@@ -721,7 +981,11 @@ async function buildSummary(client: ReturnType<typeof db>) {
     generated_at: new Date().toISOString(),
     stale: newest !== null && Date.now() - Date.parse(newest) > STALE_AFTER_MS,
     components,
-    incidents: { active, resolved: resolved.slice(0, 6) },
+    incidents: {
+      active,
+      resolved: resolved.slice(0, 6),
+      maintenance: maintenance.slice(0, 4),
+    },
     newestMs: newest ? Date.parse(newest) : null,
   };
 }
@@ -778,20 +1042,57 @@ async function handleDetail(client: ReturnType<typeof db>, componentKey: string,
   const readable = snaps.filter((s) => s.status !== "unknown");
   const healthy = readable.filter((s) => s.status === "operational" || s.status === "maintenance");
 
+  // Per-status tally of the day's checks: "94 operational, 17 degraded" says
+  // more than a single percentage.
+  const breakdown: Record<string, number> = {};
+  for (const s of snaps) breakdown[s.status] = (breakdown[s.status] ?? 0) + 1;
+
+  // Observed state changes, with the exact time we first saw each one.
+  // `unknown` is skipped rather than treated as a change: an unreadable
+  // poll is not a transition, it is a gap.
+  const transitions: Array<{ at: string; from: Status | null; to: Status }> = [];
+  let previous: Status | null = null;
+  for (const s of snaps) {
+    if (s.status === "unknown") continue;
+    if (previous === null || s.status !== previous) {
+      transitions.push({ at: s.checked_at, from: previous, to: s.status });
+      previous = s.status;
+    }
+  }
+
   const { data: incidentRows } = await client
     .from("status_incidents")
-    .select("source, worst_status, started_at, ended_at")
+    .select(INCIDENT_COLUMNS)
     .eq("component_key", componentKey)
     .lt("started_at", dayEndIso)
     .or(`ended_at.is.null,ended_at.gte.${dayStartIso}`)
     .order("started_at", { ascending: true });
 
+  const windows = (incidentRows ?? []) as IncidentRow[];
+  const dayEndMs = Math.min(dayStartMs + DAY_MS, Date.now());
+
+  // How much of THIS day the unplanned windows covered, counted once even
+  // when both the provider and our own checks reported the same outage.
+  const clipped = dedupeWindows(windows.filter((w) => w.kind !== "maintenance"))
+    .map((w) => {
+      const start = Math.max(Date.parse(w.started_at), dayStartMs);
+      const end = Math.min(w.ended_at ? Date.parse(w.ended_at) : Date.now(), dayEndMs);
+      return [start, end] as [number, number];
+    })
+    .filter(([s, e]) => e > s);
+  const disruptionMinutes = Math.round(
+    mergeIntervals(clipped).reduce((sum, [s, e]) => sum + (e - s), 0) / 60_000,
+  );
+
   const { data: dayRow } = await client
     .from("status_history_days")
-    .select("status, source")
+    .select("status, source, checks_total, checks_healthy")
     .eq("component_key", componentKey)
     .eq("day", date)
     .maybeSingle();
+  const day = dayRow as
+    | { status: Status; source: string; checks_total: number; checks_healthy: number }
+    | null;
 
   return new Response(
     JSON.stringify({
@@ -799,14 +1100,34 @@ async function handleDetail(client: ReturnType<typeof db>, componentKey: string,
       key: componentKey,
       date,
       observed: snaps.length > 0,
-      day_status: (dayRow as { status: Status } | null)?.status ?? null,
-      checks: snaps.length > 0 ? { total: readable.length, healthy: healthy.length } : null,
+      day_status: day?.status ?? null,
+      day_source: day?.source ?? null,
+      checks: snaps.length > 0
+        ? {
+            total: readable.length,
+            healthy: healthy.length,
+            unreadable: snaps.length - readable.length,
+            breakdown,
+            first_at: snaps[0].checked_at,
+            last_at: snaps[snaps.length - 1].checked_at,
+          }
+        : null,
       hours: snaps.length > 0 ? hours : [],
-      incidents: ((incidentRows ?? []) as IncidentRow[]).map((w) => ({
+      transitions,
+      disruption_minutes: disruptionMinutes,
+      incidents: windows.map((w) => ({
         source: w.source,
+        kind: w.kind,
         worst_status: w.worst_status,
         started_at: w.started_at,
         ended_at: w.ended_at,
+        scheduled_until: w.scheduled_until,
+        areas: w.areas ?? [],
+        lifecycle: Array.isArray(w.lifecycle) ? w.lifecycle : [],
+        update_count: w.update_count ?? 0,
+        time_to_identify_minutes: w.identified_at
+          ? Math.max(0, Math.round((Date.parse(w.identified_at) - Date.parse(w.started_at)) / 60_000))
+          : null,
       })),
     }),
     {

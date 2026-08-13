@@ -3,9 +3,12 @@ import test from "node:test";
 import {
   COMPONENT_STATUSES,
   FALLBACK_COMPONENT_LABEL,
+  LIFECYCLE_STAGE_LABELS,
   OVERALL_LABELS,
+  STATUS_AREA_LABELS,
   STATUS_COMPONENT_ROSTER,
   STATUS_LABELS,
+  mapAreaSlugs,
   computeOverall,
   formatDurationMs,
   historyBarTitle,
@@ -101,6 +104,8 @@ test("no vendor is ever named in public-facing status copy", () => {
     ...STATUS_COMPONENT_ROSTER.flatMap((c) => [c.key, c.label, c.description, ...c.affects]),
     ...Object.values(STATUS_LABELS),
     ...Object.values(OVERALL_LABELS),
+    ...Object.values(STATUS_AREA_LABELS),
+    ...Object.values(LIFECYCLE_STAGE_LABELS),
     FALLBACK_COMPONENT_LABEL,
   ];
   for (const s of publicStrings) {
@@ -216,7 +221,138 @@ test("incident block is normalized with roster labels and safe defaults", () => 
   // A payload with no incident block at all still normalizes.
   const bare = normalizeSummaryPayload({ ok: true, overall: "operational", components: [] });
   assert.ok(bare.ok);
-  if (bare.ok) assert.deepEqual(bare.incidents, { active: [], resolved: [] });
+  if (bare.ok) assert.deepEqual(bare.incidents, { active: [], resolved: [], maintenance: [] });
+});
+
+test("enriched incident fields survive normalization, junk does not", () => {
+  const result = normalizeSummaryPayload({
+    ok: true,
+    overall: "degraded",
+    components: [
+      {
+        key: "backend",
+        status: "operational",
+        history: [],
+        stats: {
+          incidents_30d: 16,
+          disruption_minutes_30d: 9771,
+          mttr_minutes: 747,
+          days_with_issues_30d: 15,
+          days_recorded: 30,
+        },
+      },
+    ],
+    incidents: {
+      active: [
+        {
+          key: "backend",
+          status: "degraded",
+          started_at: "2026-08-13T12:11:05Z",
+          confirmed: true,
+          areas: ["database", "R2"],
+          stage: "identified",
+          update_count: 5,
+        },
+      ],
+      resolved: [],
+      maintenance: [
+        { key: "security_delivery", starts_at: "2026-08-14T01:00:00Z", ends_at: "2026-08-14T04:00:00Z", areas: ["edge_locations"], in_progress: false },
+        { key: "backend" }, // dropped: no starts_at
+      ],
+    },
+  });
+  assert.ok(result.ok);
+  if (!result.ok) return;
+
+  assert.equal(result.components[0].stats?.incidents_30d, 16);
+  assert.equal(result.components[0].stats?.mttr_minutes, 747);
+
+  const active = result.incidents.active[0];
+  assert.equal(active.stage_label, "Cause identified");
+  assert.equal(active.update_count, 5);
+  // "R2" is not a slug this table knows, so it never reaches the page.
+  assert.deepEqual(active.areas, ["Databases"]);
+
+  assert.equal(result.incidents.maintenance.length, 1);
+  assert.equal(result.incidents.maintenance[0].label, "Edge security & delivery");
+  assert.deepEqual(result.incidents.maintenance[0].areas, ["Edge locations"]);
+});
+
+test("day detail carries transitions, breakdown and disruption", () => {
+  const detail = normalizeDayDetailPayload({
+    ok: true,
+    key: "security_delivery",
+    date: "2026-08-13",
+    observed: true,
+    day_status: "degraded",
+    day_source: "observed",
+    disruption_minutes: 103,
+    checks: {
+      total: 17,
+      healthy: 0,
+      unreadable: 1,
+      breakdown: { degraded: 17, unknown: 1, bogus_status: 4 },
+      first_at: "2026-08-13T12:11:05Z",
+      last_at: "2026-08-13T13:05:00Z",
+    },
+    transitions: [
+      { at: "2026-08-13T12:11:05Z", from: null, to: "degraded" },
+      { at: "2026-08-13T12:40:00Z", from: "degraded", to: "operational" },
+      { at: "2026-08-13T12:50:00Z", from: "operational", to: "nonsense" }, // dropped
+    ],
+  });
+  assert.ok(detail.ok);
+  if (!detail.ok) return;
+  assert.equal(detail.disruption_minutes, 103);
+  assert.equal(detail.day_source, "observed");
+  assert.equal(detail.transitions.length, 2);
+  assert.equal(detail.transitions[0].from, null);
+  assert.equal(detail.transitions[1].to, "operational");
+  assert.equal(detail.checks?.unreadable, 1);
+  // Unknown status keys are dropped; the rest sort worst-first.
+  assert.deepEqual(
+    detail.checks?.breakdown.map((b) => b.status),
+    ["degraded", "unknown"],
+  );
+  assert.equal(detail.checks?.breakdown[0].label, STATUS_LABELS.degraded);
+});
+
+test("area slugs render only from the closed vocabulary", () => {
+  // The server derives these slugs from vendor sub-component names ("R2",
+  // "Codespaces"). This table owns the words; anything it does not know is
+  // dropped, so a drifted or hostile server cannot put vendor-shaped text
+  // on the page.
+  assert.deepEqual(mapAreaSlugs(["storage", "auth"]), ["File storage", "Sign-in"]);
+  assert.deepEqual(mapAreaSlugs(["R2", "Codespaces", "Workers KV"]), []);
+  assert.deepEqual(mapAreaSlugs(["storage", "storage"]), ["File storage"]);
+  assert.deepEqual(mapAreaSlugs(["auth", 42, null, "not_a_slug"]), ["Sign-in"]);
+  assert.deepEqual(mapAreaSlugs("storage"), []);
+  assert.deepEqual(mapAreaSlugs(undefined), []);
+});
+
+test("lifecycle stages outside the known set are dropped", () => {
+  const detail = normalizeDayDetailPayload({
+    ok: true,
+    key: "backend",
+    date: "2026-08-12",
+    incidents: [
+      {
+        source: "vendor_feed",
+        worst_status: "degraded",
+        started_at: "2026-08-12T16:16:17Z",
+        lifecycle: [
+          { stage: "investigating", at: "2026-08-12T16:16:17Z" },
+          { stage: "postmortem_with_vendor_name", at: "2026-08-12T16:20:00Z" },
+          { stage: "resolved", at: "2026-08-12T16:41:18Z" },
+        ],
+      },
+    ],
+  });
+  assert.ok(detail.ok);
+  if (!detail.ok) return;
+  const stages = detail.incidents[0].lifecycle.map((l) => l.stage);
+  assert.deepEqual(stages, ["investigating", "resolved"]);
+  assert.equal(detail.incidents[0].lifecycle[0].label, "Investigating");
 });
 
 test("formatDurationMs reads like a human wrote it", () => {
@@ -254,7 +390,13 @@ test("normalizeDayDetailPayload tolerates junk and keeps the good parts", () => 
   assert.ok(detail.ok);
   if (!detail.ok) return;
   assert.equal(detail.observed, true);
-  assert.deepEqual(detail.checks, { total: 17, healthy: 17 });
+  assert.equal(detail.checks?.total, 17);
+  assert.equal(detail.checks?.healthy, 17);
+  // Absent enrichment fields degrade to empty rather than undefined.
+  assert.deepEqual(detail.checks?.breakdown, []);
+  assert.equal(detail.checks?.unreadable, 0);
+  assert.equal(detail.disruption_minutes, 0);
+  assert.deepEqual(detail.transitions, []);
   assert.equal(detail.hours.length, 3);
   assert.equal(detail.hours[1].status, "none");
   assert.equal(detail.hours[2].status, "unknown");

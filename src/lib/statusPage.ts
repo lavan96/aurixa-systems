@@ -62,6 +62,16 @@ export const OVERALL_LABELS: Record<ComponentStatus, string> = {
   unknown: "Status temporarily unavailable",
 };
 
+/** 30-day rollup for one component, computed server-side from the merged
+ * incident record (provider-published windows + our own observed runs). */
+export type ComponentStats = {
+  incidents_30d: number;
+  disruption_minutes_30d: number;
+  mttr_minutes: number | null;
+  days_with_issues_30d: number;
+  days_recorded: number;
+};
+
 export type StatusComponent = {
   key: string;
   label: string;
@@ -76,6 +86,7 @@ export type StatusComponent = {
   /** First observation in the reporting window (ISO), or null. */
   since: string | null;
   history: Array<{ date: string; status: ComponentStatus }>;
+  stats: ComponentStats | null;
 };
 
 /** Where an incident window came from: the provider's own published
@@ -90,6 +101,13 @@ export type ActiveIncident = {
   started_at: string | null;
   /** True when the provider's own feed currently lists an open incident. */
   confirmed: boolean;
+  /** Capability areas the provider says are affected (display copy). */
+  areas: string[];
+  /** Where the provider is up to: investigating → identified → monitoring. */
+  stage: string | null;
+  stage_label: string | null;
+  /** How many updates the provider has posted about it. */
+  update_count: number;
 };
 
 export type ResolvedIncident = {
@@ -100,6 +118,18 @@ export type ResolvedIncident = {
   started_at: string | null;
   ended_at: string;
   source: IncidentSource;
+  areas: string[];
+  update_count: number;
+  time_to_identify_minutes: number | null;
+};
+
+export type ScheduledMaintenance = {
+  key: string;
+  label: string;
+  starts_at: string;
+  ends_at: string | null;
+  areas: string[];
+  in_progress: boolean;
 };
 
 export type StatusSummary = {
@@ -109,17 +139,43 @@ export type StatusSummary = {
   checked_at: string | null;
   stale: boolean;
   components: StatusComponent[];
-  incidents: { active: ActiveIncident[]; resolved: ResolvedIncident[] };
+  incidents: {
+    active: ActiveIncident[];
+    resolved: ResolvedIncident[];
+    maintenance: ScheduledMaintenance[];
+  };
 };
 
 export type DayDetailHour = { hour: number; status: ComponentStatus | "none"; checks: number };
 
+/** One observed state change, with the exact time we first saw it. */
+export type DayDetailTransition = {
+  at: string;
+  from: ComponentStatus | null;
+  to: ComponentStatus;
+};
+
 export type DayDetailIncident = {
   source: IncidentSource;
+  kind: "incident" | "maintenance";
   worst_status: ComponentStatus;
   status_label: string;
   started_at: string;
   ended_at: string | null;
+  scheduled_until: string | null;
+  areas: string[];
+  lifecycle: Array<{ stage: string; label: string; at: string }>;
+  update_count: number;
+  time_to_identify_minutes: number | null;
+};
+
+export type DayDetailChecks = {
+  total: number;
+  healthy: number;
+  unreadable: number;
+  breakdown: Array<{ status: ComponentStatus; label: string; count: number }>;
+  first_at: string | null;
+  last_at: string | null;
 };
 
 export type DayDetail =
@@ -129,8 +185,11 @@ export type DayDetail =
       date: string;
       observed: boolean;
       day_status: ComponentStatus | null;
-      checks: { total: number; healthy: number } | null;
+      day_source: IncidentSource | null;
+      checks: DayDetailChecks | null;
       hours: DayDetailHour[];
+      transitions: DayDetailTransition[];
+      disruption_minutes: number;
       incidents: DayDetailIncident[];
     }
   | { ok: false };
@@ -246,6 +305,60 @@ export const STATUS_COMPONENT_ROSTER: Array<{
 export const FALLBACK_COMPONENT_LABEL = "Monitored service";
 
 /**
+ * Capability areas an incident touched, as display copy.
+ *
+ * The server sends SLUGS from a closed vocabulary it derives from each
+ * provider's sub-component names ("R2" → storage, "Codespaces" → compute);
+ * the raw names never leave it, because they identify their vendor at a
+ * glance. This table owns the words, and `mapAreaSlugs` drops any slug not
+ * listed here — so even a compromised or drifted server cannot put new
+ * vendor-shaped text on the page.
+ */
+export const STATUS_AREA_LABELS: Record<string, string> = {
+  api: "APIs",
+  auth: "Sign-in",
+  builds: "Builds & releases",
+  compute: "Serverless compute",
+  console: "Provider console",
+  database: "Databases",
+  dns: "DNS",
+  edge_locations: "Edge locations",
+  email: "Email delivery",
+  models: "AI models",
+  network: "Network & delivery",
+  observability: "Logs & analytics",
+  payments: "Payments",
+  realtime: "Realtime",
+  regional_infra: "Regional infrastructure",
+  search: "Search",
+  security: "Traffic protection",
+  source: "Source hosting",
+  storage: "File storage",
+  support: "Provider support",
+  webhooks: "Webhooks & events",
+};
+
+/** Slugs → labels, unknown slugs dropped, order preserved, deduped. */
+export function mapAreaSlugs(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const labels: string[] = [];
+  for (const slug of value) {
+    if (typeof slug !== "string") continue;
+    const label = STATUS_AREA_LABELS[slug];
+    if (label && !labels.includes(label)) labels.push(label);
+  }
+  return labels;
+}
+
+/** The provider's own incident lifecycle, in the order the stages occur. */
+export const LIFECYCLE_STAGE_LABELS: Record<string, string> = {
+  investigating: "Investigating",
+  identified: "Cause identified",
+  monitoring: "Fix monitoring",
+  resolved: "Resolved",
+};
+
+/**
  * Tooltip for one history bar. Days before our own polling began are
  * reconstructed server-side from the provider's published incident history,
  * and their tooltips say so — reconstructed and observed days must never be
@@ -314,6 +427,20 @@ export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: fa
             status: (isComponentStatus(h.status) ? h.status : "unknown") as ComponentStatus,
           }))
       : [];
+    const rawStats = item.stats as Record<string, unknown> | undefined;
+    const stats: ComponentStats | null =
+      rawStats && typeof rawStats.incidents_30d === "number"
+        ? {
+            incidents_30d: rawStats.incidents_30d,
+            disruption_minutes_30d:
+              typeof rawStats.disruption_minutes_30d === "number" ? rawStats.disruption_minutes_30d : 0,
+            mttr_minutes: typeof rawStats.mttr_minutes === "number" ? rawStats.mttr_minutes : null,
+            days_with_issues_30d:
+              typeof rawStats.days_with_issues_30d === "number" ? rawStats.days_with_issues_30d : 0,
+            days_recorded: typeof rawStats.days_recorded === "number" ? rawStats.days_recorded : 0,
+          }
+        : null;
+
     components.push({
       key,
       label: roster?.label ?? FALLBACK_COMPONENT_LABEL,
@@ -328,6 +455,7 @@ export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: fa
           : null,
       since: typeof item.since === "string" ? item.since : null,
       history,
+      stats,
     });
   }
 
@@ -339,6 +467,7 @@ export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: fa
         .filter((i) => typeof i === "object" && i !== null && typeof i.key === "string")
         .map((i) => {
           const status: ComponentStatus = isComponentStatus(i.status) ? i.status : "degraded";
+          const stage = typeof i.stage === "string" ? i.stage : null;
           return {
             key: i.key as string,
             label: rosterLabel(i.key as string),
@@ -346,6 +475,10 @@ export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: fa
             status_label: STATUS_LABELS[status],
             started_at: typeof i.started_at === "string" ? i.started_at : null,
             confirmed: i.confirmed === true,
+            areas: mapAreaSlugs(i.areas),
+            stage,
+            stage_label: stage ? (LIFECYCLE_STAGE_LABELS[stage] ?? null) : null,
+            update_count: typeof i.update_count === "number" ? i.update_count : 0,
           };
         })
     : [];
@@ -366,8 +499,28 @@ export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: fa
             started_at: typeof i.started_at === "string" ? i.started_at : null,
             ended_at: i.ended_at as string,
             source: isIncidentSource(i.source) ? i.source : "observed",
+            areas: mapAreaSlugs(i.areas),
+            update_count: typeof i.update_count === "number" ? i.update_count : 0,
+            time_to_identify_minutes:
+              typeof i.time_to_identify_minutes === "number" ? i.time_to_identify_minutes : null,
           };
         })
+    : [];
+  const maintenance: ScheduledMaintenance[] = Array.isArray(rawIncidents.maintenance)
+    ? (rawIncidents.maintenance as Array<Record<string, unknown>>)
+        .filter(
+          (m) =>
+            typeof m === "object" && m !== null &&
+            typeof m.key === "string" && typeof m.starts_at === "string",
+        )
+        .map((m) => ({
+          key: m.key as string,
+          label: rosterLabel(m.key as string),
+          starts_at: m.starts_at as string,
+          ends_at: typeof m.ends_at === "string" ? m.ends_at : null,
+          areas: mapAreaSlugs(m.areas),
+          in_progress: m.in_progress === true,
+        }))
     : [];
 
   const overall: ComponentStatus = isComponentStatus(record.overall) ? record.overall : "unknown";
@@ -378,7 +531,7 @@ export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: fa
     checked_at: typeof record.checked_at === "string" ? record.checked_at : null,
     stale: record.stale === true,
     components,
-    incidents: { active, resolved },
+    incidents: { active, resolved, maintenance },
   };
 }
 
@@ -406,27 +559,86 @@ export function normalizeDayDetailPayload(body: unknown): DayDetail {
         .filter((i) => typeof i === "object" && i !== null && typeof i.started_at === "string")
         .map((i) => {
           const status: ComponentStatus = isComponentStatus(i.worst_status) ? i.worst_status : "degraded";
+          // Lifecycle stages are display copy, so unknown stage names are
+          // dropped exactly like unknown area slugs.
+          const lifecycle = Array.isArray(i.lifecycle)
+            ? (i.lifecycle as Array<Record<string, unknown>>)
+                .filter(
+                  (l) =>
+                    typeof l === "object" && l !== null &&
+                    typeof l.stage === "string" && typeof l.at === "string" &&
+                    LIFECYCLE_STAGE_LABELS[l.stage as string] !== undefined,
+                )
+                .map((l) => ({
+                  stage: l.stage as string,
+                  label: LIFECYCLE_STAGE_LABELS[l.stage as string],
+                  at: l.at as string,
+                }))
+            : [];
           return {
             source: isIncidentSource(i.source) ? i.source : "observed",
+            kind: i.kind === "maintenance" ? ("maintenance" as const) : ("incident" as const),
             worst_status: status,
             status_label: STATUS_LABELS[status],
             started_at: i.started_at as string,
             ended_at: typeof i.ended_at === "string" ? i.ended_at : null,
+            scheduled_until: typeof i.scheduled_until === "string" ? i.scheduled_until : null,
+            areas: mapAreaSlugs(i.areas),
+            lifecycle,
+            update_count: typeof i.update_count === "number" ? i.update_count : 0,
+            time_to_identify_minutes:
+              typeof i.time_to_identify_minutes === "number" ? i.time_to_identify_minutes : null,
           };
         })
     : [];
+
+  const transitions: DayDetailTransition[] = Array.isArray(record.transitions)
+    ? (record.transitions as Array<Record<string, unknown>>)
+        .filter(
+          (t) =>
+            typeof t === "object" && t !== null &&
+            typeof t.at === "string" && isComponentStatus(t.to),
+        )
+        .map((t) => ({
+          at: t.at as string,
+          from: isComponentStatus(t.from) ? t.from : null,
+          to: t.to as ComponentStatus,
+        }))
+    : [];
+
   const rawChecks = record.checks as Record<string, unknown> | null | undefined;
+  const rawBreakdown = (rawChecks?.breakdown ?? {}) as Record<string, unknown>;
+  const breakdown = Object.entries(rawBreakdown)
+    .filter(([status, count]) => isComponentStatus(status) && typeof count === "number")
+    .map(([status, count]) => ({
+      status: status as ComponentStatus,
+      label: STATUS_LABELS[status as ComponentStatus],
+      count: count as number,
+    }))
+    .sort((a, b) => severityRank(b.status) - severityRank(a.status));
+
   return {
     ok: true,
     key: record.key,
     date: record.date,
     observed: record.observed === true,
     day_status: isComponentStatus(record.day_status) ? record.day_status : null,
+    day_source: isIncidentSource(record.day_source) ? record.day_source : null,
     checks:
       rawChecks && typeof rawChecks.total === "number" && typeof rawChecks.healthy === "number"
-        ? { total: rawChecks.total, healthy: rawChecks.healthy }
+        ? {
+            total: rawChecks.total,
+            healthy: rawChecks.healthy,
+            unreadable: typeof rawChecks.unreadable === "number" ? rawChecks.unreadable : 0,
+            breakdown,
+            first_at: typeof rawChecks.first_at === "string" ? rawChecks.first_at : null,
+            last_at: typeof rawChecks.last_at === "string" ? rawChecks.last_at : null,
+          }
         : null,
     hours,
+    transitions,
+    disruption_minutes:
+      typeof record.disruption_minutes === "number" ? record.disruption_minutes : 0,
     incidents,
   };
 }

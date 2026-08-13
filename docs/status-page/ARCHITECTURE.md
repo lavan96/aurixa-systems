@@ -119,11 +119,36 @@ our observed run), and **resolved** = windows that ended in the last 72
 hours, with observed runs suppressed when a vendor-published window already
 covers them.
 
-`GET ?component=<key>&date=YYYY-MM-DD` is the day drilldown: an hour-by-hour
-rollup of our own checks for that UTC day (hours with no checks are said to
-have none, not guessed) plus every incident window touching the day. The
-page opens it when a history bar is clicked; bars also carry a rich hover
-card stating date, status, and whether the day is observed or reconstructed.
+Each window also carries what the provider published *about* it:
+
+- **`lifecycle`** — the stage timeline (`investigating` → `identified` →
+  `monitoring` → `resolved`) with the first timestamp per stage, plus
+  `update_count`. **Update bodies are never stored or read**: they are prose
+  written by the vendor about the vendor.
+- **`areas`** — capability slugs derived from the sub-components the
+  provider listed. Those names ("R2", "Codespaces", "Speed Insights",
+  "us-west-2") identify their vendor instantly, so `AREA_RULES` in the edge
+  function reduces each to one of our own slugs and **drops anything that
+  does not match**. The client holds the display labels
+  (`STATUS_AREA_LABELS`) and drops any slug it does not know, so neither
+  side alone can put a new word on the page. Both halves are tested.
+- **`kind`** — `maintenance` windows come from the provider's separate
+  scheduled-maintenance feed and are reported as planned work, never as an
+  outage, and never counted in disruption or MTTR.
+
+Per-component `stats` (30 days) come from the deduped windows: incident
+count, total disruption minutes (overlapping windows merged so shared
+downtime is counted once), mean time to resolve, and days with issues.
+
+`GET ?component=<key>&date=YYYY-MM-DD` is the day drilldown. It returns the
+hour-by-hour rollup of our own checks (hours with no checks are said to have
+none, not guessed), the per-status check breakdown, the **observed state
+transitions** with the exact time we first saw each one (`unknown` polls are
+gaps, not transitions), the day's disruption minutes, and every incident
+window touching the day with its lifecycle, areas, update count and
+time-to-identify. The page opens it when a history bar is clicked; bars also
+carry a hover card stating date, status, and whether the day is observed or
+reconstructed.
 
 ## Adapters
 
