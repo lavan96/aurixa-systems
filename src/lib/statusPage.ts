@@ -103,9 +103,11 @@ export function isComponentStatus(value: unknown): value is ComponentStatus {
 }
 
 /**
- * Collapse raw snapshots into one status per calendar day (worst wins), for
- * the 30-day history bars. Input rows may be in any order; output is
- * oldest → newest and capped to `days`.
+ * Collapse raw snapshots into one status per calendar day for the 30-day
+ * history bars: worst CONFIRMED status wins, and `unknown` marks a day only
+ * when not a single check that day was readable — one failed read out of a
+ * day of healthy polls is not a grey day. Input rows may be in any order;
+ * output is oldest → newest and capped to `days`.
  */
 export function rollupDaily(
   rows: Array<{ date: string; status: ComponentStatus }>,
@@ -114,7 +116,11 @@ export function rollupDaily(
   const byDate = new Map<string, ComponentStatus>();
   for (const row of rows) {
     const existing = byDate.get(row.date);
-    if (!existing || severityRank(row.status) > severityRank(existing)) {
+    if (row.status === "unknown") {
+      if (!existing) byDate.set(row.date, "unknown");
+      continue;
+    }
+    if (!existing || existing === "unknown" || severityRank(row.status) > severityRank(existing)) {
       byDate.set(row.date, row.status);
     }
   }
@@ -190,6 +196,23 @@ export const STATUS_COMPONENT_ROSTER: Array<{
 
 /** Shown only for a payload key the roster does not know. */
 export const FALLBACK_COMPONENT_LABEL = "Monitored service";
+
+/**
+ * Tooltip for one history bar. Days before our own polling began are
+ * reconstructed server-side from the provider's published incident history,
+ * and their tooltips say so — reconstructed and observed days must never be
+ * presented as the same kind of evidence.
+ */
+export function historyBarTitle(
+  date: string,
+  status: ComponentStatus,
+  observedSince: string | null,
+): string {
+  const base = `${date} — ${STATUS_LABELS[status]}`;
+  const observedDay = observedSince ? observedSince.slice(0, 10) : null;
+  if (observedDay && date < observedDay) return `${base} — from the provider's published history`;
+  return base;
+}
 
 /**
  * Turn the status-summary endpoint's JSON into a display-ready summary.

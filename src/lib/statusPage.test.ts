@@ -7,6 +7,7 @@ import {
   STATUS_COMPONENT_ROSTER,
   STATUS_LABELS,
   computeOverall,
+  historyBarTitle,
   isComponentStatus,
   normalizeSummaryPayload,
   rollupDaily,
@@ -60,6 +61,32 @@ test("daily rollup keeps the worst status per day, oldest first, capped", () => 
   ]);
   assert.equal(rollupDaily(rows, 2).length, 2);
   assert.equal(rollupDaily(rows, 2)[0].date, "2026-08-02");
+});
+
+test("a day is unknown only when nothing that day was readable", () => {
+  // One failed read among healthy polls must not grey out the whole day…
+  assert.deepEqual(
+    rollupDaily([
+      { date: "2026-08-13", status: "operational" },
+      { date: "2026-08-13", status: "unknown" },
+      { date: "2026-08-13", status: "operational" },
+    ]),
+    [{ date: "2026-08-13", status: "operational" }],
+  );
+  // …a confirmed problem still beats everything…
+  assert.deepEqual(
+    rollupDaily([
+      { date: "2026-08-13", status: "unknown" },
+      { date: "2026-08-13", status: "degraded" },
+      { date: "2026-08-13", status: "operational" },
+    ]),
+    [{ date: "2026-08-13", status: "degraded" }],
+  );
+  // …and a fully unreadable day is honestly unknown.
+  assert.deepEqual(
+    rollupDaily([{ date: "2026-08-13", status: "unknown" }]),
+    [{ date: "2026-08-13", status: "unknown" }],
+  );
 });
 
 test("no vendor is ever named in public-facing status copy", () => {
@@ -134,6 +161,20 @@ test("normalizeSummaryPayload joins roster copy by key", () => {
   assert.equal(edge.label, "Edge security & delivery");
   assert.equal(edge.status_label, STATUS_LABELS.degraded);
   assert.equal(edge.uptime, null);
+});
+
+test("history bar tooltips distinguish reconstructed days from observed ones", () => {
+  const observedSince = "2026-08-13T12:11:05Z";
+  // A day before our first poll came from the provider's published record.
+  const reconstructed = historyBarTitle("2026-08-01", "degraded", observedSince);
+  assert.ok(reconstructed.includes("published history"), reconstructed);
+  // Days we polled ourselves carry no qualifier — and neither does anything
+  // when we do not know where observation began.
+  assert.equal(historyBarTitle("2026-08-13", "operational", observedSince), "2026-08-13 — Operational");
+  assert.equal(historyBarTitle("2026-08-20", "degraded", observedSince), "2026-08-20 — Degraded performance");
+  assert.equal(historyBarTitle("2026-08-01", "degraded", null), "2026-08-01 — Degraded performance");
+  // The qualifier is public copy: it must never name a vendor.
+  assert.ok(!/supabase|cloudflare|vercel|github|openai|stripe/i.test(reconstructed));
 });
 
 test("normalizeSummaryPayload degrades malformed input without breaking", () => {

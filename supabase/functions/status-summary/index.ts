@@ -12,6 +12,14 @@
 //        a 6s cap each, normalizes via the adapter registry below, writes
 //        one snapshot per component, and prunes snapshots older than 45
 //        days. pg_cron drives this every 5 minutes.
+// POST {action:"backfill"} — admin-gated. Reconstructs per-day history
+//        from each statuspage_v2 vendor's PUBLISHED incident feed
+//        (/api/v2/incidents.json) into status_history_days: incident days
+//        take the incident's impact, quiet days are operational, and days
+//        before the feed's oldest returned incident are never written —
+//        absence of data stays absent rather than being guessed. pg_cron
+//        drives this daily; buildSummary merges it with observed snapshots
+//        and OBSERVED ALWAYS WINS.
 //
 // Anonymity is enforced structurally: the ONLY strings that reach a
 // browser are the component keys (matched to public copy in
@@ -47,6 +55,11 @@ const REFRESH_IF_OLDER_MS = 30 * 60_000; // inline refresh threshold
 const VENDOR_TIMEOUT_MS = 6_000;
 const HISTORY_DAYS = 30;
 const RETENTION_DAYS = 45;
+// Backfill: how far back to reconstruct from published incident feeds, and
+// a roomier timeout — incidents.json is a much bigger document than
+// status.json.
+const BACKFILL_DAYS = 90;
+const BACKFILL_TIMEOUT_MS = 10_000;
 
 // GET is a cache read; this only bounds scripted hammering.
 const GET_WINDOW_MS = 15 * 60_000;
@@ -202,6 +215,156 @@ async function refreshAll(client: ReturnType<typeof db>): Promise<{ polled: numb
   return { polled: results.length, wrote };
 }
 
+// ── History backfill from published incident feeds ──────────────────────
+
+/** Statuspage impact → our vocabulary. `none` carries no status signal. */
+function impactToStatus(impact: unknown): Status | null {
+  switch (impact) {
+    case "minor":
+      return "degraded";
+    case "major":
+      return "partial_outage";
+    case "critical":
+      return "major_outage";
+    case "maintenance":
+      return "maintenance";
+    default:
+      return null;
+  }
+}
+
+function dayKey(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function dayKeyFloor(daysBack: number): string {
+  return dayKey(Date.now() - daysBack * 24 * 60 * 60_000);
+}
+
+/**
+ * Reconstruct per-day statuses for every enabled statuspage_v2 vendor from
+ * its published /api/v2/incidents.json. Quiet days are operational, incident
+ * days take the incident's worst impact, and days before the feed's oldest
+ * returned incident are NOT written — the feed is capped (~50 most recent
+ * incidents), so anything older is unknowable, and absent must stay absent.
+ * Today is never written: the live poller owns it, and buildSummary prefers
+ * observed data on any overlap anyway.
+ */
+async function backfillAll(
+  client: ReturnType<typeof db>,
+): Promise<{ vendors: number; days_written: number; skipped: string[] }> {
+  const { data: providers, error } = await client
+    .from("status_providers")
+    .select("component_key, adapter, endpoint")
+    .eq("enabled", true);
+  if (error) throw error;
+
+  const DAY_MS = 24 * 60 * 60_000;
+  const todayStartMs = Date.parse(`${dayKey(Date.now())}T00:00:00Z`);
+  const windowStartMs = todayStartMs - BACKFILL_DAYS * DAY_MS;
+  const skipped: string[] = [];
+  let vendors = 0;
+  let daysWritten = 0;
+
+  for (const p of providers ?? []) {
+    if (p.adapter !== "statuspage_v2") {
+      skipped.push(p.component_key);
+      continue;
+    }
+    const feedUrl = p.endpoint.replace(/\/api\/v2\/status\.json.*$/, "/api/v2/incidents.json");
+    if (feedUrl === p.endpoint) {
+      skipped.push(p.component_key);
+      continue;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), BACKFILL_TIMEOUT_MS);
+    let incidents: Array<Record<string, unknown>>;
+    try {
+      const res = await fetch(feedUrl, {
+        headers: { accept: "application/json" },
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        skipped.push(p.component_key);
+        continue;
+      }
+      const body = (await res.json()) as Record<string, unknown>;
+      incidents = Array.isArray(body?.incidents)
+        ? (body.incidents as Array<Record<string, unknown>>)
+        : [];
+    } catch (error) {
+      console.error("status-summary: backfill fetch failed", p.component_key, String(error).slice(0, 120));
+      skipped.push(p.component_key);
+      continue;
+    } finally {
+      clearTimeout(timer);
+    }
+
+    // Feed horizon: the oldest incident the capped feed still returns. An
+    // empty feed means the vendor publishes no recent incidents at all, so
+    // the whole window is legitimately quiet.
+    let horizonMs = windowStartMs;
+    if (incidents.length > 0) {
+      const oldest = incidents
+        .map((i) => Date.parse(typeof i.created_at === "string" ? i.created_at : ""))
+        .filter((t) => !Number.isNaN(t))
+        .sort((a, b) => a - b)[0];
+      if (oldest !== undefined) {
+        horizonMs = Math.max(windowStartMs, Date.parse(`${dayKey(oldest)}T00:00:00Z`));
+      }
+    }
+
+    // Quiet default, then overlay each incident's window, worst per day.
+    const byDay = new Map<string, Status>();
+    for (let ms = horizonMs; ms < todayStartMs; ms += DAY_MS) {
+      byDay.set(dayKey(ms), "operational");
+    }
+    for (const incident of incidents) {
+      const status = impactToStatus(incident.impact);
+      if (!status) continue;
+      const startRaw = typeof incident.started_at === "string" ? incident.started_at
+        : typeof incident.created_at === "string" ? incident.created_at : "";
+      const startMs = Date.parse(startRaw);
+      if (Number.isNaN(startMs)) continue;
+      const endRaw = typeof incident.resolved_at === "string" ? incident.resolved_at
+        : typeof incident.updated_at === "string" ? incident.updated_at : startRaw;
+      const endMs = Number.isNaN(Date.parse(endRaw)) ? startMs : Date.parse(endRaw);
+      const firstDay = Math.max(Date.parse(`${dayKey(startMs)}T00:00:00Z`), horizonMs);
+      const lastDay = Math.min(Date.parse(`${dayKey(Math.max(startMs, endMs))}T00:00:00Z`), todayStartMs - DAY_MS);
+      for (let ms = firstDay; ms <= lastDay; ms += DAY_MS) {
+        const key = dayKey(ms);
+        const existing = byDay.get(key);
+        // Only days inside the horizon window exist in the map.
+        if (existing === undefined) continue;
+        if (SEVERITY[status] > SEVERITY[existing]) byDay.set(key, status);
+      }
+    }
+
+    const rows = [...byDay.entries()].map(([day, status]) => ({
+      component_key: p.component_key,
+      day,
+      status,
+      source: "vendor_feed",
+      updated_at: new Date().toISOString(),
+    }));
+    if (rows.length > 0) {
+      const { error: upErr } = await client
+        .from("status_history_days")
+        .upsert(rows, { onConflict: "component_key,day" });
+      if (upErr) {
+        console.error("status-summary: backfill upsert failed", p.component_key, upErr.message);
+        skipped.push(p.component_key);
+        continue;
+      }
+      daysWritten += rows.length;
+    }
+    vendors++;
+  }
+
+  return { vendors, days_written: daysWritten, skipped };
+}
+
 // ── Public summary ───────────────────────────────────────────────────────
 
 async function buildSummary(client: ReturnType<typeof db>) {
@@ -219,6 +382,20 @@ async function buildSummary(client: ReturnType<typeof db>) {
     .eq("enabled", true)
     .order("sort_order");
 
+  // Reconstructed history (vendors' published incidents), merged below with
+  // the observed rollup — observed always wins on a shared day.
+  const historyFloor = dayKeyFloor(HISTORY_DAYS);
+  const { data: backfilled } = await client
+    .from("status_history_days")
+    .select("component_key, day, status")
+    .gte("day", historyFloor);
+  const backfillByComponent = new Map<string, Array<{ day: string; status: Status }>>();
+  for (const row of (backfilled ?? []) as Array<{ component_key: string; day: string; status: Status }>) {
+    const list = backfillByComponent.get(row.component_key) ?? [];
+    list.push({ day: row.day, status: row.status });
+    backfillByComponent.set(row.component_key, list);
+  }
+
   type Row = { component_key: string; status: Status; checked_at: string };
   const byComponent = new Map<string, Row[]>();
   for (const row of (rows ?? []) as Row[]) {
@@ -231,13 +408,29 @@ async function buildSummary(client: ReturnType<typeof db>) {
     const list = byComponent.get(p.component_key) ?? [];
     const latest = list[list.length - 1] ?? null;
 
-    // Daily rollup, worst status per day, oldest → newest.
+    // Daily rollup, worst status per day, oldest → newest. Start from the
+    // vendor-published backfill, then overlay observed days on top —
+    // anything we actually polled beats anything reconstructed.
     const byDay = new Map<string, Status>();
+    for (const entry of backfillByComponent.get(p.component_key) ?? []) {
+      byDay.set(entry.day, entry.status);
+    }
+    // Worst CONFIRMED status per day; `unknown` marks a day only when not a
+    // single check that day was readable. One failed read out of a day of
+    // healthy polls is not a grey day.
+    const observedDays = new Map<string, Status>();
     for (const row of list) {
       const day = row.checked_at.slice(0, 10);
-      const existing = byDay.get(day);
-      if (!existing || SEVERITY[row.status] > SEVERITY[existing]) byDay.set(day, row.status);
+      const existing = observedDays.get(day);
+      if (row.status === "unknown") {
+        if (!existing) observedDays.set(day, "unknown");
+        continue;
+      }
+      if (!existing || existing === "unknown" || SEVERITY[row.status] > SEVERITY[existing]) {
+        observedDays.set(day, row.status);
+      }
     }
+    for (const [day, status] of observedDays) byDay.set(day, status);
     const history = [...byDay.entries()]
       .sort(([a], [b]) => (a < b ? -1 : 1))
       .slice(-HISTORY_DAYS)
@@ -348,11 +541,13 @@ Deno.serve(async (req) => {
       } catch {
         return json({ ok: false, error: "invalid_request" }, 400);
       }
-      if (body.action !== "refresh") return json({ ok: false, error: "invalid_request" }, 400);
+      if (body.action !== "refresh" && body.action !== "backfill") {
+        return json({ ok: false, error: "invalid_request" }, 400);
+      }
 
       const client = db();
       if (!(await isAdminCall(client, req))) return json({ ok: false, error: "forbidden" }, 403);
-      const result = await refreshAll(client);
+      const result = body.action === "backfill" ? await backfillAll(client) : await refreshAll(client);
       return json({ ok: true, ...result });
     }
 

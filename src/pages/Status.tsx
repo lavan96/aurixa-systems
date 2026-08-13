@@ -5,6 +5,7 @@ import { useRouteMetadata } from "../lib/pageMetadata";
 import {
   STATUS_COMPONENT_ROSTER,
   STATUS_LABELS,
+  historyBarTitle,
   type ComponentStatus,
   type StatusComponent,
   type StatusSummary,
@@ -149,30 +150,34 @@ function StatusPill({ status, label }: { status: ComponentStatus; label: string 
 function HistoryBars({
   label,
   history,
+  observedSince,
 }: {
   label: string;
   history: Array<{ date: string; status: ComponentStatus }>;
+  observedSince: string | null;
 }) {
   const entries = history.slice(-HISTORY_DAYS);
   const padding = Math.max(0, HISTORY_DAYS - entries.length);
-  // A young ledger is not missing data — say when monitoring began instead
-  // of showing a wall of grey that reads as broken.
+  // A short strip is not missing data — say where the record starts instead
+  // of showing a wall of grey that reads as broken. (Bars can predate our
+  // own polling: those days are reconstructed from the provider's published
+  // incident history, and their tooltips say so.)
   const leftCaption =
-    padding > 0 && entries.length > 0 ? `Monitoring since ${formatDay(entries[0].date)}` : "30 days";
+    padding > 0 && entries.length > 0 ? `Since ${formatDay(entries[0].date)}` : "30 days";
   return (
     <div className="w-fit max-w-full">
       <div className="flex flex-nowrap items-center gap-1" aria-label={`${label} 30 day history`}>
         {Array.from({ length: padding }, (_, index) => (
           <span
             key={`pad-${index}`}
-            title="Before monitoring began"
+            title="No published record for this day"
             className="h-8 w-1.5 rounded-sm bg-white/[0.06]"
           />
         ))}
         {entries.map((entry) => (
           <span
             key={entry.date}
-            title={`${entry.date} — ${STATUS_LABELS[entry.status]}`}
+            title={historyBarTitle(entry.date, entry.status, observedSince)}
             className={`h-8 w-1.5 rounded-sm ${STATUS_STYLES[entry.status].bar}`}
           />
         ))}
@@ -223,7 +228,11 @@ function ComponentRow({ component }: { component: StatusComponent }) {
         </div>
       </div>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <HistoryBars label={component.label} history={component.history} />
+        <HistoryBars
+          label={component.label}
+          history={component.history}
+          observedSince={component.since}
+        />
         {component.uptime !== null && (
           <p
             className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#94A3B8]/70"
@@ -439,8 +448,10 @@ export default function Status() {
             </Link>
             <p className="max-w-lg text-xs leading-relaxed text-[#94A3B8]/70">
               Every state on this page is live: our servers poll each provider&rsquo;s official
-              status feed every five minutes and keep the history you see here. Nothing is
-              entered by hand, and nothing is cached for more than a minute.
+              status feed every five minutes and keep the history you see here. Days before our
+              own polling began are reconstructed from each provider&rsquo;s published incident
+              record, and re-synced daily. Nothing is entered by hand, and nothing is cached for
+              more than a minute.
             </p>
           </div>
         </div>

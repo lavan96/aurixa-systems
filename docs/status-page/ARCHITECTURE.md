@@ -73,6 +73,32 @@ first live day proved both ends of this: a genuine upstream `degraded` event
 was detected and bannered, and a vendor status API returning HTTP 500 for one
 poll produced a quiet `unknown` snapshot and nothing else.
 
+## Historical backfill
+
+The 30-day strips predate our own monitoring: once a day (and on demand via
+`POST {action:"backfill"}`), the function reconstructs per-day history from
+each statuspage-style vendor's **published incident feed**
+(`/api/v2/incidents.json`) into `status_history_days`. The rules that keep
+this honest:
+
+- A backfilled day is the vendor's own record: days inside a published
+  incident window take the incident's impact (worst per day), quiet days
+  are operational.
+- The feed is capped (~50 most recent incidents), so days **before the
+  oldest returned incident are never written** — absence of data is shown
+  as absence, never guessed.
+- **Observed always wins**: `buildSummary` starts from the backfill and
+  overlays our own snapshot rollup on any shared day, and the backfill
+  never writes today.
+- The UI keeps the distinction visible: bars before `since` (first
+  observation) carry a "from the provider's published history" tooltip
+  (`historyBarTitle`), and the page footer states the reconstruction.
+- Vendors without a machine-readable history API (payments) simply start
+  at our monitoring start; their strip says "Since <date>".
+
+The observed-uptime line is untouched by backfill — it is computed from our
+own polls only.
+
 ## Adapters
 
 Three normalizers in `supabase/functions/status-summary/index.ts`, all
