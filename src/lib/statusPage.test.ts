@@ -2,11 +2,13 @@ import { strict as assert } from "node:assert";
 import test from "node:test";
 import {
   COMPONENT_STATUSES,
+  FALLBACK_COMPONENT_LABEL,
   OVERALL_LABELS,
   STATUS_COMPONENT_ROSTER,
   STATUS_LABELS,
   computeOverall,
   isComponentStatus,
+  normalizeSummaryPayload,
   rollupDaily,
   severityRank,
 } from "./statusPage";
@@ -67,9 +69,10 @@ test("no vendor is ever named in public-facing status copy", () => {
   const vendorNames =
     /supabase|cloudflare|vercel|github|openai|anthropic|gemini|google|stripe|resend|twilio|aws|amazon|azure|statuspage|instatus/i;
   const publicStrings = [
-    ...STATUS_COMPONENT_ROSTER.flatMap((c) => [c.key, c.label, c.description]),
+    ...STATUS_COMPONENT_ROSTER.flatMap((c) => [c.key, c.label, c.description, ...c.affects]),
     ...Object.values(STATUS_LABELS),
     ...Object.values(OVERALL_LABELS),
+    FALLBACK_COMPONENT_LABEL,
   ];
   for (const s of publicStrings) {
     assert.ok(!vendorNames.test(s), `vendor name leaked into public copy: "${s}"`);
@@ -80,4 +83,80 @@ test("roster keys are unique and stable-format", () => {
   const keys = STATUS_COMPONENT_ROSTER.map((c) => c.key);
   assert.equal(new Set(keys).size, keys.length);
   for (const key of keys) assert.match(key, /^[a-z][a-z_]+$/);
+});
+
+test("roster labels are distinct roles, not one repeated template", () => {
+  // The first cut suffixed every label with "Provider" and the page read as
+  // the same row seven times. Labels must be unique and must not all share
+  // a trailing word.
+  const labels = STATUS_COMPONENT_ROSTER.map((c) => c.label);
+  assert.equal(new Set(labels).size, labels.length);
+  const lastWords = new Set(labels.map((l) => l.split(" ").pop()?.toLowerCase()));
+  assert.ok(lastWords.size > 1, "every roster label ends in the same word");
+  for (const entry of STATUS_COMPONENT_ROSTER) {
+    assert.ok(entry.description.length >= 40, `description too thin for ${entry.key}`);
+    assert.ok(entry.affects.length >= 1, `no affected features listed for ${entry.key}`);
+  }
+});
+
+test("normalizeSummaryPayload joins roster copy by key", () => {
+  // Regression: the server sends keys and statuses, never labels. The first
+  // deploy forgot the join, so every LIVE row rendered as the generic
+  // fallback while only the prerendered skeleton showed real labels.
+  const result = normalizeSummaryPayload({
+    ok: true,
+    overall: "degraded",
+    checked_at: "2026-08-13T12:25:01Z",
+    stale: false,
+    components: [
+      {
+        key: "backend",
+        status: "operational",
+        checked_at: "2026-08-13T12:25:01Z",
+        uptime: 100,
+        since: "2026-08-13T12:11:05Z",
+        history: [{ date: "2026-08-13", status: "operational" }],
+      },
+      { key: "security_delivery", status: "degraded", checked_at: null, history: [] },
+    ],
+  });
+  assert.ok(result.ok);
+  if (!result.ok) return;
+  assert.equal(result.overall_label, OVERALL_LABELS.degraded);
+  const backend = result.components[0];
+  assert.equal(backend.label, "Backend platform");
+  assert.notEqual(backend.label, FALLBACK_COMPONENT_LABEL);
+  assert.ok(backend.description.length > 0);
+  assert.ok(backend.affects.length > 0);
+  assert.equal(backend.uptime, 100);
+  assert.equal(backend.since, "2026-08-13T12:11:05Z");
+  const edge = result.components[1];
+  assert.equal(edge.label, "Edge security & delivery");
+  assert.equal(edge.status_label, STATUS_LABELS.degraded);
+  assert.equal(edge.uptime, null);
+});
+
+test("normalizeSummaryPayload degrades malformed input without breaking", () => {
+  assert.deepEqual(normalizeSummaryPayload(null), { ok: false });
+  assert.deepEqual(normalizeSummaryPayload("nope"), { ok: false });
+  assert.deepEqual(normalizeSummaryPayload({ ok: false }), { ok: false });
+  assert.deepEqual(normalizeSummaryPayload({ ok: true, components: "x" }), { ok: false });
+
+  const result = normalizeSummaryPayload({
+    ok: true,
+    overall: "made_up",
+    components: [
+      { key: "mystery_component", status: "down", uptime: "97", history: [{ nope: 1 }, { date: "2026-08-12", status: "weird" }] },
+      42,
+    ],
+  });
+  assert.ok(result.ok);
+  if (!result.ok) return;
+  assert.equal(result.overall, "unknown");
+  assert.equal(result.components.length, 1);
+  const mystery = result.components[0];
+  assert.equal(mystery.label, FALLBACK_COMPONENT_LABEL);
+  assert.equal(mystery.status, "unknown");
+  assert.equal(mystery.uptime, null);
+  assert.deepEqual(mystery.history, [{ date: "2026-08-12", status: "unknown" }]);
 });
