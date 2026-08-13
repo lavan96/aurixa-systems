@@ -583,6 +583,20 @@ function extractiveAnswer(hits: KbHit[]): string {
   );
 }
 
+/** HMAC-SHA256 hex of `body` under `key` — the x-support-signature scheme. */
+async function hmacHex(key: string, body: string): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(body));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /**
  * Trackability: every ask (answered, refused, or escalated) is forwarded to
  * Mission Control's assistant-activity feed with the workspace and user ids
