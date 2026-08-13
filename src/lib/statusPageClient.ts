@@ -7,26 +7,44 @@
  */
 
 import { STOREFRONT_BASE } from "./leads";
-import { normalizeSummaryPayload, type StatusSummary } from "./statusPage";
+import {
+  normalizeDayDetailPayload,
+  normalizeSummaryPayload,
+  type DayDetail,
+  type StatusSummary,
+} from "./statusPage";
 
 export type StatusResult = StatusSummary | { ok: false };
 
 const TIMEOUT_MS = 10_000;
 
-export async function fetchStatusSummary(): Promise<StatusResult> {
+async function getJson(url: string): Promise<unknown | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const response = await fetch(`${STOREFRONT_BASE}/status-summary`, {
+    const response = await fetch(url, {
       method: "GET",
       headers: { accept: "application/json" },
       signal: controller.signal,
     });
-    if (!response.ok) return { ok: false };
-    return normalizeSummaryPayload(await response.json());
+    if (!response.ok) return null;
+    return await response.json();
   } catch {
-    return { ok: false };
+    return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function fetchStatusSummary(): Promise<StatusResult> {
+  const body = await getJson(`${STOREFRONT_BASE}/status-summary`);
+  return body === null ? { ok: false } : normalizeSummaryPayload(body);
+}
+
+/** Day drilldown: hour-by-hour checks and the incident windows that
+ * touched one UTC day for one component. */
+export async function fetchStatusDayDetail(componentKey: string, date: string): Promise<DayDetail> {
+  const params = new URLSearchParams({ component: componentKey, date });
+  const body = await getJson(`${STOREFRONT_BASE}/status-summary?${params}`);
+  return body === null ? { ok: false } : normalizeDayDetailPayload(body);
 }

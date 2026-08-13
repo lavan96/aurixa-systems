@@ -7,8 +7,10 @@ import {
   STATUS_COMPONENT_ROSTER,
   STATUS_LABELS,
   computeOverall,
+  formatDurationMs,
   historyBarTitle,
   isComponentStatus,
+  normalizeDayDetailPayload,
   normalizeSummaryPayload,
   rollupDaily,
   severityRank,
@@ -175,6 +177,92 @@ test("history bar tooltips distinguish reconstructed days from observed ones", (
   assert.equal(historyBarTitle("2026-08-01", "degraded", null), "2026-08-01 — Degraded performance");
   // The qualifier is public copy: it must never name a vendor.
   assert.ok(!/supabase|cloudflare|vercel|github|openai|stripe/i.test(reconstructed));
+});
+
+test("incident block is normalized with roster labels and safe defaults", () => {
+  const result = normalizeSummaryPayload({
+    ok: true,
+    overall: "degraded",
+    components: [],
+    incidents: {
+      active: [
+        { key: "security_delivery", status: "degraded", started_at: "2026-08-13T12:11:05Z", confirmed: false },
+        { nope: true }, // dropped: no key
+      ],
+      resolved: [
+        {
+          key: "dev_platform",
+          worst_status: "partial_outage",
+          started_at: "2026-08-12T21:39:05Z",
+          ended_at: "2026-08-12T22:56:39Z",
+          source: "vendor_feed",
+        },
+        { key: "backend" }, // dropped: no ended_at
+      ],
+    },
+  });
+  assert.ok(result.ok);
+  if (!result.ok) return;
+  assert.equal(result.incidents.active.length, 1);
+  const active = result.incidents.active[0];
+  assert.equal(active.label, "Edge security & delivery");
+  assert.equal(active.status_label, STATUS_LABELS.degraded);
+  assert.equal(active.confirmed, false);
+  assert.equal(result.incidents.resolved.length, 1);
+  const resolved = result.incidents.resolved[0];
+  assert.equal(resolved.label, "Code & release pipeline");
+  assert.equal(resolved.source, "vendor_feed");
+
+  // A payload with no incident block at all still normalizes.
+  const bare = normalizeSummaryPayload({ ok: true, overall: "operational", components: [] });
+  assert.ok(bare.ok);
+  if (bare.ok) assert.deepEqual(bare.incidents, { active: [], resolved: [] });
+});
+
+test("formatDurationMs reads like a human wrote it", () => {
+  assert.equal(formatDurationMs(30_000), "moments");
+  assert.equal(formatDurationMs(42 * 60_000), "42m");
+  assert.equal(formatDurationMs(3 * 3_600_000 + 20 * 60_000), "3h 20m");
+  assert.equal(formatDurationMs(4 * 3_600_000), "4h");
+  assert.equal(formatDurationMs(2 * 86_400_000 + 5 * 3_600_000), "2d 5h");
+  assert.equal(formatDurationMs(Number.NaN), "moments");
+});
+
+test("normalizeDayDetailPayload tolerates junk and keeps the good parts", () => {
+  assert.deepEqual(normalizeDayDetailPayload(null), { ok: false });
+  assert.deepEqual(normalizeDayDetailPayload({ ok: true }), { ok: false });
+
+  const detail = normalizeDayDetailPayload({
+    ok: true,
+    key: "backend",
+    date: "2026-08-13",
+    observed: true,
+    day_status: "operational",
+    checks: { total: 17, healthy: 17 },
+    hours: [
+      { hour: 12, status: "degraded", checks: 11 },
+      { hour: 13, status: "none", checks: 0 },
+      { hour: 14, status: "made_up", checks: 2 }, // unknown-ized, kept
+      "garbage", // dropped
+    ],
+    incidents: [
+      { source: "observed", worst_status: "degraded", started_at: "2026-08-13T12:11:05Z", ended_at: null },
+      { source: "hacked", worst_status: "nope", started_at: "2026-08-13T01:00:00Z", ended_at: "2026-08-13T02:00:00Z" },
+      { no_start: true }, // dropped
+    ],
+  });
+  assert.ok(detail.ok);
+  if (!detail.ok) return;
+  assert.equal(detail.observed, true);
+  assert.deepEqual(detail.checks, { total: 17, healthy: 17 });
+  assert.equal(detail.hours.length, 3);
+  assert.equal(detail.hours[1].status, "none");
+  assert.equal(detail.hours[2].status, "unknown");
+  assert.equal(detail.incidents.length, 2);
+  assert.equal(detail.incidents[0].ended_at, null);
+  // Unrecognized source/status degrade to safe values, never leak through.
+  assert.equal(detail.incidents[1].source, "observed");
+  assert.equal(detail.incidents[1].worst_status, "degraded");
 });
 
 test("normalizeSummaryPayload degrades malformed input without breaking", () => {

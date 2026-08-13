@@ -97,7 +97,33 @@ this honest:
   at our monitoring start; their strip says "Since <date>".
 
 The observed-uptime line is untouched by backfill — it is computed from our
-own polls only.
+own polls only (materialized as per-day check counts on the observed
+day-rows, so a summary read never rescans a month of snapshots).
+
+## Incidents (jumbotron + drilldown)
+
+`status_incidents` holds timestamped incident windows from two sources:
+
+- **`vendor_feed`** — the provider's own published incidents, upserted by
+  the daily backfill with their real start/resolve times and impact.
+  Vendor incident ids stay server-side (`vendor_ref`); titles are never
+  stored at all.
+- **`observed`** — runs of consecutive non-operational polls, opened and
+  closed by the 5-minute refresh. `unknown` polls neither open nor close a
+  run, and maintenance is not an "issue".
+
+The summary's `incidents` block drives the page's jumbotron: **active** =
+components whose current status is a confirmed problem (start time from the
+provider's open incident when one exists — `confirmed: true` — else from
+our observed run), and **resolved** = windows that ended in the last 72
+hours, with observed runs suppressed when a vendor-published window already
+covers them.
+
+`GET ?component=<key>&date=YYYY-MM-DD` is the day drilldown: an hour-by-hour
+rollup of our own checks for that UTC day (hours with no checks are said to
+have none, not guessed) plus every incident window touching the day. The
+page opens it when a history bar is clicked; bars also carry a rich hover
+card stating date, status, and whether the day is observed or reconstructed.
 
 ## Adapters
 

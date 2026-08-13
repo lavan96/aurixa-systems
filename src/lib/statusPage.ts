@@ -78,6 +78,30 @@ export type StatusComponent = {
   history: Array<{ date: string; status: ComponentStatus }>;
 };
 
+/** Where an incident window came from: the provider's own published
+ * record, or a run of our 5-minute checks. */
+export type IncidentSource = "vendor_feed" | "observed";
+
+export type ActiveIncident = {
+  key: string;
+  label: string;
+  status: ComponentStatus;
+  status_label: string;
+  started_at: string | null;
+  /** True when the provider's own feed currently lists an open incident. */
+  confirmed: boolean;
+};
+
+export type ResolvedIncident = {
+  key: string;
+  label: string;
+  worst_status: ComponentStatus;
+  status_label: string;
+  started_at: string | null;
+  ended_at: string;
+  source: IncidentSource;
+};
+
 export type StatusSummary = {
   ok: true;
   overall: ComponentStatus;
@@ -85,7 +109,31 @@ export type StatusSummary = {
   checked_at: string | null;
   stale: boolean;
   components: StatusComponent[];
+  incidents: { active: ActiveIncident[]; resolved: ResolvedIncident[] };
 };
+
+export type DayDetailHour = { hour: number; status: ComponentStatus | "none"; checks: number };
+
+export type DayDetailIncident = {
+  source: IncidentSource;
+  worst_status: ComponentStatus;
+  status_label: string;
+  started_at: string;
+  ended_at: string | null;
+};
+
+export type DayDetail =
+  | {
+      ok: true;
+      key: string;
+      date: string;
+      observed: boolean;
+      day_status: ComponentStatus | null;
+      checks: { total: number; healthy: number } | null;
+      hours: DayDetailHour[];
+      incidents: DayDetailIncident[];
+    }
+  | { ok: false };
 
 /**
  * Overall = worst CONFIRMED state across components. Unknowns only decide
@@ -214,6 +262,29 @@ export function historyBarTitle(
   return base;
 }
 
+function rosterLabel(key: string): string {
+  return STATUS_COMPONENT_ROSTER.find((entry) => entry.key === key)?.label ?? FALLBACK_COMPONENT_LABEL;
+}
+
+function isIncidentSource(value: unknown): value is IncidentSource {
+  return value === "vendor_feed" || value === "observed";
+}
+
+/** "moments" / "42m" / "3h 20m" / "2d 5h" — for incident durations. */
+export function formatDurationMs(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 60_000) return "moments";
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    const rem = minutes % 60;
+    return rem > 0 ? `${hours}h ${rem}m` : `${hours}h`;
+  }
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+}
+
 /**
  * Turn the status-summary endpoint's JSON into a display-ready summary.
  *
@@ -260,6 +331,45 @@ export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: fa
     });
   }
 
+  // The anonymized incident block (jumbotron data). Absent or malformed
+  // sections degrade to empty lists, never a broken page.
+  const rawIncidents = (record.incidents ?? {}) as Record<string, unknown>;
+  const active: ActiveIncident[] = Array.isArray(rawIncidents.active)
+    ? (rawIncidents.active as Array<Record<string, unknown>>)
+        .filter((i) => typeof i === "object" && i !== null && typeof i.key === "string")
+        .map((i) => {
+          const status: ComponentStatus = isComponentStatus(i.status) ? i.status : "degraded";
+          return {
+            key: i.key as string,
+            label: rosterLabel(i.key as string),
+            status,
+            status_label: STATUS_LABELS[status],
+            started_at: typeof i.started_at === "string" ? i.started_at : null,
+            confirmed: i.confirmed === true,
+          };
+        })
+    : [];
+  const resolved: ResolvedIncident[] = Array.isArray(rawIncidents.resolved)
+    ? (rawIncidents.resolved as Array<Record<string, unknown>>)
+        .filter(
+          (i) =>
+            typeof i === "object" && i !== null &&
+            typeof i.key === "string" && typeof i.ended_at === "string",
+        )
+        .map((i) => {
+          const status: ComponentStatus = isComponentStatus(i.worst_status) ? i.worst_status : "degraded";
+          return {
+            key: i.key as string,
+            label: rosterLabel(i.key as string),
+            worst_status: status,
+            status_label: STATUS_LABELS[status],
+            started_at: typeof i.started_at === "string" ? i.started_at : null,
+            ended_at: i.ended_at as string,
+            source: isIncidentSource(i.source) ? i.source : "observed",
+          };
+        })
+    : [];
+
   const overall: ComponentStatus = isComponentStatus(record.overall) ? record.overall : "unknown";
   return {
     ok: true,
@@ -268,5 +378,55 @@ export function normalizeSummaryPayload(body: unknown): StatusSummary | { ok: fa
     checked_at: typeof record.checked_at === "string" ? record.checked_at : null,
     stale: record.stale === true,
     components,
+    incidents: { active, resolved },
+  };
+}
+
+/**
+ * Normalize the day-drilldown payload (`?component=<key>&date=YYYY-MM-DD`).
+ * Same posture as the summary: tolerate anything, never throw.
+ */
+export function normalizeDayDetailPayload(body: unknown): DayDetail {
+  if (typeof body !== "object" || body === null) return { ok: false };
+  const record = body as Record<string, unknown>;
+  if (record.ok !== true || typeof record.key !== "string" || typeof record.date !== "string") {
+    return { ok: false };
+  }
+  const hours: DayDetailHour[] = Array.isArray(record.hours)
+    ? (record.hours as Array<Record<string, unknown>>)
+        .filter((h) => typeof h === "object" && h !== null && typeof h.hour === "number")
+        .map((h) => ({
+          hour: h.hour as number,
+          status: h.status === "none" ? "none" : isComponentStatus(h.status) ? h.status : "unknown",
+          checks: typeof h.checks === "number" ? h.checks : 0,
+        }))
+    : [];
+  const incidents: DayDetailIncident[] = Array.isArray(record.incidents)
+    ? (record.incidents as Array<Record<string, unknown>>)
+        .filter((i) => typeof i === "object" && i !== null && typeof i.started_at === "string")
+        .map((i) => {
+          const status: ComponentStatus = isComponentStatus(i.worst_status) ? i.worst_status : "degraded";
+          return {
+            source: isIncidentSource(i.source) ? i.source : "observed",
+            worst_status: status,
+            status_label: STATUS_LABELS[status],
+            started_at: i.started_at as string,
+            ended_at: typeof i.ended_at === "string" ? i.ended_at : null,
+          };
+        })
+    : [];
+  const rawChecks = record.checks as Record<string, unknown> | null | undefined;
+  return {
+    ok: true,
+    key: record.key,
+    date: record.date,
+    observed: record.observed === true,
+    day_status: isComponentStatus(record.day_status) ? record.day_status : null,
+    checks:
+      rawChecks && typeof rawChecks.total === "number" && typeof rawChecks.healthy === "number"
+        ? { total: rawChecks.total, healthy: rawChecks.healthy }
+        : null,
+    hours,
+    incidents,
   };
 }

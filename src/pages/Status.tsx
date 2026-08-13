@@ -5,12 +5,17 @@ import { useRouteMetadata } from "../lib/pageMetadata";
 import {
   STATUS_COMPONENT_ROSTER,
   STATUS_LABELS,
-  historyBarTitle,
+  formatDurationMs,
   type ComponentStatus,
+  type DayDetail,
   type StatusComponent,
   type StatusSummary,
 } from "../lib/statusPage";
-import { fetchStatusSummary, type StatusResult } from "../lib/statusPageClient";
+import {
+  fetchStatusDayDetail,
+  fetchStatusSummary,
+  type StatusResult,
+} from "../lib/statusPageClient";
 
 /**
  * /status — live health of the upstream services this product is built on.
@@ -113,6 +118,25 @@ function formatUptime(uptime: number): string {
   return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
 }
 
+/** "13 August 2026" — drilldown panel headers. */
+function formatDayLong(date: string): string {
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/** "12:11" — UTC clock time of an ISO timestamp, for incident windows. */
+function formatClockUtc(iso: string): string {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toISOString().slice(11, 16);
+}
+
 /** "42 seconds ago" — for the "Last checked" line under the banner. */
 function relativeTime(iso: string): string {
   const then = Date.parse(iso);
@@ -146,22 +170,29 @@ function StatusPill({ status, label }: { status: ComponentStatus; label: string 
  * The 30-day strip. Oldest on the left, today on the right; days the ledger
  * has not seen yet are left-padded as neutral placeholder cells so every
  * strip is the same width and "Today" always sits under the last real day.
+ * Each real bar carries a rich hover card and clicks through to the day
+ * drilldown panel.
  */
 function HistoryBars({
   label,
   history,
   observedSince,
+  selectedDate,
+  onSelectDate,
 }: {
   label: string;
   history: Array<{ date: string; status: ComponentStatus }>;
   observedSince: string | null;
+  selectedDate: string | null;
+  onSelectDate: (date: string) => void;
 }) {
   const entries = history.slice(-HISTORY_DAYS);
   const padding = Math.max(0, HISTORY_DAYS - entries.length);
+  const observedDay = observedSince ? observedSince.slice(0, 10) : null;
   // A short strip is not missing data — say where the record starts instead
   // of showing a wall of grey that reads as broken. (Bars can predate our
   // own polling: those days are reconstructed from the provider's published
-  // incident history, and their tooltips say so.)
+  // incident history, and their hover cards say so.)
   const leftCaption =
     padding > 0 && entries.length > 0 ? `Since ${formatDay(entries[0].date)}` : "30 days";
   return (
@@ -174,18 +205,210 @@ function HistoryBars({
             className="h-8 w-1.5 rounded-sm bg-white/[0.06]"
           />
         ))}
-        {entries.map((entry) => (
-          <span
-            key={entry.date}
-            title={historyBarTitle(entry.date, entry.status, observedSince)}
-            className={`h-8 w-1.5 rounded-sm ${STATUS_STYLES[entry.status].bar}`}
-          />
-        ))}
+        {entries.map((entry) => {
+          const style = STATUS_STYLES[entry.status];
+          const reconstructed = observedDay !== null && entry.date < observedDay;
+          const selected = selectedDate === entry.date;
+          return (
+            <button
+              key={entry.date}
+              type="button"
+              onClick={() => onSelectDate(entry.date)}
+              aria-label={`${formatDayLong(entry.date)} — ${STATUS_LABELS[entry.status]} — view details`}
+              aria-expanded={selected}
+              className="group relative rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5EDDE8]/70"
+            >
+              <span
+                aria-hidden="true"
+                className={`block h-8 w-1.5 rounded-sm transition-transform group-hover:scale-y-110 ${style.bar} ${
+                  selected ? "outline outline-2 outline-offset-1 outline-white/60" : ""
+                }`}
+              />
+              {/* Hover card — pure CSS, no vendor names, pointer-safe. */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-max max-w-[240px] -translate-x-1/2 rounded-lg border border-white/10 bg-[#060F1F] px-3 py-2 text-left shadow-xl group-hover:block group-focus-visible:block"
+              >
+                <span className="block text-[11px] font-semibold text-white">
+                  {formatDayLong(entry.date)}
+                </span>
+                <span className="mt-1 flex items-center gap-1.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                  <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${style.text}`}>
+                    {STATUS_LABELS[entry.status]}
+                  </span>
+                </span>
+                <span className="mt-1 block text-[10px] text-[#94A3B8]">
+                  {reconstructed ? "Provider's published record" : "Our monitoring"}
+                </span>
+                <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.14em] text-[#5EDDE8]">
+                  Click for day detail
+                </span>
+              </span>
+            </button>
+          );
+        })}
       </div>
       <div className="mt-2 flex items-center justify-between gap-4 font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
         <span>{leftCaption}</span>
         <span>Today</span>
       </div>
+    </div>
+  );
+}
+
+/** Session-scoped cache for day drilldowns; today's detail is never cached
+ * because it changes with every 5-minute poll. */
+const dayDetailCache = new Map<string, DayDetail>();
+
+function DayDetailPanel({
+  componentKey,
+  label,
+  date,
+  onClose,
+}: {
+  componentKey: string;
+  label: string;
+  date: string;
+  onClose: () => void;
+}) {
+  const [detail, setDetail] = useState<DayDetail | "loading">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    const cacheKey = `${componentKey}:${date}`;
+    const cached = dayDetailCache.get(cacheKey);
+    if (cached) {
+      setDetail(cached);
+      return;
+    }
+    setDetail("loading");
+    void fetchStatusDayDetail(componentKey, date).then((result) => {
+      if (cancelled) return;
+      const today = new Date().toISOString().slice(0, 10);
+      if (result.ok && date !== today) dayDetailCache.set(cacheKey, result);
+      setDetail(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [componentKey, date]);
+
+  return (
+    <div
+      role="region"
+      aria-label={`${label} — ${formatDayLong(date)} detail`}
+      className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-sm font-semibold text-white">
+          {formatDayLong(date)}
+          <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[#94A3B8]/60">
+            times in UTC
+          </span>
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close day detail"
+          className="rounded-md px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-[#94A3B8] transition-colors hover:bg-white/5 hover:text-white"
+        >
+          Close
+        </button>
+      </div>
+
+      {detail === "loading" ? (
+        <p className="mt-3 animate-pulse text-xs text-[#94A3B8]">Loading day detail&hellip;</p>
+      ) : !detail.ok ? (
+        <p className="mt-3 text-xs text-[#94A3B8]">
+          Couldn&rsquo;t load this day&rsquo;s detail — close and try again.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-4">
+          {detail.observed && detail.hours.length > 0 && (
+            <div>
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+                  Hour by hour · our checks
+                </p>
+                {detail.checks && (
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#94A3B8]/70">
+                    {detail.checks.healthy}/{detail.checks.total} checks healthy
+                  </p>
+                )}
+              </div>
+              <div className="mt-2 flex flex-nowrap items-center gap-[3px]">
+                {detail.hours.map((h) => (
+                  <span
+                    key={h.hour}
+                    title={
+                      h.status === "none"
+                        ? `${String(h.hour).padStart(2, "0")}:00 — no checks`
+                        : `${String(h.hour).padStart(2, "0")}:00 — ${STATUS_LABELS[h.status]} — ${h.checks} check${h.checks === 1 ? "" : "s"}`
+                    }
+                    className={`h-6 min-w-0 flex-1 rounded-[3px] ${
+                      h.status === "none" ? "bg-white/[0.05]" : STATUS_STYLES[h.status].bar
+                    }`}
+                  />
+                ))}
+              </div>
+              <div className="mt-1.5 flex justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/50">
+                <span>00:00</span>
+                <span>12:00</span>
+                <span>23:00</span>
+              </div>
+            </div>
+          )}
+
+          {detail.incidents.length > 0 ? (
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+                Incident windows touching this day
+              </p>
+              <ul className="mt-2 space-y-2">
+                {detail.incidents.map((incident, index) => {
+                  const style = STATUS_STYLES[incident.worst_status];
+                  const startDay = incident.started_at.slice(0, 10);
+                  const endDay = incident.ended_at?.slice(0, 10) ?? null;
+                  const start =
+                    (startDay !== date ? `${formatDay(startDay)} ` : "") +
+                    formatClockUtc(incident.started_at);
+                  const end = incident.ended_at
+                    ? (endDay !== date ? `${formatDay(endDay!)} ` : "") +
+                      formatClockUtc(incident.ended_at)
+                    : "ongoing";
+                  const duration = incident.ended_at
+                    ? formatDurationMs(Date.parse(incident.ended_at) - Date.parse(incident.started_at))
+                    : formatDurationMs(Date.now() - Date.parse(incident.started_at));
+                  return (
+                    <li key={`${incident.started_at}-${index}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                      <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${style.text}`}>
+                        {incident.status_label}
+                      </span>
+                      <span className="text-[#E2E8F0]">
+                        {start} &rarr; {end}
+                      </span>
+                      <span className="text-[#94A3B8]">({duration})</span>
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#94A3B8]/60">
+                        {incident.source === "vendor_feed" ? "provider's record" : "our checks"}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-xs text-[#94A3B8]">
+              No incident windows recorded for this day
+              {!detail.observed && detail.day_status
+                ? ` — the provider's published record shows it as ${STATUS_LABELS[detail.day_status].toLowerCase()}`
+                : ""}
+              .
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -210,6 +433,7 @@ function AffectsChips({ affects }: { affects: readonly string[] }) {
 }
 
 function ComponentRow({ component }: { component: StatusComponent }) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   return (
     <li className="rounded-2xl border border-white/10 bg-[#0B162C]/40 p-6 backdrop-blur-xl sm:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -232,6 +456,8 @@ function ComponentRow({ component }: { component: StatusComponent }) {
           label={component.label}
           history={component.history}
           observedSince={component.since}
+          selectedDate={selectedDate}
+          onSelectDate={(date) => setSelectedDate((prev) => (prev === date ? null : date))}
         />
         {component.uptime !== null && (
           <p
@@ -243,7 +469,115 @@ function ComponentRow({ component }: { component: StatusComponent }) {
           </p>
         )}
       </div>
+      {selectedDate && (
+        <DayDetailPanel
+          componentKey={component.key}
+          label={component.label}
+          date={selectedDate}
+          onClose={() => setSelectedDate(null)}
+        />
+      )}
     </li>
+  );
+}
+
+/**
+ * The jumbotron: what is broken RIGHT NOW, and what broke recently and has
+ * already been resolved. Renders nothing when there is nothing to say —
+ * the overall banner already covers "all clear".
+ */
+function IncidentsJumbotron({ incidents }: { incidents: StatusSummary["incidents"] }) {
+  const { active, resolved } = incidents;
+  if (active.length === 0 && resolved.length === 0) return null;
+  return (
+    <section aria-label="Incident activity" className="mt-6 space-y-6">
+      {active.length > 0 && (
+        <div>
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#FBBF24]">
+            Active issues
+          </h2>
+          <ul className="mt-3 space-y-3">
+            {active.map((incident) => {
+              const style = STATUS_STYLES[incident.status];
+              const roster = STATUS_COMPONENT_ROSTER.find((c) => c.key === incident.key);
+              return (
+                <li
+                  key={incident.key}
+                  className={`relative overflow-hidden rounded-2xl border bg-[#0B162C]/40 p-5 backdrop-blur-xl sm:p-6 ${style.banner}`}
+                >
+                  <span aria-hidden="true" className={`absolute inset-y-0 left-0 w-1 ${style.bar}`} />
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <span
+                        aria-hidden="true"
+                        className={`h-2.5 w-2.5 shrink-0 animate-pulse rounded-full ${style.dot} ${style.glow}`}
+                      />
+                      <div>
+                        <p className="font-semibold text-white">{incident.label}</p>
+                        <p className={`mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] ${style.text}`}>
+                          {incident.status_label}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      {incident.started_at && (
+                        <p className="text-sm text-[#94A3B8]">
+                          Ongoing for{" "}
+                          <span className="text-white">
+                            {formatDurationMs(Date.now() - Date.parse(incident.started_at))}
+                          </span>
+                        </p>
+                      )}
+                      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[#94A3B8]/60">
+                        {incident.confirmed
+                          ? "Confirmed on the provider's status feed"
+                          : "Detected by our checks"}
+                      </p>
+                    </div>
+                  </div>
+                  {roster && <AffectsChips affects={roster.affects} />}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {resolved.length > 0 && (
+        <div>
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#94A3B8]">
+            Recently resolved &middot; last 72h
+          </h2>
+          <ul className="mt-3 divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-[#0B162C]/40 backdrop-blur-xl">
+            {resolved.slice(0, 5).map((incident, index) => (
+              <li
+                key={`${incident.key}-${incident.ended_at}-${index}`}
+                className="flex flex-col gap-1 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span
+                    aria-hidden="true"
+                    className={`h-2 w-2 rounded-full ${STATUS_STYLES[incident.worst_status].dot}`}
+                  />
+                  <span className="text-sm font-medium text-white">{incident.label}</span>
+                  <span
+                    className={`font-mono text-[10px] uppercase tracking-[0.14em] ${STATUS_STYLES[incident.worst_status].text}`}
+                  >
+                    {incident.status_label}
+                  </span>
+                </div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#94A3B8]/70">
+                  {incident.started_at
+                    ? `lasted ${formatDurationMs(Date.parse(incident.ended_at) - Date.parse(incident.started_at))} · `
+                    : ""}
+                  resolved {relativeTime(incident.ended_at)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -418,7 +752,10 @@ export default function Status() {
                   </div>
                 </section>
               ) : (
-                <OverallBanner summary={summary} />
+                <>
+                  <OverallBanner summary={summary} />
+                  <IncidentsJumbotron incidents={summary.incidents} />
+                </>
               )}
 
               <h2 className="mt-12 font-mono text-[10px] uppercase tracking-[0.35em] text-[#94A3B8]">
