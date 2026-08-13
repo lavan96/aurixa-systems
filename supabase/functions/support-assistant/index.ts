@@ -44,6 +44,11 @@ const WINDOW_MS = 15 * 60_000;
 const WINDOW_LIMIT = 20;
 const DAY_MS = 24 * 60 * 60_000;
 const DAY_LIMIT = 80;
+// Feedback pings ride their own bucket (prefixed hash) so a conversation's
+// did-this-help clicks never eat the ask quota — while a bot pumping the
+// telemetry table still hits a wall.
+const FEEDBACK_WINDOW_LIMIT = 40;
+const FEEDBACK_DAY_LIMIT = 160;
 
 const DEFAULT_GUIDE_BASE = "https://npcservices.com.au";
 
@@ -359,12 +364,16 @@ async function callModel(
 
 // ── Throttle ─────────────────────────────────────────────────────────────
 
-async function throttled(client: ReturnType<typeof db>, ipHash: string): Promise<Response | null> {
+async function throttled(
+  client: ReturnType<typeof db>,
+  ipHash: string,
+  windows: Array<{ since: number; limit: number; retry: number }> = [
+    { since: WINDOW_MS, limit: WINDOW_LIMIT, retry: WINDOW_MS / 1000 },
+    { since: DAY_MS, limit: DAY_LIMIT, retry: DAY_MS / 1000 },
+  ],
+): Promise<Response | null> {
   try {
-    for (const w of [
-      { since: WINDOW_MS, limit: WINDOW_LIMIT, retry: WINDOW_MS / 1000 },
-      { since: DAY_MS, limit: DAY_LIMIT, retry: DAY_MS / 1000 },
-    ]) {
+    for (const w of windows) {
       const { count, error } = await client
         .from("support_assistant_requests")
         .select("id", { count: "exact", head: true })
@@ -576,8 +585,20 @@ async function log(client: any, row: Record<string, unknown>) {
   }
 }
 
-async function handleFeedback(body: Record<string, unknown>): Promise<Response> {
-  await log(db(), {
+async function handleFeedback(req: Request, body: Record<string, unknown>): Promise<Response> {
+  const client = db();
+
+  // Feedback is a write into the telemetry table, so it gets its own
+  // throttle bucket ("feedback:" prefix keeps it out of the ask quota —
+  // a normal conversation's did-this-help clicks must never starve asks).
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  const limited = await throttled(client, await sha256Hex(`feedback:${ip}`), [
+    { since: WINDOW_MS, limit: FEEDBACK_WINDOW_LIMIT, retry: WINDOW_MS / 1000 },
+    { since: DAY_MS, limit: FEEDBACK_DAY_LIMIT, retry: DAY_MS / 1000 },
+  ]);
+  if (limited) return limited;
+
+  await log(client, {
     kind: "feedback",
     helped: body.helped === true,
     mode: str(body.mode, 20) || null,
@@ -753,7 +774,7 @@ Deno.serve(async (req) => {
       case "ask":
         return await handleAsk(req, body);
       case "feedback":
-        return await handleFeedback(body);
+        return await handleFeedback(req, body);
       case "reindex":
         return await handleReindex(req, body);
       case "eval":
