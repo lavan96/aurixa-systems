@@ -95,12 +95,33 @@ export async function askSupportAssistant(
  * experience: failures are swallowed, and `keepalive` lets it outlive the
  * page if they close the tab straight after clicking.
  */
-export function sendAssistantFeedback(helped: boolean, mode: AssistantMode): void {
+export function sendAssistantFeedback(
+  helped: boolean,
+  mode: AssistantMode,
+  context?: { workspace_id?: string; user_id?: string },
+): void {
+  // Identity travels with the ping so feedback is attributable to the same
+  // workspace/user as the answer it rates. Clamped like every other field.
+  const clamp = (v?: string) => {
+    const t = (v ?? "").trim().slice(0, 120);
+    return t.length > 0 ? t : undefined;
+  };
+  const identity: Record<string, string> = {};
+  const workspaceId = clamp(context?.workspace_id);
+  const userId = clamp(context?.user_id);
+  if (workspaceId) identity.workspace_id = workspaceId;
+  if (userId) identity.user_id = userId;
+
   try {
     void fetch(ASSISTANT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "feedback", helped, mode }),
+      body: JSON.stringify({
+        action: "feedback",
+        helped,
+        mode,
+        ...(Object.keys(identity).length > 0 ? { context: identity } : {}),
+      }),
       keepalive: true,
     }).catch(() => {
       // Fire-and-forget by contract.
