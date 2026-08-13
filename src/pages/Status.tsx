@@ -8,6 +8,7 @@ import {
   formatDurationMs,
   type ComponentStatus,
   type DayDetail,
+  type DayDetailIncident,
   type StatusComponent,
   type StatusSummary,
 } from "../lib/statusPage";
@@ -137,6 +138,13 @@ function formatClockUtc(iso: string): string {
   return parsed.toISOString().slice(11, 16);
 }
 
+/** "14 Aug 01:00" — for scheduled windows, which are often days out. */
+function formatDateTimeUtc(iso: string): string {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return `${formatDay(iso)} ${formatClockUtc(iso)}`;
+}
+
 /** "42 seconds ago" — for the "Last checked" line under the banner. */
 function relativeTime(iso: string): string {
   const then = Date.parse(iso);
@@ -261,6 +269,139 @@ function HistoryBars({
  * because it changes with every 5-minute poll. */
 const dayDetailCache = new Map<string, DayDetail>();
 
+/** Small labelled figures across the top of a day panel. */
+function DayStatRow({ detail }: { detail: Extract<DayDetail, { ok: true }> }) {
+  const cells: Array<{ label: string; value: string }> = [];
+  if (detail.day_status) {
+    cells.push({ label: "Worst state", value: STATUS_LABELS[detail.day_status] });
+  }
+  cells.push({
+    label: "Disrupted",
+    value: detail.disruption_minutes > 0 ? formatDurationMs(detail.disruption_minutes * 60_000) : "none",
+  });
+  if (detail.checks) {
+    cells.push({ label: "Our checks", value: `${detail.checks.total + detail.checks.unreadable}` });
+    if (detail.checks.unreadable > 0) {
+      cells.push({ label: "Unreadable", value: `${detail.checks.unreadable}` });
+    }
+  }
+  cells.push({
+    label: "Record",
+    value: detail.observed ? "our monitoring" : "provider's published",
+  });
+
+  return (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+      {cells.map((cell) => (
+        <div key={cell.label}>
+          <dt className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+            {cell.label}
+          </dt>
+          <dd className="mt-0.5 text-sm text-white">{cell.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function AreaChips({ areas }: { areas: string[] }) {
+  if (areas.length === 0) return null;
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      {areas.map((area) => (
+        <span
+          key={area}
+          className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-[#94A3B8]"
+        >
+          {area}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * One incident window inside a day panel: when it ran, how long, what the
+ * provider said it affected, and the stage timeline they published.
+ */
+function IncidentWindowCard({
+  incident,
+  date,
+}: {
+  incident: DayDetailIncident;
+  date: string;
+}) {
+  const style = STATUS_STYLES[incident.worst_status];
+  const startDay = incident.started_at.slice(0, 10);
+  const endIso = incident.ended_at ?? incident.scheduled_until;
+  const endDay = endIso?.slice(0, 10) ?? null;
+  const start =
+    (startDay !== date ? `${formatDay(startDay)} ` : "") + formatClockUtc(incident.started_at);
+  const end = endIso
+    ? (endDay !== date ? `${formatDay(endDay!)} ` : "") + formatClockUtc(endIso)
+    : "ongoing";
+  const duration = formatDurationMs(
+    (incident.ended_at ? Date.parse(incident.ended_at) : Date.now()) -
+      Date.parse(incident.started_at),
+  );
+  const planned = incident.kind === "maintenance";
+
+  return (
+    <li className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+        <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+        <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${style.text}`}>
+          {planned ? "Planned maintenance" : incident.status_label}
+        </span>
+        <span className="text-[#E2E8F0]">
+          {start} &rarr; {end}
+        </span>
+        {!planned && <span className="text-[#94A3B8]">({duration})</span>}
+        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#94A3B8]/60">
+          {incident.source === "vendor_feed" ? "provider's record" : "our checks"}
+        </span>
+      </div>
+
+      {(incident.areas.length > 0 || incident.update_count > 0 ||
+        incident.time_to_identify_minutes !== null) && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <AreaChips areas={incident.areas} />
+          {incident.time_to_identify_minutes !== null && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#94A3B8]/60">
+              cause found in {formatDurationMs(incident.time_to_identify_minutes * 60_000)}
+            </span>
+          )}
+          {incident.update_count > 0 && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#94A3B8]/60">
+              {incident.update_count} provider update{incident.update_count === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+      )}
+
+      {incident.lifecycle.length > 0 && (
+        <ol className="mt-3 space-y-1.5 border-l border-white/10 pl-3">
+          {incident.lifecycle.map((step, index) => {
+            const previous = incident.lifecycle[index - 1];
+            const gapMs = previous ? Date.parse(step.at) - Date.parse(previous.at) : 0;
+            return (
+              <li key={step.stage} className="flex flex-wrap items-center gap-x-2.5 text-[11px]">
+                <span className="font-mono tabular-nums text-[#94A3B8]">
+                  {formatClockUtc(step.at)}
+                </span>
+                <span className="text-[#E2E8F0]">{step.label}</span>
+                {previous && gapMs > 0 && (
+                  <span className="text-[#94A3B8]/70">+{formatDurationMs(gapMs)}</span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </li>
+  );
+}
+
 function DayDetailPanel({
   componentKey,
   label,
@@ -324,7 +465,9 @@ function DayDetailPanel({
           Couldn&rsquo;t load this day&rsquo;s detail — close and try again.
         </p>
       ) : (
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-5">
+          <DayStatRow detail={detail} />
+
           {detail.observed && detail.hours.length > 0 && (
             <div>
               <div className="flex items-baseline justify-between gap-4">
@@ -333,7 +476,9 @@ function DayDetailPanel({
                 </p>
                 {detail.checks && (
                   <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#94A3B8]/70">
-                    {detail.checks.healthy}/{detail.checks.total} checks healthy
+                    {detail.checks.breakdown
+                      .map((b) => `${b.count} ${b.label.toLowerCase()}`)
+                      .join(" · ")}
                   </p>
                 )}
               </div>
@@ -360,42 +505,60 @@ function DayDetailPanel({
             </div>
           )}
 
+          {detail.transitions.length > 1 && (
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+                What our checks saw change
+              </p>
+              <ol className="mt-2 space-y-1.5">
+                {detail.transitions.map((t, index) => {
+                  const style = STATUS_STYLES[t.to];
+                  const next = detail.transitions[index + 1];
+                  const heldMs =
+                    (next ? Date.parse(next.at) : Math.min(Date.now(), Date.parse(`${date}T23:59:59Z`))) -
+                    Date.parse(t.at);
+                  return (
+                    <li key={t.at} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+                      <span className="font-mono text-[10px] tabular-nums text-[#94A3B8]">
+                        {formatClockUtc(t.at)}
+                      </span>
+                      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                      <span className="text-[#E2E8F0]">
+                        {t.from ? (
+                          <>
+                            {STATUS_LABELS[t.from]} &rarr;{" "}
+                            <span className={style.text}>{STATUS_LABELS[t.to]}</span>
+                          </>
+                        ) : (
+                          <>
+                            first check &mdash;{" "}
+                            <span className={style.text}>{STATUS_LABELS[t.to]}</span>
+                          </>
+                        )}
+                      </span>
+                      {heldMs > 0 && (
+                        <span className="text-[#94A3B8]/70">held {formatDurationMs(heldMs)}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
+
           {detail.incidents.length > 0 ? (
             <div>
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
                 Incident windows touching this day
               </p>
-              <ul className="mt-2 space-y-2">
-                {detail.incidents.map((incident, index) => {
-                  const style = STATUS_STYLES[incident.worst_status];
-                  const startDay = incident.started_at.slice(0, 10);
-                  const endDay = incident.ended_at?.slice(0, 10) ?? null;
-                  const start =
-                    (startDay !== date ? `${formatDay(startDay)} ` : "") +
-                    formatClockUtc(incident.started_at);
-                  const end = incident.ended_at
-                    ? (endDay !== date ? `${formatDay(endDay!)} ` : "") +
-                      formatClockUtc(incident.ended_at)
-                    : "ongoing";
-                  const duration = incident.ended_at
-                    ? formatDurationMs(Date.parse(incident.ended_at) - Date.parse(incident.started_at))
-                    : formatDurationMs(Date.now() - Date.parse(incident.started_at));
-                  return (
-                    <li key={`${incident.started_at}-${index}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-                      <span className={`font-mono text-[10px] uppercase tracking-[0.12em] ${style.text}`}>
-                        {incident.status_label}
-                      </span>
-                      <span className="text-[#E2E8F0]">
-                        {start} &rarr; {end}
-                      </span>
-                      <span className="text-[#94A3B8]">({duration})</span>
-                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#94A3B8]/60">
-                        {incident.source === "vendor_feed" ? "provider's record" : "our checks"}
-                      </span>
-                    </li>
-                  );
-                })}
+              <ul className="mt-2 space-y-3">
+                {detail.incidents.map((incident, index) => (
+                  <IncidentWindowCard
+                    key={`${incident.started_at}-${index}`}
+                    incident={incident}
+                    date={date}
+                  />
+                ))}
               </ul>
             </div>
           ) : (
@@ -459,15 +622,33 @@ function ComponentRow({ component }: { component: StatusComponent }) {
           selectedDate={selectedDate}
           onSelectDate={(date) => setSelectedDate((prev) => (prev === date ? null : date))}
         />
-        {component.uptime !== null && (
-          <p
-            className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#94A3B8]/70"
-            title="Share of readable checks reporting a healthy state"
-          >
-            {formatUptime(component.uptime)} of checks healthy
-            {component.since ? ` since ${formatDay(component.since)}` : ""}
-          </p>
-        )}
+        <div className="flex flex-col gap-1 sm:items-end">
+          {component.uptime !== null && (
+            <p
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#94A3B8]/70"
+              title="Share of readable checks reporting a healthy state"
+            >
+              {formatUptime(component.uptime)} of checks healthy
+              {component.since ? ` since ${formatDay(component.since)}` : ""}
+            </p>
+          )}
+          {component.stats && component.stats.days_recorded > 0 && (
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#94A3B8]/60">
+              {component.stats.incidents_30d === 0 ? (
+                <>no incidents on record &middot; {component.stats.days_recorded}d</>
+              ) : (
+                <>
+                  {component.stats.incidents_30d} incident
+                  {component.stats.incidents_30d === 1 ? "" : "s"} &middot;{" "}
+                  {formatDurationMs(component.stats.disruption_minutes_30d * 60_000)} disrupted
+                  {component.stats.mttr_minutes !== null && (
+                    <> &middot; {formatDurationMs(component.stats.mttr_minutes * 60_000)} avg fix</>
+                  )}
+                </>
+              )}
+            </p>
+          )}
+        </div>
       </div>
       {selectedDate && (
         <DayDetailPanel
@@ -487,8 +668,8 @@ function ComponentRow({ component }: { component: StatusComponent }) {
  * the overall banner already covers "all clear".
  */
 function IncidentsJumbotron({ incidents }: { incidents: StatusSummary["incidents"] }) {
-  const { active, resolved } = incidents;
-  if (active.length === 0 && resolved.length === 0) return null;
+  const { active, resolved, maintenance } = incidents;
+  if (active.length === 0 && resolved.length === 0 && maintenance.length === 0) return null;
   return (
     <section aria-label="Incident activity" className="mt-6 space-y-6">
       {active.length > 0 && (
@@ -533,8 +714,24 @@ function IncidentsJumbotron({ incidents }: { incidents: StatusSummary["incidents
                           ? "Confirmed on the provider's status feed"
                           : "Detected by our checks"}
                       </p>
+                      {(incident.stage_label || incident.update_count > 0) && (
+                        <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[#94A3B8]/60">
+                          {incident.stage_label ?? "In progress"}
+                          {incident.update_count > 0 && (
+                            <> &middot; {incident.update_count} update{incident.update_count === 1 ? "" : "s"}</>
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
+                  {incident.areas.length > 0 && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#94A3B8]/60">
+                        Provider reports
+                      </span>
+                      <AreaChips areas={incident.areas} />
+                    </div>
+                  )}
                   {roster && <AffectsChips affects={roster.affects} />}
                 </li>
               );
@@ -565,6 +762,7 @@ function IncidentsJumbotron({ incidents }: { incidents: StatusSummary["incidents
                   >
                     {incident.status_label}
                   </span>
+                  <AreaChips areas={incident.areas} />
                 </div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#94A3B8]/70">
                   {incident.started_at
@@ -575,6 +773,45 @@ function IncidentsJumbotron({ incidents }: { incidents: StatusSummary["incidents
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {maintenance.length > 0 && (
+        <div>
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#60A5FA]">
+            Scheduled maintenance
+          </h2>
+          <ul className="mt-3 divide-y divide-white/5 overflow-hidden rounded-2xl border border-[#60A5FA]/20 bg-[#0B162C]/40 backdrop-blur-xl">
+            {maintenance.map((window, index) => (
+              <li
+                key={`${window.key}-${window.starts_at}-${index}`}
+                className="flex flex-col gap-1 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span aria-hidden="true" className={`h-2 w-2 rounded-full ${STATUS_STYLES.maintenance.dot}`} />
+                  <span className="text-sm font-medium text-white">{window.label}</span>
+                  {window.in_progress && (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#60A5FA]">
+                      in progress
+                    </span>
+                  )}
+                  <AreaChips areas={window.areas} />
+                </div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#94A3B8]/70">
+                  <time dateTime={window.starts_at}>{formatDateTimeUtc(window.starts_at)}</time>
+                  {window.ends_at && (
+                    <>
+                      {" "}&rarr; {formatClockUtc(window.ends_at)} UTC &middot;{" "}
+                      {formatDurationMs(Date.parse(window.ends_at) - Date.parse(window.starts_at))}
+                    </>
+                  )}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.18em] text-[#94A3B8]/50">
+            Planned work announced by our providers &middot; not an outage
+          </p>
         </div>
       )}
     </section>
