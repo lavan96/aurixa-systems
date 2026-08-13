@@ -1,31 +1,36 @@
 // The /status page's server half.
 //
 // GET  — public, CORS, lightly throttled. Serves the CACHED latest state
-//        per component from status_snapshots plus a 30-day daily history,
-//        with everything vendor-identifying stripped: the browser sees
-//        component keys and normalized statuses, never a vendor name,
-//        endpoint, or incident text. If the cache is missing or older than
-//        30 minutes, one bounded inline refresh runs first so the page is
-//        never empty.
+//        per component plus a 30-day daily history and an anonymized
+//        incident block (active + recently resolved), with everything
+//        vendor-identifying stripped: the browser sees component keys,
+//        normalized statuses, timestamps and source tags — never a vendor
+//        name, endpoint, incident id, or incident text. If the cache is
+//        missing or older than 30 minutes, one bounded inline refresh runs
+//        first so the page is never empty.
+// GET ?component=<key>&date=YYYY-MM-DD — day drilldown: hour-by-hour
+//        rollup of our own checks for that UTC day plus the incident
+//        windows that touched it. Same anonymity rules.
 // POST {action:"refresh"} — admin-gated (x-support-admin-key = the vault
 //        support_ingest_key). Polls every enabled vendor in parallel with
-//        a 6s cap each, normalizes via the adapter registry below, writes
-//        one snapshot per component, and prunes snapshots older than 45
-//        days. pg_cron drives this every 5 minutes.
+//        a 6s cap each, writes one snapshot per component, maintains the
+//        observed day-rows (worst-confirmed status + check counts) and the
+//        observed incident runs, and prunes snapshots older than 45 days.
+//        pg_cron drives this every 5 minutes.
 // POST {action:"backfill"} — admin-gated. Reconstructs per-day history
 //        from each statuspage_v2 vendor's PUBLISHED incident feed
-//        (/api/v2/incidents.json) into status_history_days: incident days
-//        take the incident's impact, quiet days are operational, and days
-//        before the feed's oldest returned incident are never written —
-//        absence of data stays absent rather than being guessed. pg_cron
-//        drives this daily; buildSummary merges it with observed snapshots
-//        and OBSERVED ALWAYS WINS.
+//        (/api/v2/incidents.json) into status_history_days, and upserts
+//        the same incidents as timestamped windows into status_incidents.
+//        Days before the feed's oldest returned incident are never
+//        written — absence of data stays absent rather than being guessed.
+//        pg_cron drives this daily; observed data ALWAYS WINS on overlap.
 //
 // Anonymity is enforced structurally: the ONLY strings that reach a
 // browser are the component keys (matched to public copy in
-// src/lib/statusPage.ts) and the normalized status vocabulary. Vendor
-// incident titles are deliberately dropped during normalization — they
-// name products ("<vendor> Auth degraded") and would undo the whole point.
+// src/lib/statusPage.ts), the normalized status vocabulary, and the
+// source tags 'vendor_feed'/'observed'. Vendor incident titles and ids
+// are deliberately dropped during normalization — they name products
+// ("<vendor> Auth degraded") and would undo the whole point.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -50,6 +55,12 @@ const SEVERITY: Record<Status, number> = {
   major_outage: 5,
 };
 
+/** An "issue" for incident purposes: a confirmed problem, not maintenance
+ * (planned) and never `unknown` (unreadable is not evidence). */
+function isIssue(status: Status): boolean {
+  return status === "degraded" || status === "partial_outage" || status === "major_outage";
+}
+
 const STALE_AFTER_MS = 10 * 60_000; // flagged in the response
 const REFRESH_IF_OLDER_MS = 30 * 60_000; // inline refresh threshold
 const VENDOR_TIMEOUT_MS = 6_000;
@@ -60,10 +71,14 @@ const RETENTION_DAYS = 45;
 // status.json.
 const BACKFILL_DAYS = 90;
 const BACKFILL_TIMEOUT_MS = 10_000;
+// Resolved incidents stay in the public block this long after they end.
+const RESOLVED_WINDOW_MS = 72 * 60 * 60_000;
 
 // GET is a cache read; this only bounds scripted hammering.
 const GET_WINDOW_MS = 15 * 60_000;
 const GET_WINDOW_LIMIT = 120;
+
+const DAY_MS = 24 * 60 * 60_000;
 
 function db() {
   return createClient(
@@ -75,6 +90,14 @@ function db() {
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function dayKey(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function dayKeyFloor(daysBack: number): string {
+  return dayKey(Date.now() - daysBack * DAY_MS);
 }
 
 // ── Adapters: vendor payload → normalized status ─────────────────────────
@@ -130,7 +153,6 @@ function normInstatusSummary(body: Record<string, unknown>): Status {
     default: {
       const incidents = body?.activeIncidents;
       if (Array.isArray(incidents) && incidents.length > 0) return "degraded";
-      if (raw === "") return "unknown";
       return "unknown";
     }
   }
@@ -182,6 +204,128 @@ async function isAdminCall(client: ReturnType<typeof db>, req: Request): Promise
   }
 }
 
+/** Worst CONFIRMED status of a set of polls; `unknown` only when nothing
+ * was readable. One failed read among healthy polls is not a grey result. */
+function worstConfirmed(statuses: Status[]): Status {
+  let worst: Status | null = null;
+  for (const s of statuses) {
+    if (s === "unknown") continue;
+    if (worst === null || SEVERITY[s] > SEVERITY[worst]) worst = s;
+  }
+  if (worst !== null) return worst;
+  return statuses.length > 0 ? "unknown" : "unknown";
+}
+
+/**
+ * Recompute today's observed day-row per component from today's snapshots:
+ * worst-confirmed status plus check counts (readable / healthy), so the
+ * summary never has to rescan a month of snapshots per read.
+ */
+async function upsertObservedDayRows(client: ReturnType<typeof db>): Promise<void> {
+  const todayStartIso = `${dayKey(Date.now())}T00:00:00Z`;
+  const { data: rows, error } = await client
+    .from("status_snapshots")
+    .select("component_key, status")
+    .gte("checked_at", todayStartIso);
+  if (error) throw error;
+
+  const byComponent = new Map<string, Status[]>();
+  for (const row of (rows ?? []) as Array<{ component_key: string; status: Status }>) {
+    const list = byComponent.get(row.component_key) ?? [];
+    list.push(row.status);
+    byComponent.set(row.component_key, list);
+  }
+
+  const day = dayKey(Date.now());
+  const upserts = [...byComponent.entries()].map(([component_key, statuses]) => {
+    const readable = statuses.filter((s) => s !== "unknown");
+    const healthy = readable.filter((s) => s === "operational" || s === "maintenance");
+    return {
+      component_key,
+      day,
+      status: worstConfirmed(statuses),
+      source: "observed",
+      checks_total: readable.length,
+      checks_healthy: healthy.length,
+      updated_at: new Date().toISOString(),
+    };
+  });
+  if (upserts.length > 0) {
+    const { error: upErr } = await client
+      .from("status_history_days")
+      .upsert(upserts, { onConflict: "component_key,day" });
+    if (upErr) console.error("status-summary: day-row upsert failed", upErr.message);
+  }
+}
+
+/**
+ * Open, extend and close observed incident runs from the latest poll
+ * results. A run opens when a component's status becomes a confirmed issue,
+ * carries its worst status, and closes on the first healthy poll. `unknown`
+ * polls neither open nor close a run.
+ */
+async function maintainObservedIncidents(
+  client: ReturnType<typeof db>,
+  results: Array<{ component_key: string; status: Status }>,
+): Promise<void> {
+  const { data: openRows, error } = await client
+    .from("status_incidents")
+    .select("id, component_key, worst_status")
+    .eq("source", "observed")
+    .is("ended_at", null);
+  if (error) {
+    console.error("status-summary: open incident read failed", error.message);
+    return;
+  }
+  const open = new Map(
+    ((openRows ?? []) as Array<{ id: string; component_key: string; worst_status: Status }>).map(
+      (r) => [r.component_key, r],
+    ),
+  );
+
+  for (const r of results) {
+    const existing = open.get(r.component_key);
+    if (isIssue(r.status)) {
+      if (!existing) {
+        // Walk back through recent polls to find where this run started —
+        // consecutive issue polls, with `unknown` treated as neutral.
+        const { data: recent } = await client
+          .from("status_snapshots")
+          .select("status, checked_at")
+          .eq("component_key", r.component_key)
+          .order("checked_at", { ascending: false })
+          .limit(200);
+        let startedAt = new Date().toISOString();
+        let worst: Status = r.status;
+        for (const row of (recent ?? []) as Array<{ status: Status; checked_at: string }>) {
+          if (row.status === "unknown") continue;
+          if (!isIssue(row.status)) break;
+          startedAt = row.checked_at;
+          if (SEVERITY[row.status] > SEVERITY[worst]) worst = row.status;
+        }
+        const { error: insErr } = await client.from("status_incidents").insert({
+          component_key: r.component_key,
+          source: "observed",
+          vendor_ref: `obs:${startedAt}`,
+          worst_status: worst,
+          started_at: startedAt,
+        });
+        if (insErr) console.error("status-summary: incident open failed", insErr.message);
+      } else if (SEVERITY[r.status] > SEVERITY[existing.worst_status]) {
+        await client
+          .from("status_incidents")
+          .update({ worst_status: r.status, updated_at: new Date().toISOString() })
+          .eq("id", existing.id);
+      }
+    } else if (r.status !== "unknown" && existing) {
+      await client
+        .from("status_incidents")
+        .update({ ended_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    }
+  }
+}
+
 async function refreshAll(client: ReturnType<typeof db>): Promise<{ polled: number; wrote: number }> {
   const { data: providers, error } = await client
     .from("status_providers")
@@ -207,10 +351,17 @@ async function refreshAll(client: ReturnType<typeof db>): Promise<{ polled: numb
     else console.error("status-summary: snapshot insert failed", r.component_key, insErr.message);
   }
 
+  try {
+    await upsertObservedDayRows(client);
+    await maintainObservedIncidents(client, results);
+  } catch (error) {
+    console.error("status-summary: post-refresh upkeep failed", error);
+  }
+
   await client
     .from("status_snapshots")
     .delete()
-    .lt("checked_at", new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60_000).toISOString());
+    .lt("checked_at", new Date(Date.now() - RETENTION_DAYS * DAY_MS).toISOString());
 
   return { polled: results.length, wrote };
 }
@@ -233,38 +384,31 @@ function impactToStatus(impact: unknown): Status | null {
   }
 }
 
-function dayKey(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 10);
-}
-
-function dayKeyFloor(daysBack: number): string {
-  return dayKey(Date.now() - daysBack * 24 * 60 * 60_000);
-}
-
 /**
  * Reconstruct per-day statuses for every enabled statuspage_v2 vendor from
- * its published /api/v2/incidents.json. Quiet days are operational, incident
- * days take the incident's worst impact, and days before the feed's oldest
- * returned incident are NOT written — the feed is capped (~50 most recent
+ * its published /api/v2/incidents.json, and record the same incidents as
+ * timestamped windows. Quiet days are operational, incident days take the
+ * incident's worst impact, and days before the feed's oldest returned
+ * incident are NOT written — the feed is capped (~50 most recent
  * incidents), so anything older is unknowable, and absent must stay absent.
- * Today is never written: the live poller owns it, and buildSummary prefers
- * observed data on any overlap anyway.
+ * Today's day-row is never written: the live poller owns it, and
+ * buildSummary prefers observed data on any overlap anyway.
  */
 async function backfillAll(
   client: ReturnType<typeof db>,
-): Promise<{ vendors: number; days_written: number; skipped: string[] }> {
+): Promise<{ vendors: number; days_written: number; incidents_written: number; skipped: string[] }> {
   const { data: providers, error } = await client
     .from("status_providers")
     .select("component_key, adapter, endpoint")
     .eq("enabled", true);
   if (error) throw error;
 
-  const DAY_MS = 24 * 60 * 60_000;
   const todayStartMs = Date.parse(`${dayKey(Date.now())}T00:00:00Z`);
   const windowStartMs = todayStartMs - BACKFILL_DAYS * DAY_MS;
   const skipped: string[] = [];
   let vendors = 0;
   let daysWritten = 0;
+  let incidentsWritten = 0;
 
   for (const p of providers ?? []) {
     if (p.adapter !== "statuspage_v2") {
@@ -316,10 +460,12 @@ async function backfillAll(
     }
 
     // Quiet default, then overlay each incident's window, worst per day.
+    // Alongside the day map, collect the incidents themselves as windows.
     const byDay = new Map<string, Status>();
     for (let ms = horizonMs; ms < todayStartMs; ms += DAY_MS) {
       byDay.set(dayKey(ms), "operational");
     }
+    const windowRows: Array<Record<string, unknown>> = [];
     for (const incident of incidents) {
       const status = impactToStatus(incident.impact);
       if (!status) continue;
@@ -327,9 +473,23 @@ async function backfillAll(
         : typeof incident.created_at === "string" ? incident.created_at : "";
       const startMs = Date.parse(startRaw);
       if (Number.isNaN(startMs)) continue;
-      const endRaw = typeof incident.resolved_at === "string" ? incident.resolved_at
-        : typeof incident.updated_at === "string" ? incident.updated_at : startRaw;
+      const resolvedRaw = typeof incident.resolved_at === "string" ? incident.resolved_at : null;
+      const endRaw = resolvedRaw ?? (typeof incident.updated_at === "string" ? incident.updated_at : startRaw);
       const endMs = Number.isNaN(Date.parse(endRaw)) ? startMs : Date.parse(endRaw);
+
+      const vendorId = typeof incident.id === "string" && incident.id.length > 0 ? incident.id : null;
+      if (vendorId && endMs >= windowStartMs) {
+        windowRows.push({
+          component_key: p.component_key,
+          source: "vendor_feed",
+          vendor_ref: vendorId,
+          worst_status: status,
+          started_at: new Date(startMs).toISOString(),
+          ended_at: resolvedRaw ? new Date(Date.parse(resolvedRaw)).toISOString() : null,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
       const firstDay = Math.max(Date.parse(`${dayKey(startMs)}T00:00:00Z`), horizonMs);
       const lastDay = Math.min(Date.parse(`${dayKey(Math.max(startMs, endMs))}T00:00:00Z`), todayStartMs - DAY_MS);
       for (let ms = firstDay; ms <= lastDay; ms += DAY_MS) {
@@ -341,13 +501,26 @@ async function backfillAll(
       }
     }
 
-    const rows = [...byDay.entries()].map(([day, status]) => ({
-      component_key: p.component_key,
-      day,
-      status,
-      source: "vendor_feed",
-      updated_at: new Date().toISOString(),
-    }));
+    // Never overwrite an observed day: those rows carry our own counts and
+    // worst-confirmed status, which beat any reconstruction.
+    const { data: observedDays } = await client
+      .from("status_history_days")
+      .select("day")
+      .eq("component_key", p.component_key)
+      .eq("source", "observed");
+    const observedSet = new Set(
+      ((observedDays ?? []) as Array<{ day: string }>).map((d) => d.day),
+    );
+
+    const rows = [...byDay.entries()]
+      .filter(([day]) => !observedSet.has(day))
+      .map(([day, status]) => ({
+        component_key: p.component_key,
+        day,
+        status,
+        source: "vendor_feed",
+        updated_at: new Date().toISOString(),
+      }));
     if (rows.length > 0) {
       const { error: upErr } = await client
         .from("status_history_days")
@@ -359,20 +532,36 @@ async function backfillAll(
       }
       daysWritten += rows.length;
     }
+    if (windowRows.length > 0) {
+      const { error: winErr } = await client
+        .from("status_incidents")
+        .upsert(windowRows, { onConflict: "component_key,vendor_ref" });
+      if (winErr) console.error("status-summary: incident upsert failed", p.component_key, winErr.message);
+      else incidentsWritten += windowRows.length;
+    }
     vendors++;
   }
 
-  return { vendors, days_written: daysWritten, skipped };
+  return { vendors, days_written: daysWritten, incidents_written: incidentsWritten, skipped };
 }
 
 // ── Public summary ───────────────────────────────────────────────────────
 
+type IncidentRow = {
+  component_key: string;
+  source: "vendor_feed" | "observed";
+  worst_status: Status;
+  started_at: string;
+  ended_at: string | null;
+};
+
 async function buildSummary(client: ReturnType<typeof db>) {
-  const since = new Date(Date.now() - HISTORY_DAYS * 24 * 60 * 60_000).toISOString();
-  const { data: rows, error } = await client
+  // Latest polls (48h window is plenty: the cron runs every 5 minutes, and
+  // anything staler triggers the inline refresh below anyway).
+  const { data: recentRows, error } = await client
     .from("status_snapshots")
     .select("component_key, status, checked_at")
-    .gte("checked_at", since)
+    .gte("checked_at", new Date(Date.now() - 2 * DAY_MS).toISOString())
     .order("checked_at", { ascending: true });
   if (error) throw error;
 
@@ -382,80 +571,136 @@ async function buildSummary(client: ReturnType<typeof db>) {
     .eq("enabled", true)
     .order("sort_order");
 
-  // Reconstructed history (vendors' published incidents), merged below with
-  // the observed rollup — observed always wins on a shared day.
+  // The strip and the uptime figures come from the materialized day-rows:
+  // observed rows (our polls, with check counts) win over vendor_feed rows
+  // (reconstructed) on any shared day.
   const historyFloor = dayKeyFloor(HISTORY_DAYS);
-  const { data: backfilled } = await client
+  const { data: dayRows } = await client
     .from("status_history_days")
-    .select("component_key, day, status")
+    .select("component_key, day, status, source, checks_total, checks_healthy")
     .gte("day", historyFloor);
-  const backfillByComponent = new Map<string, Array<{ day: string; status: Status }>>();
-  for (const row of (backfilled ?? []) as Array<{ component_key: string; day: string; status: Status }>) {
-    const list = backfillByComponent.get(row.component_key) ?? [];
-    list.push({ day: row.day, status: row.status });
-    backfillByComponent.set(row.component_key, list);
+  type DayRow = {
+    component_key: string;
+    day: string;
+    status: Status;
+    source: string;
+    checks_total: number;
+    checks_healthy: number;
+  };
+  const daysByComponent = new Map<string, DayRow[]>();
+  for (const row of (dayRows ?? []) as DayRow[]) {
+    const list = daysByComponent.get(row.component_key) ?? [];
+    list.push(row);
+    daysByComponent.set(row.component_key, list);
   }
 
   type Row = { component_key: string; status: Status; checked_at: string };
-  const byComponent = new Map<string, Row[]>();
-  for (const row of (rows ?? []) as Row[]) {
-    const list = byComponent.get(row.component_key) ?? [];
+  const recentByComponent = new Map<string, Row[]>();
+  for (const row of (recentRows ?? []) as Row[]) {
+    const list = recentByComponent.get(row.component_key) ?? [];
     list.push(row);
-    byComponent.set(row.component_key, list);
+    recentByComponent.set(row.component_key, list);
   }
 
-  const components = ((providers ?? []) as Array<{ component_key: string }>).map((p) => {
-    const list = byComponent.get(p.component_key) ?? [];
-    const latest = list[list.length - 1] ?? null;
+  // Incident windows for the jumbotron: everything open, plus everything
+  // that ended inside the resolved window.
+  const resolvedFloor = new Date(Date.now() - RESOLVED_WINDOW_MS).toISOString();
+  const { data: incidentRows } = await client
+    .from("status_incidents")
+    .select("component_key, source, worst_status, started_at, ended_at")
+    .or(`ended_at.is.null,ended_at.gte.${resolvedFloor}`);
+  const incidentsByComponent = new Map<string, IncidentRow[]>();
+  for (const row of (incidentRows ?? []) as IncidentRow[]) {
+    const list = incidentsByComponent.get(row.component_key) ?? [];
+    list.push(row);
+    incidentsByComponent.set(row.component_key, list);
+  }
 
-    // Daily rollup, worst status per day, oldest → newest. Start from the
-    // vendor-published backfill, then overlay observed days on top —
-    // anything we actually polled beats anything reconstructed.
-    const byDay = new Map<string, Status>();
-    for (const entry of backfillByComponent.get(p.component_key) ?? []) {
-      byDay.set(entry.day, entry.status);
-    }
-    // Worst CONFIRMED status per day; `unknown` marks a day only when not a
-    // single check that day was readable. One failed read out of a day of
-    // healthy polls is not a grey day.
-    const observedDays = new Map<string, Status>();
-    for (const row of list) {
-      const day = row.checked_at.slice(0, 10);
-      const existing = observedDays.get(day);
-      if (row.status === "unknown") {
-        if (!existing) observedDays.set(day, "unknown");
-        continue;
+  const active: Array<{ key: string; status: Status; started_at: string | null; confirmed: boolean }> = [];
+  const resolved: Array<{
+    key: string;
+    worst_status: Status;
+    started_at: string | null;
+    ended_at: string;
+    source: string;
+  }> = [];
+
+  const components = ((providers ?? []) as Array<{ component_key: string }>).map((p) => {
+    const recent = recentByComponent.get(p.component_key) ?? [];
+    const latest = recent[recent.length - 1] ?? null;
+    const days = (daysByComponent.get(p.component_key) ?? []).slice();
+
+    // Observed beats reconstructed on a shared day.
+    const byDay = new Map<string, { status: Status; source: string }>();
+    for (const row of days) {
+      const existing = byDay.get(row.day);
+      if (!existing || (existing.source !== "observed" && row.source === "observed")) {
+        byDay.set(row.day, { status: row.status, source: row.source });
       }
-      if (!existing || existing === "unknown" || SEVERITY[row.status] > SEVERITY[existing]) {
-        observedDays.set(day, row.status);
-      }
     }
-    for (const [day, status] of observedDays) byDay.set(day, status);
     const history = [...byDay.entries()]
       .sort(([a], [b]) => (a < b ? -1 : 1))
       .slice(-HISTORY_DAYS)
-      .map(([date, status]) => ({ date, status }));
+      .map(([date, v]) => ({ date, status: v.status }));
 
-    // Observed uptime over the window: share of READABLE checks that were
-    // healthy. `unknown` rows are excluded from the denominator — a status
-    // API we could not read says nothing about whether they were up — and
-    // maintenance counts as healthy.
-    const readable = list.filter((row) => row.status !== "unknown");
-    const healthy = readable.filter(
-      (row) => row.status === "operational" || row.status === "maintenance",
-    );
-    const uptime =
-      readable.length > 0 ? Math.round((healthy.length / readable.length) * 1000) / 10 : null;
+    // Observed uptime: summed check counts over the window's observed
+    // day-rows. `unknown` polls were excluded from the counts at write
+    // time, and maintenance counted as healthy.
+    const observed = days.filter((d) => d.source === "observed");
+    const total = observed.reduce((sum, d) => sum + (d.checks_total ?? 0), 0);
+    const healthy = observed.reduce((sum, d) => sum + (d.checks_healthy ?? 0), 0);
+    const uptime = total > 0 ? Math.round((healthy / total) * 1000) / 10 : null;
+    const firstObservedDay = observed.map((d) => d.day).sort()[0] ?? null;
+
+    // Incident block entries for this component.
+    const windows = incidentsByComponent.get(p.component_key) ?? [];
+    const currentStatus = (latest?.status ?? "unknown") as Status;
+    if (isIssue(currentStatus)) {
+      const vendorOpen = windows
+        .filter((w) => w.source === "vendor_feed" && w.ended_at === null)
+        .sort((a, b) => (a.started_at < b.started_at ? -1 : 1))[0];
+      const observedOpen = windows
+        .filter((w) => w.source === "observed" && w.ended_at === null)
+        .sort((a, b) => (a.started_at < b.started_at ? -1 : 1))[0];
+      active.push({
+        key: p.component_key,
+        status: currentStatus,
+        started_at: vendorOpen?.started_at ?? observedOpen?.started_at ?? null,
+        confirmed: vendorOpen !== undefined,
+      });
+    }
+    const vendorWindows = windows.filter((w) => w.source === "vendor_feed");
+    for (const w of windows) {
+      if (w.ended_at === null) continue;
+      // Skip observed runs that a vendor-published window already covers.
+      if (w.source === "observed") {
+        const covered = vendorWindows.some((v) => {
+          const vEnd = v.ended_at ? Date.parse(v.ended_at) : Date.now();
+          return Date.parse(v.started_at) <= Date.parse(w.ended_at!) &&
+            vEnd >= Date.parse(w.started_at);
+        });
+        if (covered) continue;
+      }
+      resolved.push({
+        key: p.component_key,
+        worst_status: w.worst_status,
+        started_at: w.started_at,
+        ended_at: w.ended_at,
+        source: w.source,
+      });
+    }
 
     return {
       key: p.component_key,
-      status: (latest?.status ?? "unknown") as Status,
+      status: currentStatus,
       checked_at: latest?.checked_at ?? null,
       uptime,
-      since: list[0]?.checked_at ?? null,
+      since: firstObservedDay ? `${firstObservedDay}T00:00:00Z` : null,
       history,
     };
   });
+
+  resolved.sort((a, b) => (a.ended_at > b.ended_at ? -1 : 1));
 
   const known = components.map((c) => c.status).filter((s) => s !== "unknown");
   const overall: Status =
@@ -476,9 +721,108 @@ async function buildSummary(client: ReturnType<typeof db>) {
     generated_at: new Date().toISOString(),
     stale: newest !== null && Date.now() - Date.parse(newest) > STALE_AFTER_MS,
     components,
+    incidents: { active, resolved: resolved.slice(0, 6) },
     newestMs: newest ? Date.parse(newest) : null,
   };
 }
+
+// ── Day drilldown ────────────────────────────────────────────────────────
+
+async function handleDetail(client: ReturnType<typeof db>, componentKey: string, date: string): Promise<Response> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ ok: false, error: "invalid_date" }, 400);
+  const dayStartMs = Date.parse(`${date}T00:00:00Z`);
+  if (Number.isNaN(dayStartMs)) return json({ ok: false, error: "invalid_date" }, 400);
+  const now = Date.now();
+  if (dayStartMs > now || dayStartMs < now - (BACKFILL_DAYS + 1) * DAY_MS) {
+    return json({ ok: false, error: "date_out_of_range" }, 400);
+  }
+
+  const { data: provider } = await client
+    .from("status_providers")
+    .select("component_key")
+    .eq("component_key", componentKey)
+    .eq("enabled", true)
+    .maybeSingle();
+  if (!provider) return json({ ok: false, error: "unknown_component" }, 404);
+
+  const dayEndIso = new Date(dayStartMs + DAY_MS).toISOString();
+  const dayStartIso = new Date(dayStartMs).toISOString();
+
+  const { data: snapRows } = await client
+    .from("status_snapshots")
+    .select("status, checked_at")
+    .eq("component_key", componentKey)
+    .gte("checked_at", dayStartIso)
+    .lt("checked_at", dayEndIso)
+    .order("checked_at", { ascending: true });
+  const snaps = (snapRows ?? []) as Array<{ status: Status; checked_at: string }>;
+
+  // Hour-by-hour rollup of our own checks (UTC hours). Hours with no
+  // checks are reported as such rather than guessed.
+  const byHour = new Map<number, Status[]>();
+  for (const s of snaps) {
+    const hour = new Date(s.checked_at).getUTCHours();
+    const list = byHour.get(hour) ?? [];
+    list.push(s.status);
+    byHour.set(hour, list);
+  }
+  const hours = Array.from({ length: 24 }, (_, hour) => {
+    const list = byHour.get(hour) ?? [];
+    return {
+      hour,
+      status: list.length > 0 ? worstConfirmed(list) : ("none" as const),
+      checks: list.length,
+    };
+  });
+
+  const readable = snaps.filter((s) => s.status !== "unknown");
+  const healthy = readable.filter((s) => s.status === "operational" || s.status === "maintenance");
+
+  const { data: incidentRows } = await client
+    .from("status_incidents")
+    .select("source, worst_status, started_at, ended_at")
+    .eq("component_key", componentKey)
+    .lt("started_at", dayEndIso)
+    .or(`ended_at.is.null,ended_at.gte.${dayStartIso}`)
+    .order("started_at", { ascending: true });
+
+  const { data: dayRow } = await client
+    .from("status_history_days")
+    .select("status, source")
+    .eq("component_key", componentKey)
+    .eq("day", date)
+    .maybeSingle();
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      key: componentKey,
+      date,
+      observed: snaps.length > 0,
+      day_status: (dayRow as { status: Status } | null)?.status ?? null,
+      checks: snaps.length > 0 ? { total: readable.length, healthy: healthy.length } : null,
+      hours: snaps.length > 0 ? hours : [],
+      incidents: ((incidentRows ?? []) as IncidentRow[]).map((w) => ({
+        source: w.source,
+        worst_status: w.worst_status,
+        started_at: w.started_at,
+        ended_at: w.ended_at,
+      })),
+    }),
+    {
+      status: 200,
+      headers: {
+        ...CORS,
+        "content-type": "application/json",
+        // Past days barely change (a daily backfill re-sync at most);
+        // today's detail changes every 5 minutes.
+        "cache-control": "public, max-age=300",
+      },
+    },
+  );
+}
+
+// ── HTTP surface ─────────────────────────────────────────────────────────
 
 async function handleGet(req: Request): Promise<Response> {
   const client = db();
@@ -498,6 +842,11 @@ async function handleGet(req: Request): Promise<Response> {
   } catch (error) {
     console.error("status-summary: throttle unavailable, failing open", error);
   }
+
+  const url = new URL(req.url);
+  const componentKey = url.searchParams.get("component");
+  const date = url.searchParams.get("date");
+  if (componentKey && date) return await handleDetail(client, componentKey, date);
 
   let summary = await buildSummary(client);
 
