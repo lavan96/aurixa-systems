@@ -94,7 +94,7 @@ function llmsTxt(): string {
     section("Product", ["/platform", "/solutions", "/industries", "/docs"]),
     section("Company", ["/about", "/compliance", "/contact"]),
     section("Legal", ["/privacy-policy", "/terms-and-conditions"]),
-    section("Optional", ["/resources"]),
+    section("Optional", ["/resources", "/status"]),
   ].join("\n");
 }
 

@@ -53,3 +53,9 @@ verify_jwt = false
 # admin actions are gated by the x-support-admin-key header inside the function.
 [functions.support-assistant]
 verify_jwt = false
+
+# The public /status page's data source. GET serves a server-side cache of
+# anonymized upstream states (no login, no Authorization header); the
+# refresh action is gated by x-support-admin-key inside the function.
+[functions.status-summary]
+verify_jwt = false

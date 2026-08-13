@@ -25,6 +25,7 @@ import Contact from "./pages/Contact";
 import Compliance from "./pages/Compliance";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
+import Status from "./pages/Status";
 // The catch-all. Renders inside the normal chrome and asks not to be indexed.
 import NotFound from "./pages/NotFound";
 
@@ -131,6 +132,7 @@ export function AppShell() {
             <Route path="/compliance" element={<Compliance />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+            <Route path="/status" element={<Status />} />
             <Route path="/questionnaire" element={<Questionnaire />} />
             <Route path="/schedule-strategic-review" element={<ScheduleStrategicReview />} />
             <Route path="/feedback" element={<Feedback />} />

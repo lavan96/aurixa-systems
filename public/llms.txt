@@ -24,3 +24,4 @@ site — the Contact page is the entry point for both.
 
 ## Optional
 - [Resources](https://www.aurixasystems.com.au/resources): Guidance, frameworks and reference material on operating governed AI systems inside Australian property and finance businesses.
+- [System Status](https://www.aurixasystems.com.au/status): Live health of the upstream services Aurixa Systems is built on, shown by provider role rather than by vendor, with 30 days of history per service. Auto-refreshes every minute.
