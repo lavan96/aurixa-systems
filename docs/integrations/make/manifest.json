@@ -1,0 +1,88 @@
+{
+  "source": {
+    "platform": "make.com",
+    "zone": "eu2.make.com",
+    "organizationId": 1620547,
+    "teamId": 528268
+  },
+  "exportedScenarios": 4,
+  "scenarios": [
+    {
+      "id": 9602082,
+      "name": "Aurixa Stage 3 Access",
+      "file": "waitlist/aurixa-stage-3-access.9602082.json",
+      "category": "waitlist",
+      "active": true,
+      "folder": null,
+      "modules": 4,
+      "packages": [
+        "airtable",
+        "gateway"
+      ],
+      "scheduling": "immediately",
+      "hookId": 4291689,
+      "lastEdit": "2026-07-31T17:50:10.363Z",
+      "created": "2026-07-31T17:10:49.883Z",
+      "redactedSecrets": []
+    },
+    {
+      "id": 9389960,
+      "name": "Aurixa Waitlist Stage 1",
+      "file": "waitlist/aurixa-waitlist-stage-1.9389960.json",
+      "category": "waitlist",
+      "active": true,
+      "folder": null,
+      "modules": 7,
+      "packages": [
+        "airtable",
+        "gateway",
+        "http",
+        "util"
+      ],
+      "scheduling": "immediately",
+      "hookId": 4198128,
+      "lastEdit": "2026-07-31T15:38:20.562Z",
+      "created": "2026-06-15T08:52:04.898Z",
+      "redactedSecrets": []
+    },
+    {
+      "id": 9590512,
+      "name": "Aurixa Waitlist Stage 2",
+      "file": "waitlist/aurixa-waitlist-stage-2.9590512.json",
+      "category": "waitlist",
+      "active": true,
+      "folder": null,
+      "modules": 4,
+      "packages": [
+        "airtable",
+        "gateway",
+        "http"
+      ],
+      "scheduling": "immediately",
+      "hookId": 4286621,
+      "lastEdit": "2026-07-31T15:34:33.510Z",
+      "created": "2026-07-29T12:25:46.682Z",
+      "redactedSecrets": []
+    },
+    {
+      "id": 9601915,
+      "name": "Aurixa Waitlist Stage 3",
+      "file": "waitlist/aurixa-waitlist-stage-3.9601915.json",
+      "category": "waitlist",
+      "active": true,
+      "folder": null,
+      "modules": 7,
+      "packages": [
+        "airtable",
+        "gateway",
+        "http",
+        "util"
+      ],
+      "scheduling": "immediately",
+      "hookId": 4291609,
+      "lastEdit": "2026-07-31T16:21:05.718Z",
+      "created": "2026-07-31T16:14:28.476Z",
+      "redactedSecrets": []
+    }
+  ]
+}

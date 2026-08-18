@@ -1,0 +1,74 @@
+# Make.com blueprints — Aurixa Systems
+
+A point-in-time export of the Aurixa scenarios in the Make organisation
+(`eu2.make.com`, org `1620547`, team `528268`), taken **2026-08-18**.
+
+These four scenarios are the priority-access application funnel end to end, and
+they hand off to each other in order:
+
+| Blueprint | Scenario id | In Make | Modules |
+| --- | --- | --- | --- |
+| [`waitlist/aurixa-stage-3-access.9602082.json`](waitlist/aurixa-stage-3-access.9602082.json) | `9602082` | live | 4 |
+| [`waitlist/aurixa-waitlist-stage-1.9389960.json`](waitlist/aurixa-waitlist-stage-1.9389960.json) | `9389960` | live | 7 |
+| [`waitlist/aurixa-waitlist-stage-2.9590512.json`](waitlist/aurixa-waitlist-stage-2.9590512.json) | `9590512` | live | 4 |
+| [`waitlist/aurixa-waitlist-stage-3.9601915.json`](waitlist/aurixa-waitlist-stage-3.9601915.json) | `9601915` | live | 7 |
+
+- **Stage 1** takes the waitlist submission, writes the applicant to Airtable
+  and sends the acknowledgement.
+- **Stage 2** receives the Business Readiness Questionnaire, writes ~40 answer
+  fields to Airtable and emails the "book your strategic review" invitation.
+- **Stage 3 Access** is a synchronous gate: the site posts an application id and
+  the scenario answers `{"ok": true|false, "applicant": {…}}` only when
+  Airtable holds both a matching application **and** a `Stage 3 Access` value of
+  `GRANT`. It is what stops the scheduling page opening for an unapproved
+  applicant.
+- **Stage 3** records the requested slot, waits, re-reads the row, and sends the
+  confirmation email only if `Send Booking Confirmation` still reads `SEND` —
+  so a slot withdrawn in Airtable between request and send is not confirmed.
+
+All four run on the Airtable base `apptyShYE0yzL4IGB` and send through Microsoft
+Graph rather than a mail app, which is why the HTML email bodies are inlined in
+the blueprint.
+
+`manifest.json` is the machine-readable index.
+
+## What a file here is
+
+Each `.json` is a Make **blueprint object** — `flow`, `metadata`, `name`,
+`scheduling`, `interface` — which is exactly what Make's own *Export Blueprint*
+button produces and exactly what Make's *Import Blueprint* accepts. It is not
+the API's scenario envelope: the surrounding metadata (active state, hook id,
+folder, timestamps) lives in `manifest.json` instead, so a blueprint file can be
+re-imported without being edited first.
+
+Filenames are `<slug>.<scenarioId>.json`. The numeric id is the Make scenario id
+and is the stable identifier — names get renamed, ids do not.
+
+## Credentials are placeholders, not values
+
+Several scenarios hard-code an API key into an HTTP module's `Authorization`
+header rather than using a Make connection. Those literals have been replaced
+with named placeholders of the form `{{SECRET:NAME}}`.
+
+They are **replaced, never deleted**. A deleted key produces a blueprint that
+imports cleanly and then fails at runtime with nothing to point at; a named one
+fails loudly and says which key is missing. Re-importing is a find-and-replace
+of each placeholder with the live value before you paste the blueprint in.
+
+Scenarios that use a Make *connection* (Airtable, Microsoft 365, OpenAI, Twilio,
+Google) are unaffected — those carry only a numeric connection id, never a
+secret, and the id is meaningless outside this Make account.
+
+None of the four Aurixa blueprints contains a hard-coded credential — they use
+Make connections throughout, so no placeholder appears in this directory.
+
+## Re-importing a blueprint
+
+1. Substitute any `{{SECRET:*}}` placeholder with the live credential.
+2. Make → Scenarios → **Create a new scenario** → ⋯ → **Import Blueprint**.
+3. Re-map every connection and webhook. Connection ids and `hook` ids in these
+   files refer to objects in the original account; an import into any other
+   account (or a re-import after a webhook is deleted) must re-point them.
+
+An import creates a *new* scenario. It does not update the scenario the
+blueprint came from, and the new one starts inactive.

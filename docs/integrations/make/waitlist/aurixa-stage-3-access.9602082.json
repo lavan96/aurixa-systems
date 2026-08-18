@@ -1,0 +1,164 @@
+{
+  "flow": [
+    {
+      "id": 1,
+      "mapper": {},
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "hook",
+            "type": "hook:gateway-webhook",
+            "label": "Webhook",
+            "required": true
+          },
+          {
+            "name": "maxResults",
+            "type": "number",
+            "label": "Maximum number of results"
+          }
+        ]
+      },
+      "parameters": {
+        "hook": 4291689,
+        "maxResults": 1
+      }
+    },
+    {
+      "id": 2,
+      "mapper": {
+        "qs": [
+          {
+            "key": "filterByFormula",
+            "value": "{{\"AND({Application ID Key} = '\" + replace(upper(trim(1.applicationId)); \"/[^A-Z0-9-]/g\"; \"\") + \"', {Stage 3 Access (Application)} = 'GRANT')\"}}"
+          },
+          {
+            "key": "maxRecords",
+            "value": "1"
+          }
+        ],
+        "url": "v0/apptyShYE0yzL4IGB/tblHzGiB591W3GpoZ",
+        "body": "",
+        "method": "GET",
+        "headers": []
+      },
+      "module": "airtable:makeApiCall",
+      "version": 3,
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:airtable3,airtable2",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      },
+      "parameters": {
+        "__IMTCONN__": 2426955
+      }
+    },
+    {
+      "id": 3,
+      "mapper": {
+        "qs": [
+          {
+            "key": "filterByFormula",
+            "value": "{{\"UPPER(TRIM({Application ID})) = '\" + replace(upper(trim(1.applicationId)); \"/[^A-Z0-9-]/g\"; \"\") + \"'\"}}"
+          },
+          {
+            "key": "maxRecords",
+            "value": "1"
+          }
+        ],
+        "url": "v0/apptyShYE0yzL4IGB/tblB1t18q6aUTNI0g",
+        "body": "",
+        "method": "GET",
+        "headers": []
+      },
+      "module": "airtable:makeApiCall",
+      "version": 3,
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0
+        },
+        "parameters": [
+          {
+            "name": "__IMTCONN__",
+            "type": "account:airtable3,airtable2",
+            "label": "Connection",
+            "required": true
+          }
+        ]
+      },
+      "parameters": {
+        "__IMTCONN__": 2426955
+      }
+    },
+    {
+      "id": 4,
+      "mapper": {
+        "body": "{\"ok\":{{if(length(2.body.records) * length(3.body.records) > 0; \"true\"; \"false\")}},\"applicant\":{\"applicationId\":\"{{if(length(2.body.records) * length(3.body.records) > 0; escapeJSON(get(2.body.records; \"1.fields.Application ID Key\")); \"\")}}\",\"firstName\":\"{{if(length(2.body.records) * length(3.body.records) > 0; escapeJSON(get(2.body.records; \"1.fields.First Name\")); \"\")}}\",\"lastName\":\"{{if(length(2.body.records) * length(3.body.records) > 0; escapeJSON(get(2.body.records; \"1.fields.Last Name\")); \"\")}}\",\"workEmail\":\"{{if(length(2.body.records) * length(3.body.records) > 0; escapeJSON(get(2.body.records; \"1.fields.Corporate Email\")); \"\")}}\",\"organisationName\":\"{{if(length(2.body.records) * length(3.body.records) > 0; escapeJSON(get(2.body.records; \"1.fields.Entity Name\")); \"\")}}\"}}",
+        "status": "200",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      "module": "gateway:WebhookRespond",
+      "version": 1,
+      "metadata": {
+        "designer": {
+          "x": 900,
+          "y": 0
+        }
+      }
+    }
+  ],
+  "name": "Aurixa Stage 3 Access",
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "designer": {},
+    "scenario": {
+      "dlq": false,
+      "slots": null,
+      "dataloss": false,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "roundtrips": 1,
+      "sequential": false,
+      "confidential": false,
+      "freshVariables": false,
+      "autoCommitTriggerLast": true
+    }
+  },
+  "scheduling": {
+    "type": "immediately",
+    "maximum_runs_per_minute": 60
+  },
+  "interface": {
+    "input": [],
+    "output": []
+  }
+}
